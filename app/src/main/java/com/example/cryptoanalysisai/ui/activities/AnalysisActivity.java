@@ -80,8 +80,6 @@ public class AnalysisActivity extends AppCompatActivity {
         analysisService = new AnalysisService();
         indicatorService = new TechnicalIndicatorService();
 
-        // 라인 차트 초기화
-        setupLineChart();
 
         // 결과 컨테이너 초기에 숨기기
         binding.resultContainer.setVisibility(View.GONE);
@@ -120,16 +118,6 @@ public class AnalysisActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * 라인 차트 초기화
-     */
-    private void setupLineChart() {
-        // 차트 설정 (binding.lineChart가 XML에 정의되어 있어야 함)
-        if (binding.chartContainer != null) {
-            // 여기에 차트 설정 코드 추가
-            // 예: binding.chartContainer.addView(chartView);
-        }
-    }
 
     /**
      * 캔들 데이터 로드

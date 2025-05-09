@@ -1,7 +1,6 @@
 package com.example.cryptoanalysisai.ui.fragments;
 
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -25,15 +24,6 @@ import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.models.TickerData;
 import com.example.cryptoanalysisai.services.TechnicalIndicatorService;
 import com.example.cryptoanalysisai.utils.Constants;
-import com.github.mikephil.charting.components.Legend;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.CandleDataSet;
-import com.github.mikephil.charting.data.CandleEntry;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
-import com.github.mikephil.charting.highlight.Highlight;
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
@@ -45,7 +35,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class ChartFragment extends Fragment implements OnChartValueSelectedListener {
+public class ChartFragment extends Fragment {
 
     private static final String TAG = "ChartFragment";
     private static final String ARG_COIN_INFO = "arg_coin_info";
@@ -72,7 +62,6 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
         Bundle args = new Bundle();
 
         if (coinInfo != null) {
-            // TODO: CoinInfo 직렬화 구현 필요 (Parcelable)
             args.putString(ARG_COIN_INFO, coinInfo.getMarket());
         }
 
@@ -86,7 +75,6 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
         super.onCreate(savedInstanceState);
 
         if (getArguments() != null) {
-            // TODO: CoinInfo 역직렬화 구현 필요 (현재는 그냥 마켓코드만 저장)
             String market = getArguments().getString(ARG_COIN_INFO);
             if (market != null) {
                 coinInfo = new CoinInfo();
@@ -112,9 +100,6 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        // 차트 초기화
-        setupCandleStickChart();
 
         // 기간 탭 초기화
         setupIntervalTabs();
@@ -148,45 +133,6 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
             // 차트 데이터 로드
             loadMarketData(coinInfo.getMarket());
         }
-    }
-
-    /**
-     * 캔들스틱 차트 설정
-     */
-    private void setupCandleStickChart() {
-        // 캔들스틱 차트 설정
-        binding.candleStickChart.setBackgroundColor(Color.WHITE);
-        binding.candleStickChart.getDescription().setEnabled(false);
-        binding.candleStickChart.setMaxVisibleValueCount(60);
-        binding.candleStickChart.setPinchZoom(true);
-        binding.candleStickChart.setDragEnabled(true);
-        binding.candleStickChart.setScaleEnabled(true);
-        binding.candleStickChart.setDoubleTapToZoomEnabled(true);
-        binding.candleStickChart.setHighlightPerDragEnabled(true);
-        binding.candleStickChart.setOnChartValueSelectedListener(this);
-
-        // X축 설정
-        XAxis xAxis = binding.candleStickChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(false);
-        xAxis.setLabelCount(7);
-
-        // 왼쪽 Y축 설정
-        YAxis leftAxis = binding.candleStickChart.getAxisLeft();
-        leftAxis.setDrawGridLines(true);
-        leftAxis.setLabelCount(8);
-
-        // 오른쪽 Y축 설정
-        YAxis rightAxis = binding.candleStickChart.getAxisRight();
-        rightAxis.setEnabled(false);
-
-        // 범례 설정
-        Legend legend = binding.candleStickChart.getLegend();
-        legend.setEnabled(true);
-        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
-        legend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
-        legend.setDrawInside(false);
     }
 
     /**
@@ -443,7 +389,7 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
             public void onResponse(@NonNull Call<List<com.example.cryptoanalysisai.models.CandleData>> call, @NonNull Response<List<com.example.cryptoanalysisai.models.CandleData>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     candleDataList = response.body();
-                    updateChartData(candleDataList);
+                    binding.progressBar.setVisibility(View.GONE);
                 } else {
                     Toast.makeText(getContext(), "데이터 로딩 실패: " + response.code(), Toast.LENGTH_SHORT).show();
                     binding.progressBar.setVisibility(View.GONE);
@@ -478,8 +424,7 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
 
                     // 날짜 순서대로 정렬 (최신 -> 과거)
                     Collections.reverse(candleDataList);
-
-                    updateChartData(candleDataList);
+                    binding.progressBar.setVisibility(View.GONE);
                 } else {
                     Toast.makeText(getContext(), "데이터 로딩 실패: " + response.code(), Toast.LENGTH_SHORT).show();
                     binding.progressBar.setVisibility(View.GONE);
@@ -492,64 +437,6 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
                 binding.progressBar.setVisibility(View.GONE);
             }
         });
-    }
-
-    /**
-     * 차트 데이터 업데이트
-     */
-    private void updateChartData(List<com.example.cryptoanalysisai.models.CandleData> candles) {
-        if (candles.isEmpty()) {
-            binding.progressBar.setVisibility(View.GONE);
-            return;
-        }
-
-        // 기술적 지표 계산
-        technicalIndicators = indicatorService.calculateAllIndicators(candles);
-
-        // 캔들 차트 데이터 생성
-        List<CandleEntry> candleEntries = new ArrayList<>();
-        List<String> xValues = new ArrayList<>();
-
-        for (int i = 0; i < candles.size(); i++) {
-            com.example.cryptoanalysisai.models.CandleData candle = candles.get(i);
-
-            // CandleEntry(x, shadowH, shadowL, open, close)
-            candleEntries.add(new CandleEntry(i,
-                    (float) candle.getHighPrice(),
-                    (float) candle.getLowPrice(),
-                    (float) candle.getOpeningPrice(),
-                    (float) candle.getTradePrice()));
-
-            xValues.add(candle.getFormattedDate());
-        }
-
-        // 차트 데이터셋 생성
-        CandleDataSet dataSet = new CandleDataSet(candleEntries, "Price");
-        dataSet.setDrawIcons(false);
-        dataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-        dataSet.setShadowColor(Color.DKGRAY);
-        dataSet.setShadowWidth(0.7f);
-        dataSet.setDecreasingColor(Color.RED);
-        dataSet.setDecreasingPaintStyle(Paint.Style.FILL);
-        dataSet.setIncreasingColor(Color.rgb(122, 242, 84));
-        dataSet.setIncreasingPaintStyle(Paint.Style.FILL);
-        dataSet.setNeutralColor(Color.BLUE);
-        dataSet.setHighlightLineWidth(1f);
-
-        // 캔들 차트 데이터 설정
-        CandleData data = new CandleData(dataSet);
-        binding.candleStickChart.setData(data);
-
-        // X축 라벨 설정
-        binding.candleStickChart.getXAxis().setValueFormatter(new IndexAxisValueFormatter(xValues));
-
-        // 차트 업데이트
-        binding.candleStickChart.invalidate();
-
-        // 현재 선택된 지표 업데이트
-        updateIndicator(currentIndicator);
-
-        binding.progressBar.setVisibility(View.GONE);
     }
 
     /**
@@ -670,32 +557,5 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
         } else {
             binding.tvIndicatorValue.setTextColor(Color.BLACK);
         }
-    }
-
-    /**
-     * 차트 값 선택 시 이벤트 처리
-     */
-    @Override
-    public void onValueSelected(Entry e, Highlight h) {
-        // 차트에서 특정 캔들 선택 시
-        if (e instanceof CandleEntry) {
-            CandleEntry ce = (CandleEntry) e;
-            int position = (int) e.getX();
-
-            if (position >= 0 && position < candleDataList.size()) {
-                com.example.cryptoanalysisai.models.CandleData candle = candleDataList.get(position);
-
-                String dateInfo = candle.getFormattedDate();
-                String priceInfo = String.format("시가: %.2f, 고가: %.2f, 저가: %.2f, 종가: %.2f",
-                        ce.getOpen(), ce.getHigh(), ce.getLow(), ce.getClose());
-
-                //Toast.makeText(getContext(), dateInfo + "\n" + priceInfo, Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    @Override
-    public void onNothingSelected() {
-        // Not used
     }
 }
