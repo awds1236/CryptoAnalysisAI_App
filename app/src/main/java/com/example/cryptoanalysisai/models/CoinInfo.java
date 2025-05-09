@@ -153,13 +153,19 @@ public class CoinInfo {
         return "KRW".equals(unit) ? "₩" : "$";
     }
 
-    // 가격 포맷팅 (₩55,000,000 또는 $45,000.00)
+    // 가격 포맷팅 (₩55,000,000 또는 $45,000.00 또는 $0.1234)
     public String getFormattedPrice() {
         String symbol = getCurrencySymbol();
         if ("₩".equals(symbol)) {
+            // 원화는 정수로 표시
             return String.format("%s%,.0f", symbol, currentPrice);
         } else {
-            return String.format("%s%,.2f", symbol, currentPrice);
+            // 달러는 10달러 미만일 경우 소수점 4자리, 그 이상은 소수점 2자리
+            if (currentPrice < 10.0) {
+                return String.format("%s%,.4f", symbol, currentPrice);
+            } else {
+                return String.format("%s%,.2f", symbol, currentPrice);
+            }
         }
     }
 
