@@ -1,9 +1,12 @@
 package com.example.cryptoanalysisai.models;
 
+import com.github.mikephil.charting.data.CandleDataSet;
+import com.github.mikephil.charting.interfaces.datasets.ICandleDataSet;
 import com.google.gson.annotations.SerializedName;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class CandleData extends com.github.mikephil.charting.data.CandleData {
@@ -39,11 +42,22 @@ public class CandleData extends com.github.mikephil.charting.data.CandleData {
     @SerializedName("openTime")
     private Long openTime;
 
+    // 기본 생성자 - 부모 클래스의 기본 생성자 호출
     public CandleData() {
-        // 기본 생성자
+        super();
     }
 
-    // Getters and Setters
+    // 단일 ICandleDataSet을 받는 생성자
+    public CandleData(ICandleDataSet dataSet) {
+        super(dataSet);
+    }
+
+    // 여러 ICandleDataSet을 받는 생성자
+    public CandleData(List<ICandleDataSet> dataSets) {
+        super(dataSets);
+    }
+
+    // 기존 메서드들...
 
     public String getMarket() {
         return market;

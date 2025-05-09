@@ -18,6 +18,7 @@ import com.example.cryptoanalysisai.api.RetrofitClient;
 import com.example.cryptoanalysisai.api.UpbitApiService;
 import com.example.cryptoanalysisai.databinding.FragmentChartBinding;
 import com.example.cryptoanalysisai.models.BinanceModels;
+import com.example.cryptoanalysisai.models.BinanceTicker;
 import com.example.cryptoanalysisai.models.CandleData;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
@@ -326,24 +327,25 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
         } else if (exchangeType == ExchangeType.BINANCE) {
             BinanceApiService apiService = RetrofitClient.getBinanceApiService();
 
-            apiService.getTicker(market).enqueue(new Callback<BinanceModels.BinanceTicker>() {
+            // Binance API 호출 부분
+            apiService.getTicker(market).enqueue(new Callback<BinanceTicker>() {
                 @Override
-                public void onResponse(@NonNull Call<BinanceModels.BinanceTicker> call, @NonNull Response<BinanceModels.BinanceTicker> response) {
+                public void onResponse(@NonNull Call<BinanceTicker> call, @NonNull Response<BinanceTicker> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        BinanceModels.BinanceTicker ticker = response.body();
+                        final BinanceTicker ticker = response.body();
 
                         // 24시간 변화율 정보도 가져오기
-                        apiService.get24hTicker(market).enqueue(new Callback<BinanceModels.BinanceTicker>() {
+                        apiService.get24hTicker(market).enqueue(new Callback<BinanceTicker>() {
                             @Override
-                            public void onResponse(@NonNull Call<BinanceModels.BinanceTicker> call, @NonNull Response<BinanceModels.BinanceTicker> response) {
+                            public void onResponse(@NonNull Call<BinanceTicker> call, @NonNull Response<BinanceTicker> response) {
                                 if (response.isSuccessful() && response.body() != null) {
-                                    BinanceModels.BinanceTicker ticker24h = response.body();
+                                    BinanceTicker ticker24h = response.body();
                                     updatePriceInfo(ticker.getPrice(), ticker24h.getPriceChangePercent() / 100.0);
                                 }
                             }
 
                             @Override
-                            public void onFailure(@NonNull Call<BinanceModels.BinanceTicker> call, @NonNull Throwable t) {
+                            public void onFailure(@NonNull Call<BinanceTicker> call, @NonNull Throwable t) {
                                 Log.e(TAG, "24시간 변화율 로딩 실패: " + t.getMessage());
                                 updatePriceInfo(ticker.getPrice(), 0);
                             }
@@ -352,7 +354,7 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
                 }
 
                 @Override
-                public void onFailure(@NonNull Call<BinanceModels.BinanceTicker> call, @NonNull Throwable t) {
+                public void onFailure(@NonNull Call<BinanceTicker> call, @NonNull Throwable t) {
                     Log.e(TAG, "현재가 로딩 실패: " + t.getMessage());
                 }
             });
@@ -665,7 +667,7 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
                 String priceInfo = String.format("시가: %.2f, 고가: %.2f, 저가: %.2f, 종가: %.2f",
                         ce.getOpen(), ce.getHigh(), ce.getLow(), ce.getClose());
 
-                Toast.makeText(getContext(), dateInfo + "\n" + priceInfo, Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getContext(), dateInfo + "\n" + priceInfo, Toast.LENGTH_SHORT).show();
             }
         }
     }

@@ -152,10 +152,14 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
      * 분석 액티비티 시작
      */
     private void startAnalysisActivity() {
-        Intent intent = new Intent(this, AnalysisActivity.class);
-        intent.putExtra(Constants.EXTRA_COIN_INFO, selectedCoin);
-        intent.putExtra(Constants.EXTRA_EXCHANGE_TYPE, selectedExchange.getCode());
-        startActivity(intent);
+        if (selectedCoin != null) {
+            Intent intent = new Intent(this, AnalysisActivity.class);
+            intent.putExtra(Constants.EXTRA_COIN_INFO, selectedCoin.getMarket());
+            intent.putExtra(Constants.EXTRA_EXCHANGE_TYPE, selectedExchange.getCode());
+            startActivity(intent);
+        } else {
+            Toast.makeText(this, "코인을 먼저 선택해주세요.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

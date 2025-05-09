@@ -23,6 +23,8 @@ import com.example.cryptoanalysisai.api.RetrofitClient;
 import com.example.cryptoanalysisai.api.UpbitApiService;
 import com.example.cryptoanalysisai.databinding.FragmentCoinListBinding;
 import com.example.cryptoanalysisai.models.BinanceModels;
+import com.example.cryptoanalysisai.models.BinanceTicker;
+import com.example.cryptoanalysisai.models.BinanceKline;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.models.TickerData;
@@ -337,9 +339,7 @@ public class CoinListFragment extends Fragment {
         });
     }
 
-    /**
-     * 바이낸스 가격 정보 로드
-     */
+    // 바이낸스 가격 정보 로드 메서드
     private void loadBinancePrices(List<CoinInfo> markets) {
         if (markets.isEmpty()) {
             showError("마켓 정보가 없습니다.");
@@ -349,15 +349,15 @@ public class CoinListFragment extends Fragment {
 
         BinanceApiService apiService = RetrofitClient.getBinanceApiService();
 
-        apiService.getAllTickers().enqueue(new Callback<List<BinanceModels.BinanceTicker>>() {
+        apiService.getAllTickers().enqueue(new Callback<List<BinanceTicker>>() {
             @Override
-            public void onResponse(@NonNull Call<List<BinanceModels.BinanceTicker>> call, @NonNull Response<List<BinanceModels.BinanceTicker>> response) {
+            public void onResponse(@NonNull Call<List<BinanceTicker>> call, @NonNull Response<List<BinanceTicker>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    List<BinanceModels.BinanceTicker> tickers = response.body();
+                    List<BinanceTicker> tickers = response.body();
 
                     // 코인 정보에 가격 데이터 추가
                     for (CoinInfo market : markets) {
-                        for (BinanceModels.BinanceTicker ticker : tickers) {
+                        for (BinanceTicker ticker : tickers) {
                             if (market.getMarket().equals(ticker.getSymbol())) {
                                 market.setCurrentPrice(ticker.getPrice());
 
@@ -385,7 +385,7 @@ public class CoinListFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<BinanceModels.BinanceTicker>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<BinanceTicker>> call, @NonNull Throwable t) {
                 showError("네트워크 오류: " + t.getMessage());
                 showLoading(false);
             }
@@ -398,18 +398,18 @@ public class CoinListFragment extends Fragment {
     private void load24hTickerForCoin(CoinInfo coinInfo) {
         BinanceApiService apiService = RetrofitClient.getBinanceApiService();
 
-        apiService.get24hTicker(coinInfo.getMarket()).enqueue(new Callback<BinanceModels.BinanceTicker>() {
+        apiService.get24hTicker(coinInfo.getMarket()).enqueue(new Callback<BinanceTicker>() {
             @Override
-            public void onResponse(@NonNull Call<BinanceModels.BinanceTicker> call, @NonNull Response<BinanceModels.BinanceTicker> response) {
+            public void onResponse(@NonNull Call<BinanceTicker> call, @NonNull Response<BinanceTicker> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    BinanceModels.BinanceTicker ticker = response.body();
+                    BinanceTicker ticker = response.body();
                     coinInfo.setPriceChange(ticker.getPriceChangePercent() / 100.0);
                     adapter.notifyDataSetChanged();
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<BinanceModels.BinanceTicker> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<BinanceTicker> call, @NonNull Throwable t) {
                 Log.e(TAG, "24시간 변화 정보 로딩 실패: " + t.getMessage());
             }
         });

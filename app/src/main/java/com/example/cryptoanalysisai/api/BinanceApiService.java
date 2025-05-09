@@ -1,5 +1,8 @@
 package com.example.cryptoanalysisai.api;
 
+import com.example.cryptoanalysisai.models.BinanceModels;
+import com.example.cryptoanalysisai.models.BinanceTicker;
+
 import java.util.List;
 
 import retrofit2.Call;
@@ -10,19 +13,19 @@ public interface BinanceApiService {
 
     // 거래소 정보 및 심볼 목록 조회
     @GET("exchangeInfo")
-    Call<Object> getExchangeInfo();
+    Call<BinanceModels.BinanceExchangeInfo> getExchangeInfo();
 
     // 현재가 조회 (전체)
     @GET("ticker/price")
-    Call<List<Object>> getAllTickers();
+    Call<List<BinanceTicker>> getAllTickers();
 
     // 현재가 조회 (개별)
     @GET("ticker/price")
-    Call<Object> getTicker(@Query("symbol") String symbol);
+    Call<BinanceTicker> getTicker(@Query("symbol") String symbol);
 
     // 24시간 변동 정보
     @GET("ticker/24hr")
-    Call<Object> get24hTicker(@Query("symbol") String symbol);
+    Call<BinanceTicker> get24hTicker(@Query("symbol") String symbol);
 
     // 캔들스틱 데이터 조회
     @GET("klines")
