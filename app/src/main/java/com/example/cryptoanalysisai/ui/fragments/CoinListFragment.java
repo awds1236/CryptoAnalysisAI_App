@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,6 +29,9 @@ import com.example.cryptoanalysisai.models.BinanceKline;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.models.TickerData;
+import com.example.cryptoanalysisai.models.firebase.FirestoreAnalysisResult;
+import com.example.cryptoanalysisai.services.FirebaseManager;
+import com.google.android.material.card.MaterialCardView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,6 +53,10 @@ public class CoinListFragment extends Fragment {
     private CoinListAdapter adapter;
     private OnCoinSelectedListener listener;
     private ExchangeType exchangeType = ExchangeType.UPBIT;
+    private FirebaseManager firebaseManager;
+
+    // 코인 심볼별 최신 분석 결과 캐시
+    private Map<String, FirestoreAnalysisResult> analysisCache = new HashMap<>();
 
     public CoinListFragment() {
         // 기본 생성자
@@ -73,6 +81,8 @@ public class CoinListFragment extends Fragment {
             String exchangeCode = getArguments().getString(ARG_EXCHANGE_TYPE);
             exchangeType = ExchangeType.fromCode(exchangeCode);
         }
+
+        firebaseManager = FirebaseManager.getInstance();
     }
 
     @Nullable
@@ -187,16 +197,54 @@ public class CoinListFragment extends Fragment {
     }
 
     /**
-     * 코인 목록 로드
+     * 코인 목록 로드 수정 버전 - Firebase에서 분석 결과를 함께 로드
      */
     private void loadCoinList() {
         showLoading(true);
 
+        // 1. Firebase에서 모든 코인의 최신 분석 결과 로드
+        loadAllAnalysesFromFirebase();
+
+        // 2. 거래소에 따라 코인 목록 로드
         if (exchangeType == ExchangeType.UPBIT) {
             loadUpbitMarkets();
         } else {
             loadBinanceMarkets();
         }
+    }
+
+    /**
+     * Firebase에서 모든 코인의 최신 분석 결과 로드
+     */
+    private void loadAllAnalysesFromFirebase() {
+        firebaseManager.getAllLatestAnalyses(new FirebaseManager.OnAllAnalysesRetrievedListener() {
+            @Override
+            public void onAllAnalysesRetrieved(List<FirestoreAnalysisResult> resultList) {
+                // 분석 결과 캐시 업데이트
+                analysisCache.clear();
+
+                // 거래소에 맞는 분석 결과만 필터링
+                for (FirestoreAnalysisResult result : resultList) {
+                    if (exchangeType.getCode().equals(result.getExchange())) {
+                        String cacheKey = result.getCoinSymbol();
+                        analysisCache.put(cacheKey, result);
+                    }
+                }
+
+                // 어댑터에 분석 결과 제공 (어댑터가 이미 초기화된 경우)
+                if (adapter != null) {
+                    adapter.setAnalysisResults(analysisCache);
+                    adapter.notifyDataSetChanged();
+                }
+
+                Log.d(TAG, "Firebase에서 " + analysisCache.size() + "개의 분석 결과 로드됨");
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                Log.e(TAG, "Firebase 분석 결과 로드 실패: " + errorMessage);
+            }
+        });
     }
 
     /**
@@ -507,11 +555,16 @@ public class CoinListFragment extends Fragment {
         private final List<CoinInfo> originalList;
         private List<CoinInfo> filteredList;
         private final OnCoinClickListener listener;
+        private Map<String, FirestoreAnalysisResult> analysisResults = new HashMap<>();
 
         public CoinListAdapter(List<CoinInfo> coins, OnCoinClickListener listener) {
             this.originalList = new ArrayList<>(coins);
             this.filteredList = new ArrayList<>(coins);
             this.listener = listener;
+        }
+
+        public void setAnalysisResults(Map<String, FirestoreAnalysisResult> analysisResults) {
+            this.analysisResults = analysisResults;
         }
 
         @NonNull
@@ -539,6 +592,34 @@ public class CoinListFragment extends Fragment {
             holder.tvPriceChange.setTextColor(coin.getPriceChange() >= 0 ?
                     android.graphics.Color.rgb(76, 175, 80) : // 상승: 초록색
                     android.graphics.Color.rgb(244, 67, 54)); // 하락: 빨간색
+
+            // 분석 결과 표시 (있는 경우)
+            FirestoreAnalysisResult analysis = analysisResults.get(coin.getSymbol());
+            if (analysis != null) {
+                holder.tvAnalysisRecommendation.setVisibility(View.VISIBLE);
+
+                // 추천 표시
+                String recommendation = analysis.getRecommendation();
+                holder.tvAnalysisRecommendation.setText(recommendation);
+
+                // 색상 설정
+                if ("매수".equals(recommendation)) {
+                    holder.tvAnalysisRecommendation.setTextColor(android.graphics.Color.rgb(76, 175, 80)); // 초록색
+                    holder.cardView.setStrokeColor(android.graphics.Color.rgb(76, 175, 80));
+                    holder.cardView.setStrokeWidth(2);
+                } else if ("매도".equals(recommendation)) {
+                    holder.tvAnalysisRecommendation.setTextColor(android.graphics.Color.rgb(244, 67, 54)); // 빨간색
+                    holder.cardView.setStrokeColor(android.graphics.Color.rgb(244, 67, 54));
+                    holder.cardView.setStrokeWidth(2);
+                } else {
+                    holder.tvAnalysisRecommendation.setTextColor(android.graphics.Color.rgb(255, 152, 0)); // 주황색
+                    holder.cardView.setStrokeColor(android.graphics.Color.rgb(255, 152, 0));
+                    holder.cardView.setStrokeWidth(2);
+                }
+            } else {
+                holder.tvAnalysisRecommendation.setVisibility(View.GONE);
+                holder.cardView.setStrokeWidth(0);
+            }
 
             // 클릭 리스너
             holder.itemView.setOnClickListener(v -> {
@@ -602,10 +683,12 @@ public class CoinListFragment extends Fragment {
          * 뷰홀더
          */
         static class ViewHolder extends RecyclerView.ViewHolder {
-            android.widget.TextView tvCoinSymbol;
-            android.widget.TextView tvCoinName;
-            android.widget.TextView tvPrice;
-            android.widget.TextView tvPriceChange;
+            TextView tvCoinSymbol;
+            TextView tvCoinName;
+            TextView tvPrice;
+            TextView tvPriceChange;
+            TextView tvAnalysisRecommendation;
+            MaterialCardView cardView;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -613,6 +696,8 @@ public class CoinListFragment extends Fragment {
                 tvCoinName = itemView.findViewById(R.id.tvCoinName);
                 tvPrice = itemView.findViewById(R.id.tvPrice);
                 tvPriceChange = itemView.findViewById(R.id.tvPriceChange);
+                tvAnalysisRecommendation = itemView.findViewById(R.id.tvAnalysisRecommendation);
+                cardView = (MaterialCardView) itemView;
             }
         }
 
