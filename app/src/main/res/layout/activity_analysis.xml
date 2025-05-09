@@ -32,13 +32,14 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+            <!-- btnAnalyze의 제약 조건 변경 (chartContainer 대신 cardSummary에 연결) -->
             <Button
                 android:id="@+id/btnAnalyze"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="분석하기"
-                app:layout_constraintTop_toBottomOf="@id/chartContainer" />
+                app:layout_constraintTop_toBottomOf="@id/cardSummary" />
 
 
             <TextView
@@ -93,14 +94,6 @@
                         tools:text="BTC의 단기 추세는 다소 약세이나, 중장기적으로는 회복 가능성이 있습니다." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <!-- 차트를 표시할 컨테이너 -->
-            <FrameLayout
-                android:id="@+id/chartContainer"
-                android:layout_width="match_parent"
-                android:layout_height="250dp"
-                android:layout_marginTop="16dp"
-                app:layout_constraintTop_toBottomOf="@id/cardSummary" />
 
             <ProgressBar
                 android:id="@+id/progressAnalysis"

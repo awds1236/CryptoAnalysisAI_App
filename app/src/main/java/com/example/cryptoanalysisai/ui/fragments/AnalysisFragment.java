@@ -118,8 +118,6 @@ public class AnalysisFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 라인 차트 초기화
-        setupLineChart();
 
         // 분석 버튼 클릭 리스너 설정
         binding.btnStartAnalysis.setOnClickListener(v -> {
@@ -180,42 +178,6 @@ public class AnalysisFragment extends Fragment {
         updateAnalysisUI();
     }
 
-    /**
-     * 라인 차트 초기화 - x축 레이블 제거
-     */
-    private void setupLineChart() {
-        // 차트 설정
-        binding.lineChart.setBackgroundColor(Color.WHITE);
-        binding.lineChart.getDescription().setEnabled(false);
-        binding.lineChart.setTouchEnabled(true);
-        binding.lineChart.setDragEnabled(true);
-        binding.lineChart.setScaleEnabled(true);
-        binding.lineChart.setPinchZoom(true);
-
-        // X축 설정 - 라벨 제거
-        XAxis xAxis = binding.lineChart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(false);
-        xAxis.setDrawLabels(false); // X축 레이블 숨기기
-        xAxis.setDrawAxisLine(true);
-
-        // 왼쪽 Y축 설정
-        YAxis leftAxis = binding.lineChart.getAxisLeft();
-        leftAxis.setDrawGridLines(true);
-        leftAxis.setLabelCount(8);
-
-        // 오른쪽 Y축 설정
-        YAxis rightAxis = binding.lineChart.getAxisRight();
-        rightAxis.setEnabled(false);
-
-        // 범례 설정
-        Legend legend = binding.lineChart.getLegend();
-        legend.setEnabled(true);
-        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.RIGHT);
-        legend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
-        legend.setDrawInside(false);
-    }
 
     /**
      * 캔들 데이터 로드
@@ -357,8 +319,6 @@ public class AnalysisFragment extends Fragment {
                     // 기술적 지표 계산
                     technicalIndicators = indicatorService.calculateAllIndicators(candleDataList);
 
-                    // 차트 데이터 업데이트
-                    updateChartData(candleDataList);
 
                     binding.progressAnalysis.setVisibility(View.GONE);
                 } else {
@@ -400,8 +360,6 @@ public class AnalysisFragment extends Fragment {
                     // 기술적 지표 계산
                     technicalIndicators = indicatorService.calculateAllIndicators(candleDataList);
 
-                    // 차트 데이터 업데이트
-                    updateChartData(candleDataList);
 
                     binding.progressAnalysis.setVisibility(View.GONE);
                 } else {
@@ -420,95 +378,6 @@ public class AnalysisFragment extends Fragment {
 
 
 
-    /**
-     * 차트 데이터 업데이트
-     */
-    private void updateChartData(List<CandleData> candles) {
-        if (candles.isEmpty() || binding == null) return;
-
-        // 라인 차트 데이터 생성 (종가)
-        List<Entry> priceEntries = new ArrayList<>();
-        List<String> xValues = new ArrayList<>();
-
-        // 최신 데이터(인덱스 0)를 차트의 오른쪽에 표시하기 위해 역순으로 추가
-        // candles은 이미 최신->과거 순으로 정렬되어 있음
-        for (int i = candles.size() - 1; i >= 0; i--) {
-            CandleData candle = candles.get(i);
-            // 인덱스 재조정: 0 -> size-1, 1 -> size-2, ..., size-1 -> 0
-            int adjustedIndex = candles.size() - 1 - i;
-            priceEntries.add(new Entry(adjustedIndex, (float) candle.getTradePrice()));
-            xValues.add(candle.getFormattedDate());
-        }
-
-        // 가격 데이터셋 생성
-        LineDataSet priceDataSet = new LineDataSet(priceEntries, "가격");
-        priceDataSet.setColor(Color.BLUE);
-        priceDataSet.setCircleColor(Color.BLUE);
-        priceDataSet.setCircleRadius(1f);
-        priceDataSet.setDrawCircleHole(false);
-        priceDataSet.setLineWidth(2f);
-        priceDataSet.setDrawValues(false);
-        priceDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-
-        // 이동평균선 데이터 추가 (SMA, EMA)
-        LineData lineData;
-        if (technicalIndicators != null && technicalIndicators.containsKey("smaSeries") && technicalIndicators.containsKey("emaSeries")) {
-            List<Double> smaSeries = (List<Double>) technicalIndicators.get("smaSeries");
-            List<Double> emaSeries = (List<Double>) technicalIndicators.get("emaSeries");
-
-            List<Entry> smaEntries = new ArrayList<>();
-            List<Entry> emaEntries = new ArrayList<>();
-
-            // SMA, EMA 데이터도 마찬가지로 역순으로 추가
-            int smaSize = smaSeries.size();
-            for (int i = smaSize - 1; i >= 0; i--) {
-                int adjustedIndex = smaSize - 1 - i;
-                if (adjustedIndex < candles.size()) {
-                    smaEntries.add(new Entry(adjustedIndex, smaSeries.get(i).floatValue()));
-                }
-            }
-
-            int emaSize = emaSeries.size();
-            for (int i = emaSize - 1; i >= 0; i--) {
-                int adjustedIndex = emaSize - 1 - i;
-                if (adjustedIndex < candles.size()) {
-                    emaEntries.add(new Entry(adjustedIndex, emaSeries.get(i).floatValue()));
-                }
-            }
-
-            // SMA 데이터셋
-            LineDataSet smaDataSet = new LineDataSet(smaEntries, "SMA(20)");
-            smaDataSet.setColor(Color.RED);
-            smaDataSet.setCircleRadius(0f);
-            smaDataSet.setDrawCircles(false);
-            smaDataSet.setLineWidth(1.5f);
-            smaDataSet.setDrawValues(false);
-            smaDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-
-            // EMA 데이터셋
-            LineDataSet emaDataSet = new LineDataSet(emaEntries, "EMA(20)");
-            emaDataSet.setColor(Color.GREEN);
-            emaDataSet.setCircleRadius(0f);
-            emaDataSet.setDrawCircles(false);
-            emaDataSet.setLineWidth(1.5f);
-            emaDataSet.setDrawValues(false);
-            emaDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
-
-            // 라인 차트 데이터 설정
-            lineData = new LineData(priceDataSet, smaDataSet, emaDataSet);
-        } else {
-            // 이동평균선 없이 가격만 표시
-            lineData = new LineData(priceDataSet);
-        }
-
-        binding.lineChart.setData(lineData);
-
-        // X축 레이블 설정 - 레이블 숨김
-        binding.lineChart.getXAxis().setValueFormatter(null);
-
-        // 차트 업데이트
-        binding.lineChart.invalidate();
-    }
 
     /**
      * Claude API로 분석 요청 - 버튼 클릭시에만 호출
