@@ -55,7 +55,7 @@ public class AnalysisService {
             Map<String, Object> analysisData = new HashMap<>();
             analysisData.put("market", coinInfo.getMarket());
             analysisData.put("exchange", exchangeType.getCode());
-            analysisData.put("currentPrice", gson.toJson(tickerData));
+            analysisData.put("currentPrice", tickerData != null ? gson.toJson(tickerData) : gson.toJson(coinInfo.getCurrentPrice()));
             analysisData.put("candles", gson.toJson(candles));
             analysisData.put("technicalIndicators", technicalIndicators);
 

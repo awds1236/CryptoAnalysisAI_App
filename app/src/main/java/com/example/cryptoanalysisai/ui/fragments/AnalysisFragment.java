@@ -2,6 +2,7 @@ package com.example.cryptoanalysisai.ui.fragments;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,6 +20,7 @@ import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.CandleData;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
+import com.example.cryptoanalysisai.models.TickerData;
 import com.example.cryptoanalysisai.services.AnalysisService;
 import com.example.cryptoanalysisai.services.TechnicalIndicatorService;
 import com.example.cryptoanalysisai.utils.Constants;
@@ -29,6 +31,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +47,7 @@ public class AnalysisFragment extends Fragment {
     private static final String TAG = "AnalysisFragment";
     private static final String ARG_COIN_INFO = "arg_coin_info";
     private static final String ARG_EXCHANGE_TYPE = "arg_exchange_type";
+    private static final long COOLDOWN_DURATION = 60000; // 1분 (60,000ms)
 
     private FragmentAnalysisBinding binding;
     private CoinInfo coinInfo;
@@ -53,6 +57,12 @@ public class AnalysisFragment extends Fragment {
     private TechnicalIndicatorService indicatorService;
     private List<CandleData> candleDataList = new ArrayList<>();
     private Map<String, Object> technicalIndicators;
+    private TickerData currentTickerData;
+
+    // 분석 상태 및 쿨다운 관련 변수
+    private boolean isAnalysisInProgress = false;
+    private boolean isCooldownActive = false;
+    private CountDownTimer cooldownTimer;
 
     public AnalysisFragment() {
         // 기본 생성자
@@ -111,6 +121,18 @@ public class AnalysisFragment extends Fragment {
         // 라인 차트 초기화
         setupLineChart();
 
+        // 분석 버튼 클릭 리스너 설정
+        binding.btnStartAnalysis.setOnClickListener(v -> {
+            if (!isAnalysisInProgress && !isCooldownActive) {
+                // 분석 시작 전에 최신 가격 정보 로드
+                loadCurrentPrice();
+            } else if (isCooldownActive) {
+                Toast.makeText(getContext(), "분석은 1분에 한 번만 가능합니다", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), "분석이 이미 진행 중입니다", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         // UI 초기화
         if (coinInfo != null && coinInfo.getMarket() != null) {
             updateCoin(coinInfo, exchangeType);
@@ -122,6 +144,9 @@ public class AnalysisFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
+        if (cooldownTimer != null) {
+            cooldownTimer.cancel();
+        }
         super.onDestroyView();
         binding = null;
     }
@@ -156,7 +181,7 @@ public class AnalysisFragment extends Fragment {
     }
 
     /**
-     * 라인 차트 초기화
+     * 라인 차트 초기화 - x축 레이블 제거
      */
     private void setupLineChart() {
         // 차트 설정
@@ -167,11 +192,12 @@ public class AnalysisFragment extends Fragment {
         binding.lineChart.setScaleEnabled(true);
         binding.lineChart.setPinchZoom(true);
 
-        // X축 설정
+        // X축 설정 - 라벨 제거
         XAxis xAxis = binding.lineChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
-        xAxis.setLabelCount(7);
+        xAxis.setDrawLabels(false); // X축 레이블 숨기기
+        xAxis.setDrawAxisLine(true);
 
         // 왼쪽 Y축 설정
         YAxis leftAxis = binding.lineChart.getAxisLeft();
@@ -201,6 +227,95 @@ public class AnalysisFragment extends Fragment {
             loadUpbitCandles(market, interval);
         } else if (exchangeType == ExchangeType.BINANCE) {
             loadBinanceCandles(market, interval);
+        }
+    }
+
+    /**
+     * 현재가 정보 로드 - 분석 시작 전에 호출
+     */
+    private void loadCurrentPrice() {
+        binding.progressAnalysis.setVisibility(View.VISIBLE);
+
+        if (coinInfo == null || coinInfo.getMarket() == null) {
+            Toast.makeText(getContext(), "코인 정보가 없습니다", Toast.LENGTH_SHORT).show();
+            binding.progressAnalysis.setVisibility(View.GONE);
+            return;
+        }
+
+        if (exchangeType == ExchangeType.UPBIT) {
+            UpbitApiService apiService = RetrofitClient.getUpbitApiService();
+
+            apiService.getTicker(coinInfo.getMarket()).enqueue(new Callback<List<TickerData>>() {
+                @Override
+                public void onResponse(@NonNull Call<List<TickerData>> call, @NonNull Response<List<TickerData>> response) {
+                    if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                        currentTickerData = response.body().get(0);
+                        coinInfo.setCurrentPrice(currentTickerData.getTradePrice());
+                        coinInfo.setPriceChange(currentTickerData.getChangeRate());
+
+                        // 현재가 로드 후 분석 시작
+                        requestAnalysis();
+                    } else {
+                        Toast.makeText(getContext(), "가격 정보를 가져오는데 실패했습니다", Toast.LENGTH_SHORT).show();
+                        binding.progressAnalysis.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<List<TickerData>> call, @NonNull Throwable t) {
+                    Toast.makeText(getContext(), "네트워크 오류: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    binding.progressAnalysis.setVisibility(View.GONE);
+                }
+            });
+        } else if (exchangeType == ExchangeType.BINANCE) {
+            BinanceApiService apiService = RetrofitClient.getBinanceApiService();
+
+            apiService.getTicker(coinInfo.getMarket()).enqueue(new Callback<com.example.cryptoanalysisai.models.BinanceTicker>() {
+                @Override
+                public void onResponse(@NonNull Call<com.example.cryptoanalysisai.models.BinanceTicker> call,
+                                       @NonNull Response<com.example.cryptoanalysisai.models.BinanceTicker> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        final com.example.cryptoanalysisai.models.BinanceTicker ticker = response.body();
+                        coinInfo.setCurrentPrice(ticker.getPrice());
+
+                        // 24시간 변화율 정보도 가져오기
+                        apiService.get24hTicker(coinInfo.getMarket()).enqueue(new Callback<com.example.cryptoanalysisai.models.BinanceTicker>() {
+                            @Override
+                            public void onResponse(@NonNull Call<com.example.cryptoanalysisai.models.BinanceTicker> call,
+                                                   @NonNull Response<com.example.cryptoanalysisai.models.BinanceTicker> response) {
+                                if (response.isSuccessful() && response.body() != null) {
+                                    com.example.cryptoanalysisai.models.BinanceTicker ticker24h = response.body();
+                                    coinInfo.setPriceChange(ticker24h.getPriceChangePercent() / 100.0);
+
+                                    // 티커 데이터를 UpbitTickerData 형태로 변환
+                                    currentTickerData = ticker.toUpbitFormat();
+
+                                    // 현재가 로드 후 분석 시작
+                                    requestAnalysis();
+                                } else {
+                                    Toast.makeText(getContext(), "가격 정보를 가져오는데 실패했습니다", Toast.LENGTH_SHORT).show();
+                                    binding.progressAnalysis.setVisibility(View.GONE);
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(@NonNull Call<com.example.cryptoanalysisai.models.BinanceTicker> call, @NonNull Throwable t) {
+                                Toast.makeText(getContext(), "네트워크 오류: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                                binding.progressAnalysis.setVisibility(View.GONE);
+                            }
+                        });
+                    } else {
+                        Toast.makeText(getContext(), "가격 정보를 가져오는데 실패했습니다", Toast.LENGTH_SHORT).show();
+                        binding.progressAnalysis.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<com.example.cryptoanalysisai.models.BinanceTicker> call, @NonNull Throwable t) {
+                    Toast.makeText(getContext(), "네트워크 오류: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    binding.progressAnalysis.setVisibility(View.GONE);
+                }
+            });
         }
     }
 
@@ -235,14 +350,17 @@ public class AnalysisFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     candleDataList = response.body();
 
+                    // 데이터 정렬 - 업비트 데이터는 최신 -> 과거 순으로 되어 있음
+                    // 차트를 위해 순서를 유지 (최신이 오른쪽에 오도록)
+                    // Collections.reverse(candleDataList);
+
                     // 기술적 지표 계산
                     technicalIndicators = indicatorService.calculateAllIndicators(candleDataList);
 
                     // 차트 데이터 업데이트
                     updateChartData(candleDataList);
 
-                    // 분석 실행
-                    requestAnalysis();
+                    binding.progressAnalysis.setVisibility(View.GONE);
                 } else {
                     Toast.makeText(getContext(), "데이터 로딩 실패: " + response.code(), Toast.LENGTH_SHORT).show();
                     binding.progressAnalysis.setVisibility(View.GONE);
@@ -276,8 +394,8 @@ public class AnalysisFragment extends Fragment {
                         candleDataList.add(binanceKline.toUpbitFormat(market));
                     }
 
-                    // 날짜 순서대로 정렬 (최신 -> 과거)
-                    Collections.reverse(candleDataList);
+                    // 데이터 정렬 처리하지 않음 (이미 바이낸스도 최신 -> 과거 순으로 정렬됨)
+                    // Collections.reverse(candleDataList);
 
                     // 기술적 지표 계산
                     technicalIndicators = indicatorService.calculateAllIndicators(candleDataList);
@@ -285,8 +403,7 @@ public class AnalysisFragment extends Fragment {
                     // 차트 데이터 업데이트
                     updateChartData(candleDataList);
 
-                    // 분석 실행
-                    requestAnalysis();
+                    binding.progressAnalysis.setVisibility(View.GONE);
                 } else {
                     Toast.makeText(getContext(), "데이터 로딩 실패: " + response.code(), Toast.LENGTH_SHORT).show();
                     binding.progressAnalysis.setVisibility(View.GONE);
@@ -301,6 +418,8 @@ public class AnalysisFragment extends Fragment {
         });
     }
 
+
+
     /**
      * 차트 데이터 업데이트
      */
@@ -311,9 +430,13 @@ public class AnalysisFragment extends Fragment {
         List<Entry> priceEntries = new ArrayList<>();
         List<String> xValues = new ArrayList<>();
 
-        for (int i = 0; i < candles.size(); i++) {
+        // 최신 데이터(인덱스 0)를 차트의 오른쪽에 표시하기 위해 역순으로 추가
+        // candles은 이미 최신->과거 순으로 정렬되어 있음
+        for (int i = candles.size() - 1; i >= 0; i--) {
             CandleData candle = candles.get(i);
-            priceEntries.add(new Entry(i, (float) candle.getTradePrice()));
+            // 인덱스 재조정: 0 -> size-1, 1 -> size-2, ..., size-1 -> 0
+            int adjustedIndex = candles.size() - 1 - i;
+            priceEntries.add(new Entry(adjustedIndex, (float) candle.getTradePrice()));
             xValues.add(candle.getFormattedDate());
         }
 
@@ -328,6 +451,7 @@ public class AnalysisFragment extends Fragment {
         priceDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
 
         // 이동평균선 데이터 추가 (SMA, EMA)
+        LineData lineData;
         if (technicalIndicators != null && technicalIndicators.containsKey("smaSeries") && technicalIndicators.containsKey("emaSeries")) {
             List<Double> smaSeries = (List<Double>) technicalIndicators.get("smaSeries");
             List<Double> emaSeries = (List<Double>) technicalIndicators.get("emaSeries");
@@ -335,12 +459,21 @@ public class AnalysisFragment extends Fragment {
             List<Entry> smaEntries = new ArrayList<>();
             List<Entry> emaEntries = new ArrayList<>();
 
-            for (int i = 0; i < Math.min(candles.size(), smaSeries.size()); i++) {
-                smaEntries.add(new Entry(i, smaSeries.get(i).floatValue()));
+            // SMA, EMA 데이터도 마찬가지로 역순으로 추가
+            int smaSize = smaSeries.size();
+            for (int i = smaSize - 1; i >= 0; i--) {
+                int adjustedIndex = smaSize - 1 - i;
+                if (adjustedIndex < candles.size()) {
+                    smaEntries.add(new Entry(adjustedIndex, smaSeries.get(i).floatValue()));
+                }
             }
 
-            for (int i = 0; i < Math.min(candles.size(), emaSeries.size()); i++) {
-                emaEntries.add(new Entry(i, emaSeries.get(i).floatValue()));
+            int emaSize = emaSeries.size();
+            for (int i = emaSize - 1; i >= 0; i--) {
+                int adjustedIndex = emaSize - 1 - i;
+                if (adjustedIndex < candles.size()) {
+                    emaEntries.add(new Entry(adjustedIndex, emaSeries.get(i).floatValue()));
+                }
             }
 
             // SMA 데이터셋
@@ -362,37 +495,40 @@ public class AnalysisFragment extends Fragment {
             emaDataSet.setAxisDependency(YAxis.AxisDependency.LEFT);
 
             // 라인 차트 데이터 설정
-            LineData lineData = new LineData(priceDataSet, smaDataSet, emaDataSet);
-            binding.lineChart.setData(lineData);
+            lineData = new LineData(priceDataSet, smaDataSet, emaDataSet);
         } else {
             // 이동평균선 없이 가격만 표시
-            LineData lineData = new LineData(priceDataSet);
-            binding.lineChart.setData(lineData);
+            lineData = new LineData(priceDataSet);
         }
 
-        // X축 라벨 설정
-        binding.lineChart.getXAxis().setValueFormatter(new IndexAxisValueFormatter(xValues));
+        binding.lineChart.setData(lineData);
+
+        // X축 레이블 설정 - 레이블 숨김
+        binding.lineChart.getXAxis().setValueFormatter(null);
 
         // 차트 업데이트
         binding.lineChart.invalidate();
     }
 
     /**
-     * Claude API로 분석 요청
+     * Claude API로 분석 요청 - 버튼 클릭시에만 호출
      */
     private void requestAnalysis() {
         if (coinInfo == null || candleDataList.isEmpty() || technicalIndicators == null) {
+            Toast.makeText(getContext(), "분석에 필요한 데이터가 없습니다", Toast.LENGTH_SHORT).show();
             binding.progressAnalysis.setVisibility(View.GONE);
             return;
         }
 
-        // 정식 요청 시 coinInfo에서 현재가 정보 업데이트 필요 (candleDataList 최신 종가 사용)
-        if (!candleDataList.isEmpty()) {
-            CandleData latestCandle = candleDataList.get(0);
-            coinInfo.setCurrentPrice(latestCandle.getTradePrice());
-        }
+        binding.progressAnalysis.setVisibility(View.VISIBLE);
+        isAnalysisInProgress = true;
 
-        analysisService.generateAnalysis(coinInfo, candleDataList, null, exchangeType, technicalIndicators,
+        // 버튼 텍스트 변경
+        binding.btnStartAnalysis.setText("분석 중...");
+        binding.btnStartAnalysis.setEnabled(false);
+
+        // 이제 분석 시 현재가(최신) 데이터 사용
+        analysisService.generateAnalysis(coinInfo, candleDataList, currentTickerData, exchangeType, technicalIndicators,
                 new AnalysisService.AnalysisCallback() {
                     @Override
                     public void onAnalysisSuccess(AnalysisResult result, String rawResponse) {
@@ -402,6 +538,10 @@ public class AnalysisFragment extends Fragment {
                             getActivity().runOnUiThread(() -> {
                                 updateAnalysisUI();
                                 binding.progressAnalysis.setVisibility(View.GONE);
+                                isAnalysisInProgress = false;
+
+                                // 분석 완료 후 쿨다운 시작
+                                startCooldown();
                             });
                         }
                     }
@@ -412,10 +552,39 @@ public class AnalysisFragment extends Fragment {
                             getActivity().runOnUiThread(() -> {
                                 Toast.makeText(getContext(), "분석 실패: " + error, Toast.LENGTH_SHORT).show();
                                 binding.progressAnalysis.setVisibility(View.GONE);
+                                isAnalysisInProgress = false;
+                                binding.btnStartAnalysis.setText("분석 시작");
+                                binding.btnStartAnalysis.setEnabled(true);
                             });
                         }
                     }
                 });
+    }
+
+    /**
+     * 쿨다운 타이머 시작 메서드
+     */
+    private void startCooldown() {
+        isCooldownActive = true;
+
+        if (cooldownTimer != null) {
+            cooldownTimer.cancel();
+        }
+
+        cooldownTimer = new CountDownTimer(COOLDOWN_DURATION, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                int secondsLeft = (int) (millisUntilFinished / 1000);
+                binding.btnStartAnalysis.setText("분석 대기 중... (" + secondsLeft + "초)");
+            }
+
+            @Override
+            public void onFinish() {
+                isCooldownActive = false;
+                binding.btnStartAnalysis.setText("분석 시작");
+                binding.btnStartAnalysis.setEnabled(true);
+            }
+        }.start();
     }
 
     /**
