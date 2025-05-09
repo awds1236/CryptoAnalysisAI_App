@@ -1,5 +1,5 @@
 package com.example.cryptoanalysisai.utils;
-
+import com.example.cryptoanalysisai.BuildConfig;
 public class Constants {
 
     // API 기본 URL
@@ -8,7 +8,7 @@ public class Constants {
     public static final String CLAUDE_API_URL = "https://api.anthropic.com/";
 
     // API 키 (실제 앱에서는 BuildConfig나 암호화하여 보관해야 함)
-    public static final String CLAUDE_API_KEY = "YOUR_CLAUDE_API_KEY"; // TODO: API 키 설정 필요
+    public static final String CLAUDE_API_KEY = BuildConfig.CLAUDE_API_KEY; // TODO: API 키 설정 필요
 
     // 기본 설정
     public static final int DEFAULT_CANDLE_COUNT = 30;

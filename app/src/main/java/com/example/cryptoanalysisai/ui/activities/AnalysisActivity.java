@@ -83,6 +83,16 @@ public class AnalysisActivity extends AppCompatActivity {
         // 라인 차트 초기화
         setupLineChart();
 
+        // 결과 컨테이너 초기에 숨기기
+        binding.resultContainer.setVisibility(View.GONE);
+
+        // 분석하기 버튼 클릭 리스너 설정
+        binding.btnAnalyze.setOnClickListener(v -> {
+            // 분석 시작
+            binding.progressAnalysis.setVisibility(View.VISIBLE);
+            loadCandleData(coinInfo.getMarket(), Constants.CandleInterval.DAY_1);
+        });
+
         // 데이터 로드
         if (coinInfo != null && coinInfo.getMarket() != null) {
             // 타이틀 설정
@@ -93,8 +103,8 @@ public class AnalysisActivity extends AppCompatActivity {
             binding.tvExchangeInfo.setText("거래소: " + exchangeType.getDisplayName() +
                     " / 통화단위: " + (exchangeType == ExchangeType.UPBIT ? "원" : "달러(USD)"));
 
-            // 캔들 데이터 로드
-            loadCandleData(coinInfo.getMarket(), Constants.CandleInterval.DAY_1);
+            // 초기 데이터로드는 하지 않고, 사용자가 분석하기 버튼을 클릭했을 때만 로드
+            // loadCandleData(coinInfo.getMarket(), Constants.CandleInterval.DAY_1);
         } else {
             Toast.makeText(this, "코인 정보가 없습니다.", Toast.LENGTH_SHORT).show();
             finish();
@@ -261,10 +271,20 @@ public class AnalysisActivity extends AppCompatActivity {
                         analysisResult = result;
 
                         runOnUiThread(() -> {
-                            // 여기서 binding.tvRecommendation, binding.progressProbability 등을 사용하지 않고
-                            // 간소화된 UI 업데이트 로직으로 대체
+                            // 결과 UI 업데이트
                             updateAnalysisUI();
+                            // 프로그레스바 숨기기
                             binding.progressAnalysis.setVisibility(View.GONE);
+                            // 결과 컨테이너 보이기
+                            binding.resultContainer.setVisibility(View.VISIBLE);
+
+                            // 가장 간단한 방법: 결과 컨테이너에 포커스 주기
+                            binding.resultContainer.post(() -> {
+                                binding.resultContainer.requestFocus();
+                            });
+
+                            // 성공 메시지 표시
+                            Toast.makeText(AnalysisActivity.this, "분석이 완료되었습니다!", Toast.LENGTH_SHORT).show();
                         });
                     }
 
@@ -278,17 +298,24 @@ public class AnalysisActivity extends AppCompatActivity {
                 });
     }
 
+
     /**
      * 분석 결과로 UI 업데이트
      */
     private void updateAnalysisUI() {
         if (analysisResult == null) return;
 
-        // 분석 요약만 표시하고 나머지는 생략
+        // 분석 요약 표시
         binding.tvAnalysisSummary.setText(analysisResult.getSummary());
 
-        // XML에 정의된 뷰만 사용하도록 수정
-        // tvRecommendation, progressProbability, ratingBar 등은 사용하지 않음
+        // 결과 컨테이너 안에 있는 모든 결과 뷰들 업데이트
+        // 이 부분은 UI 구조에 따라 다르게 구현해야 할 수 있습니다
+
+        // 다른 결과 뷰들도 업데이트...
+        // 예: 매수/매도 추천, 시간별 전망, 기술적 분석 등
+
+        // 결과 컨테이너 보이기
+        binding.resultContainer.setVisibility(View.VISIBLE);
     }
 
     // 결과 메인 화면으로 전달

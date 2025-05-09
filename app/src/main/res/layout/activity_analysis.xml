@@ -32,6 +32,15 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
+            <Button
+                android:id="@+id/btnAnalyze"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="분석하기"
+                app:layout_constraintTop_toBottomOf="@id/chartContainer" />
+
+
             <TextView
                 android:id="@+id/tvCoinTitle"
                 android:layout_width="match_parent"
@@ -60,10 +69,13 @@
                 app:layout_constraintTop_toBottomOf="@id/tvExchangeInfo">
 
                 <LinearLayout
+                    android:id="@+id/resultContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toBottomOf="@id/btnAnalyze">
 
                     <TextView
                         android:layout_width="wrap_content"
