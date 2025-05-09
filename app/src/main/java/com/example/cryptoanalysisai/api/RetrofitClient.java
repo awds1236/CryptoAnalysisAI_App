@@ -69,9 +69,12 @@ public class RetrofitClient {
     public static synchronized ClaudeApiService getClaudeApiService() {
         if (claudeApiService == null) {
             if (claudeRetrofit == null) {
+                HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+                loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
                 OkHttpClient client = new OkHttpClient.Builder()
-                        .addInterceptor(loggingInterceptor -> {
-                            okhttp3.Request original = loggingInterceptor.request();
+                        .addInterceptor(chain -> {
+                            okhttp3.Request original = chain.request();
 
                             // API 키 헤더 추가
                             okhttp3.Request.Builder requestBuilder = original.newBuilder()
@@ -79,8 +82,9 @@ public class RetrofitClient {
                                     .header("anthropic-version", "2023-06-01")
                                     .header("Content-Type", "application/json");
 
-                            return loggingInterceptor.proceed(requestBuilder.build());
+                            return chain.proceed(requestBuilder.build());
                         })
+                        .addInterceptor(loggingInterceptor)
                         .connectTimeout(60, TimeUnit.SECONDS) // Claude 응답이 더 오래 걸릴 수 있어 타임아웃 증가
                         .readTimeout(60, TimeUnit.SECONDS)
                         .writeTimeout(60, TimeUnit.SECONDS)

@@ -18,7 +18,7 @@ public class ClaudeRequest {
     public ClaudeRequest() {
         // 기본 생성자
         this.model = "claude-3-7-sonnet-latest";
-        this.maxTokens = 4000;
+        this.maxTokens = 8000;
         this.messages = new ArrayList<>();
     }
 

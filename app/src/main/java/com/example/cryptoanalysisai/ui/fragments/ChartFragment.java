@@ -194,10 +194,21 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
      */
     private void setupIntervalTabs() {
         // 기간 탭 설정
-        binding.tabsInterval.addTab(binding.tabsInterval.newTab().setText("1일"));
-        binding.tabsInterval.addTab(binding.tabsInterval.newTab().setText("4시간"));
-        binding.tabsInterval.addTab(binding.tabsInterval.newTab().setText("1시간"));
-        binding.tabsInterval.addTab(binding.tabsInterval.newTab().setText("15분"));
+        TabLayout.Tab dayTab = binding.tabsInterval.newTab().setText("1일");
+        dayTab.view.setContentDescription("1일 기간 차트");
+        binding.tabsInterval.addTab(dayTab);
+
+        TabLayout.Tab hour4Tab = binding.tabsInterval.newTab().setText("4시간");
+        hour4Tab.view.setContentDescription("4시간 기간 차트");
+        binding.tabsInterval.addTab(hour4Tab);
+
+        TabLayout.Tab hour1Tab = binding.tabsInterval.newTab().setText("1시간");
+        hour1Tab.view.setContentDescription("1시간 기간 차트");
+        binding.tabsInterval.addTab(hour1Tab);
+
+        TabLayout.Tab min15Tab = binding.tabsInterval.newTab().setText("15분");
+        min15Tab.view.setContentDescription("15분 기간 차트");
+        binding.tabsInterval.addTab(min15Tab);
 
         binding.tabsInterval.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -243,10 +254,21 @@ public class ChartFragment extends Fragment implements OnChartValueSelectedListe
      */
     private void setupIndicatorTabs() {
         // 지표 탭 설정
-        binding.tabsIndicator.addTab(binding.tabsIndicator.newTab().setText("RSI"));
-        binding.tabsIndicator.addTab(binding.tabsIndicator.newTab().setText("MACD"));
-        binding.tabsIndicator.addTab(binding.tabsIndicator.newTab().setText("볼린저밴드"));
-        binding.tabsIndicator.addTab(binding.tabsIndicator.newTab().setText("이동평균선"));
+        TabLayout.Tab rsiTab = binding.tabsIndicator.newTab().setText("RSI");
+        rsiTab.view.setContentDescription("RSI 기술 지표");
+        binding.tabsIndicator.addTab(rsiTab);
+
+        TabLayout.Tab macdTab = binding.tabsIndicator.newTab().setText("MACD");
+        macdTab.view.setContentDescription("MACD 기술 지표");
+        binding.tabsIndicator.addTab(macdTab);
+
+        TabLayout.Tab bbTab = binding.tabsIndicator.newTab().setText("볼린저밴드");
+        bbTab.view.setContentDescription("볼린저밴드 기술 지표");
+        binding.tabsIndicator.addTab(bbTab);
+
+        TabLayout.Tab maTab = binding.tabsIndicator.newTab().setText("이동평균선");
+        maTab.view.setContentDescription("이동평균선 기술 지표");
+        binding.tabsIndicator.addTab(maTab);
 
         binding.tabsIndicator.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override

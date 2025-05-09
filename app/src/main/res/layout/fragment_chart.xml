@@ -61,6 +61,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="8dp"
         android:layout_marginTop="8dp"
+        android:contentDescription="차트 기간 선택"
         app:layout_constraintTop_toBottomOf="@id/cardPrice"
         app:tabGravity="fill"
         app:tabMode="fixed" />
@@ -70,6 +71,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_margin="8dp"
+        android:contentDescription="코인 가격 차트"
         app:layout_constraintBottom_toTopOf="@id/tabsIndicator"
         app:layout_constraintTop_toBottomOf="@id/tabsInterval" />
 
@@ -78,6 +80,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="8dp"
+        android:contentDescription="기술 지표 선택"
         app:layout_constraintBottom_toTopOf="@id/tvIndicatorValue"
         app:tabGravity="fill"
         app:tabMode="scrollable" />
@@ -96,6 +99,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
+        android:contentDescription="로딩 중"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

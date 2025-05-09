@@ -1,6 +1,9 @@
 package com.example.cryptoanalysisai.services;
 
 import android.util.Log;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONException;
 
 import com.example.cryptoanalysisai.api.ClaudeApiService;
 import com.example.cryptoanalysisai.api.RetrofitClient;
@@ -12,6 +15,7 @@ import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.models.TickerData;
 import com.example.cryptoanalysisai.utils.JsonUtils;
+import com.example.cryptoanalysisai.utils.Constants;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -51,58 +55,122 @@ public class AnalysisService {
             AnalysisCallback callback) {
 
         try {
+            // API 키 검사
+            if (Constants.CLAUDE_API_KEY == null || Constants.CLAUDE_API_KEY.isEmpty() ||
+                    Constants.CLAUDE_API_KEY.equals("\"${localProperties.getProperty('claude.api.key')}\"")) {
+                callback.onAnalysisFailure("Claude API 키가 설정되지 않았습니다. local.properties 파일을 확인하세요.");
+                return;
+            }
+
+            // 필수 데이터 검사
+            if (coinInfo == null || candles == null || candles.isEmpty()) {
+                callback.onAnalysisFailure("분석에 필요한 필수 데이터가 누락되었습니다.");
+                return;
+            }
+
             // 분석에 필요한 데이터 준비
             Map<String, Object> analysisData = new HashMap<>();
             analysisData.put("market", coinInfo.getMarket());
             analysisData.put("exchange", exchangeType.getCode());
-            analysisData.put("currentPrice", tickerData != null ? gson.toJson(tickerData) : gson.toJson(coinInfo.getCurrentPrice()));
-            analysisData.put("candles", gson.toJson(candles));
-            analysisData.put("technicalIndicators", technicalIndicators);
 
-            // 공포/욕심 지수 데이터 (예시)
-            Map<String, Object> fearGreedIndex = new HashMap<>();
-            fearGreedIndex.put("value", 45);
-            fearGreedIndex.put("valueClassification", "중립");
-            analysisData.put("fearGreedIndex", fearGreedIndex);
+            // currentPrice 설정 - tickerData가 없는 경우 첫 번째 캔들의 종가 사용
+            if (tickerData != null) {
+                analysisData.put("currentPrice", gson.toJson(tickerData));
+            } else if (coinInfo.getCurrentPrice() > 0) {
+                analysisData.put("currentPrice", gson.toJson(coinInfo.getCurrentPrice()));
+            } else if (!candles.isEmpty()) {
+                analysisData.put("currentPrice", gson.toJson(candles.get(0).getTradePrice()));
+            } else {
+                callback.onAnalysisFailure("현재가 정보가 없습니다.");
+                return;
+            }
+
+            // 캔들 데이터는 크기가 클 수 있으므로 최근 30개만 사용
+            List<CandleData> recentCandles = candles;
+            if (candles.size() > 30) {
+                recentCandles = candles.subList(0, 30);
+            }
+            analysisData.put("candles", gson.toJson(recentCandles));
+
+            // 기술적 지표 데이터 추가
+            if (technicalIndicators != null && !technicalIndicators.isEmpty()) {
+                analysisData.put("technicalIndicators", technicalIndicators);
+            }
 
             // 프롬프트 생성
             String prompt = buildPrompt(coinInfo, analysisData, exchangeType);
+            Log.d(TAG, "프롬프트 생성 완료: " + prompt.substring(0, Math.min(100, prompt.length())) + "...");
 
             // Claude API 요청 생성
             ClaudeRequest request = new ClaudeRequest(prompt);
+
+            // API 호출 로그
+            Log.d(TAG, "Claude API 호출 시작...");
 
             // API 호출
             claudeApiService.generateAnalysis(request).enqueue(new Callback<ClaudeResponse>() {
                 @Override
                 public void onResponse(Call<ClaudeResponse> call, Response<ClaudeResponse> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        ClaudeResponse claudeResponse = response.body();
+                    try {
+                        if (response.isSuccessful() && response.body() != null) {
+                            Log.d(TAG, "Claude API 응답 성공");
+                            ClaudeResponse claudeResponse = response.body();
+                            String responseText = claudeResponse.getText();
 
-                        // 응답에서 JSON 부분 추출
-                        String jsonResponse = extractJsonFromResponse(claudeResponse.getText());
+                            if (responseText == null || responseText.isEmpty()) {
+                                callback.onAnalysisFailure("API 응답이 비어있습니다.");
+                                return;
+                            }
 
-                        try {
-                            // JSON 파싱
-                            AnalysisResult analysisResult = gson.fromJson(jsonResponse, AnalysisResult.class);
-                            callback.onAnalysisSuccess(analysisResult, claudeResponse.getText());
-                        } catch (Exception e) {
-                            Log.e(TAG, "JSON 파싱 실패: " + e.getMessage());
-                            callback.onAnalysisFailure("JSON 파싱 실패: " + e.getMessage());
+                            // 응답에서 JSON 부분 추출
+                            String jsonResponse = extractJsonFromResponse(responseText);
+                            Log.d(TAG, "추출된 JSON: " + jsonResponse);
+
+                            if (jsonResponse == null || jsonResponse.isEmpty()) {
+                                callback.onAnalysisFailure("JSON 추출 실패");
+                                return;
+                            }
+
+                            try {
+                                // JSON 파싱
+                                AnalysisResult analysisResult = gson.fromJson(jsonResponse, AnalysisResult.class);
+                                if (analysisResult == null) {
+                                    callback.onAnalysisFailure("분석 결과 파싱 실패");
+                                    return;
+                                }
+
+                                callback.onAnalysisSuccess(analysisResult, responseText);
+                            } catch (Exception e) {
+                                Log.e(TAG, "JSON 파싱 실패: " + e.getMessage(), e);
+                                callback.onAnalysisFailure("JSON 파싱 실패: " + e.getMessage());
+                            }
+                        } else {
+                            String errorBody = "";
+                            try {
+                                if (response.errorBody() != null) {
+                                    errorBody = response.errorBody().string();
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, "에러 바디 읽기 실패: " + e.getMessage());
+                            }
+
+                            Log.e(TAG, "API 호출 실패: " + response.code() + " - " + errorBody);
+                            callback.onAnalysisFailure("API 호출 실패: " + response.code() + " - " + errorBody);
                         }
-                    } else {
-                        Log.e(TAG, "API 호출 실패: " + response.code());
-                        callback.onAnalysisFailure("API 호출 실패: " + response.code());
+                    } catch (Exception e) {
+                        Log.e(TAG, "API 응답 처리 오류: " + e.getMessage(), e);
+                        callback.onAnalysisFailure("API 응답 처리 오류: " + e.getMessage());
                     }
                 }
 
                 @Override
                 public void onFailure(Call<ClaudeResponse> call, Throwable t) {
-                    Log.e(TAG, "API 호출 오류: " + t.getMessage());
+                    Log.e(TAG, "API 호출 오류: " + t.getMessage(), t);
                     callback.onAnalysisFailure("API 호출 오류: " + t.getMessage());
                 }
             });
         } catch (Exception e) {
-            Log.e(TAG, "분석 요청 오류: " + e.getMessage());
+            Log.e(TAG, "분석 요청 오류: " + e.getMessage(), e);
             callback.onAnalysisFailure("분석 요청 오류: " + e.getMessage());
         }
     }
@@ -191,22 +259,144 @@ public class AnalysisService {
      */
     private String extractJsonFromResponse(String response) {
         try {
+            if (response == null || response.isEmpty()) {
+                Log.e(TAG, "응답이 비어 있습니다.");
+                return "{}";
+            }
+
+            Log.d(TAG, "원본 응답 길이: " + response.length());
+
+            // JSON 블록 찾기 (```json ... ``` 형식)
             int startIndex = response.indexOf("```json");
             int endIndex = response.lastIndexOf("```");
 
+            String jsonString;
             if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
                 // json 블록 시작 부분 이후부터 추출
                 startIndex = response.indexOf("\n", startIndex) + 1;
-                return response.substring(startIndex, endIndex).trim();
+                if (startIndex <= 0 || startIndex >= endIndex) {
+                    Log.e(TAG, "JSON 블록 추출 실패");
+                    return "{}";
+                }
+                jsonString = response.substring(startIndex, endIndex).trim();
+            } else {
+                // JSON 중괄호로 찾기
+                startIndex = response.indexOf("{");
+                endIndex = response.lastIndexOf("}");
+
+                if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
+                    jsonString = response.substring(startIndex, endIndex + 1).trim();
+                } else {
+                    Log.e(TAG, "JSON 형식을 찾을 수 없습니다: " + response);
+                    return "{}";
+                }
             }
 
-            // JSON 형식이 아닌 경우
-            return "{\"분석_요약\":\"" + response + "\"}";
+            Log.d(TAG, "추출된 JSON 길이: " + jsonString.length());
+
+            // 괄호 검사를 통한 JSON 완전성 확인
+            if (!isBalancedBrackets(jsonString)) {
+                Log.e(TAG, "불완전한 JSON (괄호가 맞지 않음): " + jsonString);
+                return createDefaultJson(jsonString);
+            }
+
+            // JSON 문자열 정제
+            String cleanedJson = cleanupJsonString(jsonString);
+
+            return cleanedJson;
         } catch (Exception e) {
-            Log.e(TAG, "JSON 추출 실패: " + e.getMessage());
-            return "{\"분석_요약\":\"JSON 추출 실패\"}";
+            Log.e(TAG, "JSON 추출 실패: " + e.getMessage(), e);
+            return "{}";
         }
     }
+
+
+    // 괄호 밸런스 확인 메서드
+    private boolean isBalancedBrackets(String s) {
+        int braces = 0;  // {}
+        int brackets = 0;  // []
+
+        for (char c : s.toCharArray()) {
+            if (c == '{') braces++;
+            else if (c == '}') braces--;
+            else if (c == '[') brackets++;
+            else if (c == ']') brackets--;
+
+            // 음수가 되면 닫는 괄호가 먼저 나온 것
+            if (braces < 0 || brackets < 0) return false;
+        }
+
+        // 0이어야 모든 괄호가 짝을 이룸
+        return braces == 0 && brackets == 0;
+    }
+
+    // 불완전한 JSON을 기본 형태로 보완
+    private String createDefaultJson(String partialJson) {
+        try {
+            // 1. 필수 필드 확인
+            boolean hasSummary = partialJson.contains("\"분석_요약\"");
+            boolean hasRecommendation = partialJson.contains("\"매수매도_추천\"");
+
+            // 2. 최소한의 필수 필드가 있으면서 불완전한 경우
+            if (hasSummary && hasRecommendation) {
+                // 끝부분 보완
+                if (!partialJson.endsWith("}")) {
+                    partialJson = partialJson + "}}";
+                }
+                return partialJson;
+            }
+
+            // 3. 너무 불완전하면 기본 JSON 반환
+            return "{\"분석_요약\":\"분석 결과 처리 중 오류가 발생했습니다. 다시 시도해주세요.\"}";
+        } catch (Exception e) {
+            Log.e(TAG, "기본 JSON 생성 실패: " + e.getMessage(), e);
+            return "{}";
+        }
+    }
+
+
+    // JSON 문자열 정제 메서드
+    private String cleanupJsonString(String jsonString) {
+        try {
+            // 1. 줄바꿈 문자와 탭 문자 제거
+            jsonString = jsonString.replaceAll("\\r\\n|\\r|\\n|\\t", " ");
+
+            // 2. 연속된 공백 제거
+            jsonString = jsonString.replaceAll("\\s+", " ");
+
+            // 3. 잘못된 숫자 키 수정 (숫자로 시작하는 키를 문자열로 변환)
+            // 예: "매매_전략": { 700: 값 } -> "매매_전략": { "700": 값 }
+            jsonString = jsonString.replaceAll("(\\{\\s*)(\\d+)(\\s*:)", "$1\"$2\"$3");
+
+            // 4. 쉼표로 끝나는 객체 항목 수정 - 정규식 수정
+            // 문제의 정규식을 수정합니다
+            jsonString = jsonString.replace(",}", "}");
+            jsonString = jsonString.replace(", }", "}");
+            jsonString = jsonString.replace(",]", "]");
+            jsonString = jsonString.replace(", ]", "]");
+
+            return jsonString;
+        } catch (Exception e) {
+            Log.e(TAG, "JSON 문자열 정제 중 오류: " + e.getMessage(), e);
+            return jsonString; // 원본 반환
+        }
+    }
+
+    // JSON 유효성 검사 메서드
+    private boolean isValidJson(String jsonString) {
+        try {
+            new JSONObject(jsonString);
+            return true;
+        } catch (Exception e) {
+            try {
+                new JSONArray(jsonString);
+                return true;
+            } catch (Exception e2) {
+                return false;
+            }
+        }
+    }
+
 
     /**
      * 분석 콜백 인터페이스
