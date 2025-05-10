@@ -29,12 +29,18 @@ public class FirebaseManager {
     private static final String HOURLY_ANALYSES_COLLECTION = "analyses_hourly";
     private static final String COINS_COLLECTION = "coins";
 
-    private final FirebaseFirestore db;
-
+    private FirebaseFirestore db;
     private static FirebaseManager instance;
 
+    private boolean isFirebaseAvailable = true;
+
     private FirebaseManager() {
-        db = FirebaseFirestore.getInstance();
+        try {
+            db = FirebaseFirestore.getInstance();
+        } catch (Exception e) {
+            Log.e(TAG, "FirebaseFirestore 초기화 실패: " + e.getMessage());
+            isFirebaseAvailable = false;
+        }
     }
 
     public static synchronized FirebaseManager getInstance() {
@@ -216,6 +222,17 @@ public class FirebaseManager {
         void onAnalysisRetrieved(FirestoreAnalysisResult result);
         void onNoAnalysisFound();
         void onFailure(String errorMessage);
+    }
+
+    /**
+     * Firebase 사용 가능 여부 설정
+     */
+    public void setFirebaseAvailable(boolean available) {
+        isFirebaseAvailable = available;
+
+        if (!available) {
+            Log.d(TAG, "Firebase 사용 불가능 모드로 전환");
+        }
     }
 
     public interface OnAnalysisHistoryRetrievedListener {
