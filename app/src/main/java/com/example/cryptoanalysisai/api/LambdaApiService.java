@@ -15,11 +15,12 @@ import retrofit2.http.Query;
 public interface LambdaApiService {
     /**
      * Get the latest analysis for a specific coin
-     * @param coinPath 코인 심볼을 포함한 경로 (예: BTC/)
+     * @param coinSymbol The coin symbol (e.g., BTC)
+     * @param exchange The exchange name (e.g., binance)
      */
-    @GET("analyses")
+    @GET("api/analyses/{coin_symbol}")
     Call<AnalysisResult> getLatestAnalysis(
-            @Query(value = "", encoded = true) String coinPath,
+            @Path("coin_symbol") String coinSymbol,
             @Query("exchange") String exchange
     );
 
