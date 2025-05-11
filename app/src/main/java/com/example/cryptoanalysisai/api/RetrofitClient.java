@@ -1,11 +1,14 @@
 package com.example.cryptoanalysisai.api;
 
+import android.util.Log;
+
 import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.utils.Constants;
 
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -69,9 +72,34 @@ public class RetrofitClient {
     public static synchronized LambdaApiService getLambdaApiService() {
         if (lambdaApiService == null) {
             if (lambdaRetrofit == null) {
+                // 상세 로깅 설정
+                HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+                loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+                OkHttpClient client = new OkHttpClient.Builder()
+                        // 요청 URL을 로깅하는 인터셉터 추가
+                        .addInterceptor(chain -> {
+                            Request original = chain.request();
+
+                            // 요청 URL을 로그에 출력
+                            String url = original.url().toString();
+                            Log.d("RETROFIT_URL", "요청 URL: " + url);
+
+                            // 헤더 정보도 로깅 (선택사항)
+                            Log.d("RETROFIT_HEADERS", "요청 헤더: " + original.headers());
+
+                            // 원래 요청 진행
+                            return chain.proceed(original);
+                        })
+                        .addInterceptor(loggingInterceptor)  // 기존 로깅 인터셉터도 유지
+                        .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
+                        .readTimeout(TIMEOUT, TimeUnit.SECONDS)
+                        .writeTimeout(TIMEOUT, TimeUnit.SECONDS)
+                        .build();
+
                 lambdaRetrofit = new Retrofit.Builder()
                         .baseUrl(Constants.LAMBDA_API_URL)
-                        .client(createOkHttpClient())
+                        .client(client)
                         .addConverterFactory(GsonConverterFactory.create())
                         .build();
             }

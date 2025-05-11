@@ -23,6 +23,7 @@ import retrofit2.Response;
  */
 public class AnalysisApiService {
     private static final String TAG = "AnalysisApiService";
+    private static final String EXCHANGE = "binance";
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
     private static AnalysisApiService instance;
@@ -40,27 +41,28 @@ public class AnalysisApiService {
     }
 
     /**
-     * 특정 코인의 최신 분석 결과 가져오기
+     * 특정 코인의 최신 분석 결과 가져오기 (바이낸스 거래소만)
      */
-    public void getLatestAnalysis(String coinSymbol, ExchangeType exchangeType, OnAnalysisRetrievedListener listener) {
+    public void getLatestAnalysis(String coinSymbol, OnAnalysisRetrievedListener listener) {
         if (coinSymbol == null || listener == null) {
             Log.e(TAG, "파라미터가 null입니다");
             return;
         }
 
-        apiService.getLatestAnalysis(coinSymbol, exchangeType.getCode())
+        // 쿼리 파라미터를 URL에 직접 추가
+        apiService.getLatestAnalysis(coinSymbol,"binance")
                 .enqueue(new Callback<AnalysisResult>() {
                     @Override
                     public void onResponse(Call<AnalysisResult> call, Response<AnalysisResult> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            mainHandler.post(() -> listener.onAnalysisRetrieved(response.body()));
+                            listener.onAnalysisRetrieved(response.body());
                         } else {
                             int errorCode = response.code();
                             if (errorCode == 404) {
-                                mainHandler.post(listener::onNoAnalysisFound);
+                                listener.onNoAnalysisFound();
                             } else {
                                 String errorMessage = "서버 오류: " + errorCode;
-                                mainHandler.post(() -> listener.onFailure(errorMessage));
+                                listener.onFailure(errorMessage);
                             }
                         }
                     }
@@ -69,29 +71,29 @@ public class AnalysisApiService {
                     public void onFailure(Call<AnalysisResult> call, Throwable t) {
                         String errorMessage = "네트워크 오류: " + t.getMessage();
                         Log.e(TAG, errorMessage, t);
-                        mainHandler.post(() -> listener.onFailure(errorMessage));
+                        listener.onFailure(errorMessage);
                     }
                 });
     }
 
     /**
-     * 모든 코인의 최신 분석 결과 가져오기
+     * 모든 코인의 최신 분석 결과 가져오기 (바이낸스 거래소만)
      */
-    public void getAllLatestAnalyses(ExchangeType exchangeType, OnAllAnalysesRetrievedListener listener) {
+    public void getAllLatestAnalyses(OnAllAnalysesRetrievedListener listener) {
         if (listener == null) {
             Log.e(TAG, "리스너가 null입니다");
             return;
         }
 
-        apiService.getAllLatestAnalyses(exchangeType.getCode())
+        apiService.getAllLatestAnalyses("binance")
                 .enqueue(new Callback<List<AnalysisResult>>() {
                     @Override
                     public void onResponse(Call<List<AnalysisResult>> call, Response<List<AnalysisResult>> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            mainHandler.post(() -> listener.onAllAnalysesRetrieved(response.body()));
+                            listener.onAllAnalysesRetrieved(response.body());
                         } else {
                             String errorMessage = "서버 오류: " + response.code();
-                            mainHandler.post(() -> listener.onFailure(errorMessage));
+                            listener.onFailure(errorMessage);
                         }
                     }
 
@@ -99,7 +101,7 @@ public class AnalysisApiService {
                     public void onFailure(Call<List<AnalysisResult>> call, Throwable t) {
                         String errorMessage = "네트워크 오류: " + t.getMessage();
                         Log.e(TAG, errorMessage, t);
-                        mainHandler.post(() -> listener.onFailure(errorMessage));
+                        listener.onFailure(errorMessage);
                     }
                 });
     }
