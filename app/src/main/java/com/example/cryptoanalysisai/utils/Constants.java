@@ -3,9 +3,17 @@ import com.example.cryptoanalysisai.BuildConfig;
 public class Constants {
 
     // API 기본 URL
+    // API 기본 URL
     public static final String UPBIT_API_URL = "https://api.upbit.com/v1/";
     public static final String BINANCE_API_URL = "https://api.binance.com/api/v3/";
-    public static final String CLAUDE_API_URL = "https://api.anthropic.com/";
+
+    // AWS RDS 설정 (BuildConfig에서 가져옴)
+    public static final String DB_URL = BuildConfig.DB_URL;
+    public static final String DB_USER = BuildConfig.DB_USER;
+    public static final String DB_PASS = BuildConfig.DB_PASS;
+
+    public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL"};
+
 
     // API 키 (실제 앱에서는 BuildConfig나 암호화하여 보관해야 함)
     public static final String CLAUDE_API_KEY = BuildConfig.CLAUDE_API_KEY; // TODO: API 키 설정 필요
