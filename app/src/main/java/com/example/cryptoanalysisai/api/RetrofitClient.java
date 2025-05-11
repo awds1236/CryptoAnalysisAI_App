@@ -16,11 +16,9 @@ public class RetrofitClient {
 
     private static Retrofit upbitRetrofit;
     private static Retrofit binanceRetrofit;
-    private static Retrofit claudeRetrofit;
 
     private static UpbitApiService upbitApiService;
     private static BinanceApiService binanceApiService;
-    private static ClaudeApiService claudeApiService;
 
     // OkHttpClient 생성
     private static OkHttpClient createOkHttpClient() {
@@ -63,42 +61,6 @@ public class RetrofitClient {
             binanceApiService = binanceRetrofit.create(BinanceApiService.class);
         }
         return binanceApiService;
-    }
-
-    // Claude API 클라이언트 생성
-    public static synchronized ClaudeApiService getClaudeApiService() {
-        if (claudeApiService == null) {
-            if (claudeRetrofit == null) {
-                HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-                loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-                OkHttpClient client = new OkHttpClient.Builder()
-                        .addInterceptor(chain -> {
-                            okhttp3.Request original = chain.request();
-
-                            // API 키 헤더 추가
-                            okhttp3.Request.Builder requestBuilder = original.newBuilder()
-                                    .header("x-api-key", Constants.CLAUDE_API_KEY)
-                                    .header("anthropic-version", "2023-06-01")
-                                    .header("Content-Type", "application/json");
-
-                            return chain.proceed(requestBuilder.build());
-                        })
-                        .addInterceptor(loggingInterceptor)
-                        .connectTimeout(60, TimeUnit.SECONDS) // Claude 응답이 더 오래 걸릴 수 있어 타임아웃 증가
-                        .readTimeout(60, TimeUnit.SECONDS)
-                        .writeTimeout(60, TimeUnit.SECONDS)
-                        .build();
-
-                claudeRetrofit = new Retrofit.Builder()
-                        .baseUrl(Constants.CLAUDE_API_URL)
-                        .client(client)
-                        .addConverterFactory(GsonConverterFactory.create())
-                        .build();
-            }
-            claudeApiService = claudeRetrofit.create(ClaudeApiService.class);
-        }
-        return claudeApiService;
     }
 
     // 거래소 타입에 따른 API 서비스 선택

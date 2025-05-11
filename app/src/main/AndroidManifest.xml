@@ -27,11 +27,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name=".ui.activities.AnalysisActivity"
-            android:exported="false"
-            android:label="상세 분석"
-            android:parentActivityName=".MainActivity" />
     </application>
 
 </manifest>

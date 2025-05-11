@@ -7,9 +7,10 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -18,7 +19,6 @@ import com.example.cryptoanalysisai.databinding.ActivityMainBinding;
 import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
-import com.example.cryptoanalysisai.ui.activities.AnalysisActivity;
 import com.example.cryptoanalysisai.ui.fragments.AnalysisFragment;
 import com.example.cryptoanalysisai.ui.fragments.CoinListFragment;
 import com.example.cryptoanalysisai.utils.Constants;
@@ -28,10 +28,14 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
     private ActivityMainBinding binding;
     private CoinInfo selectedCoin;
-    private ExchangeType selectedExchange = ExchangeType.UPBIT;
+    private ExchangeType selectedExchange = ExchangeType.BINANCE; // 바이낸스로 변경
 
     // 차트 탭 제거: 코인 목록과 분석 탭만 유지
     private final String[] tabTitles = new String[]{"코인 목록", "분석"};
+
+    // 가격 업데이트 핸들러
+    private final Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
+    private boolean isAutoRefreshEnabled = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,13 +46,86 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         // 툴바 설정
         setSupportActionBar(binding.toolbar);
 
-        // 저장된 설정 불러오기
-        loadPreferences();
+        // 바이낸스로 고정하므로 저장된 설정은 필요없음
+        // loadPreferences();
 
         // ViewPager 설정
         setupViewPager();
 
-        // FAB 관련 코드 모두 제거
+        // 3초마다 가격 갱신 시작
+        startPriceUpdates();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isAutoRefreshEnabled = true;
+        startPriceUpdates();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isAutoRefreshEnabled = false;
+        stopPriceUpdates();
+        // 설정 저장 필요 없음
+        // savePreferences();
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopPriceUpdates();
+        super.onDestroy();
+    }
+
+    /**
+     * 가격 업데이트 시작
+     */
+    private void startPriceUpdates() {
+        priceUpdateHandler.postDelayed(priceUpdateRunnable, Constants.PRICE_REFRESH_INTERVAL);
+    }
+
+    /**
+     * 가격 업데이트 중지
+     */
+    private void stopPriceUpdates() {
+        priceUpdateHandler.removeCallbacks(priceUpdateRunnable);
+    }
+
+    /**
+     * 가격 업데이트 Runnable
+     */
+    private final Runnable priceUpdateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isAutoRefreshEnabled) {
+                updateCoinsPrice();
+                priceUpdateHandler.postDelayed(this, Constants.PRICE_REFRESH_INTERVAL);
+            }
+        }
+    };
+
+    /**
+     * 코인 가격 업데이트
+     */
+    private void updateCoinsPrice() {
+        // 코인 목록 탭이 표시 중일 때
+        if (binding.viewPager.getCurrentItem() == 0) {
+            CoinListFragment coinListFragment = (CoinListFragment) getSupportFragmentManager()
+                    .findFragmentByTag("f0");
+            if (coinListFragment != null) {
+                coinListFragment.refreshPrices();
+            }
+        }
+
+        // 분석 탭이 표시 중이고 선택된 코인이 있을 때
+        if (binding.viewPager.getCurrentItem() == 1 && selectedCoin != null) {
+            AnalysisFragment analysisFragment = (AnalysisFragment) getSupportFragmentManager()
+                    .findFragmentByTag("f1");
+            if (analysisFragment != null) {
+                analysisFragment.updatePrice();
+            }
+        }
     }
 
     /**
@@ -63,28 +140,34 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             tab.setText(tabTitles[position]);
         }).attach();
 
-        // 페이지 변경 리스너 - FAB 관련 코드 제거
+        // 페이지 변경 리스너
         binding.viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
-                // FAB 표시/숨김 코드 제거
+                // 페이지 변경 시 필요한 작업이 있으면 여기에 구현
             }
         });
     }
 
     /**
-     * 저장된 설정 불러오기
+     * 저장된 설정 불러오기 - 필요 없음 (바이낸스로 고정)
      */
+    /*
     private void loadPreferences() {
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
-        String exchangeCode = prefs.getString(Constants.PREF_EXCHANGE_TYPE, ExchangeType.UPBIT.getCode());
+        String exchangeCode = prefs.getString(Constants.PREF_EXCHANGE_TYPE, ExchangeType.BINANCE.getCode());
         selectedExchange = ExchangeType.fromCode(exchangeCode);
+
+        // 바이낸스로 고정
+        selectedExchange = ExchangeType.BINANCE;
     }
+    */
 
     /**
-     * 설정 저장하기
+     * 설정 저장하기 - 필요 없음 (바이낸스로 고정)
      */
+    /*
     private void savePreferences() {
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
@@ -94,12 +177,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         }
         editor.apply();
     }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        savePreferences();
-    }
+    */
 
     /**
      * 코인 선택 이벤트 처리
@@ -109,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         this.selectedCoin = coinInfo;
         this.selectedExchange = exchangeType;
 
-        // 코인이 선택되면 분석 페이지로 이동 (수정: 차트 페이지 제거로 인덱스 변경)
+        // 코인이 선택되면 분석 페이지로 이동
         binding.viewPager.setCurrentItem(1);
 
         // 다른 프래그먼트에 선택된 코인 정보 전달
@@ -120,27 +198,11 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
      * 선택된 코인 정보로 프래그먼트 갱신
      */
     private void updateFragmentsWithCoin() {
-        // 차트 프래그먼트 관련 코드 제거
-
         AnalysisFragment analysisFragment = (AnalysisFragment) getSupportFragmentManager()
-                .findFragmentByTag("f" + 1); // 수정: 분석 프래그먼트 인덱스 변경
+                .findFragmentByTag("f" + 1);
 
         if (analysisFragment != null) {
             analysisFragment.updateCoin(selectedCoin, selectedExchange);
-        }
-    }
-
-    /**
-     * 분석 액티비티 시작 - 메서드는 유지하지만 FAB에서 호출하지 않음
-     */
-    private void startAnalysisActivity() {
-        if (selectedCoin != null) {
-            Intent intent = new Intent(this, AnalysisActivity.class);
-            intent.putExtra(Constants.EXTRA_COIN_INFO, selectedCoin.getMarket());
-            intent.putExtra(Constants.EXTRA_EXCHANGE_TYPE, selectedExchange.getCode());
-            startActivity(intent);
-        } else {
-            Toast.makeText(this, "코인을 먼저 선택해주세요.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -149,11 +211,11 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
      */
     public void deliverAnalysisResult(AnalysisResult result) {
         AnalysisFragment analysisFragment = (AnalysisFragment) getSupportFragmentManager()
-                .findFragmentByTag("f" + 1); // 수정: 분석 프래그먼트 인덱스 변경
+                .findFragmentByTag("f" + 1);
 
         if (analysisFragment != null) {
             analysisFragment.setAnalysisResult(result);
-            binding.viewPager.setCurrentItem(1); // 수정: 분석 탭으로 이동 (인덱스 변경)
+            binding.viewPager.setCurrentItem(1);
         }
     }
 
@@ -172,7 +234,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             switch (position) {
                 case 0:
                     return CoinListFragment.newInstance(selectedExchange);
-                case 1: // 수정: 차트 제거로 인덱스 1이 분석 탭으로 변경
+                case 1:
                     return AnalysisFragment.newInstance(selectedCoin, selectedExchange);
                 default:
                     return CoinListFragment.newInstance(selectedExchange);
@@ -181,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
         @Override
         public int getItemCount() {
-            return tabTitles.length; // 수정: 탭 개수가 2개로 줄어듦
+            return tabTitles.length;
         }
     }
 
@@ -199,8 +261,8 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             refreshCurrentFragment();
             return true;
         } else if (id == R.id.action_settings) {
-            // 설정 화면 이동 구현
-            Toast.makeText(this, "설정 기능은 추후 추가될 예정입니다.", Toast.LENGTH_SHORT).show();
+            // 설정 화면 구현 없음
+            Toast.makeText(this, "바이낸스 거래소의 4개 코인에 대한 데이터만 표시합니다.", Toast.LENGTH_SHORT).show();
             return true;
         }
 
@@ -221,7 +283,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
                     coinListFragment.refreshData();
                 }
                 break;
-            case 1: // 수정: 차트 제거로 인덱스 1이 분석 탭으로 변경
+            case 1:
                 AnalysisFragment analysisFragment = (AnalysisFragment) getSupportFragmentManager()
                         .findFragmentByTag("f" + currentPage);
                 if (analysisFragment != null && selectedCoin != null) {
