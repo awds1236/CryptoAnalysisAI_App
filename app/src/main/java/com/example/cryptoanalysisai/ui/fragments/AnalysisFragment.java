@@ -18,10 +18,8 @@ import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.BinanceTicker;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
-import com.example.cryptoanalysisai.services.AwsRdsService;
+import com.example.cryptoanalysisai.services.AnalysisApiService;
 import com.example.cryptoanalysisai.utils.Constants;
-
-import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -37,7 +35,7 @@ public class AnalysisFragment extends Fragment {
     private CoinInfo coinInfo;
     private ExchangeType exchangeType = ExchangeType.BINANCE;
     private AnalysisResult analysisResult;
-    private AwsRdsService awsRdsService;
+    private AnalysisApiService analysisApiService;
 
     public AnalysisFragment() {
         // 기본 생성자
@@ -76,7 +74,7 @@ public class AnalysisFragment extends Fragment {
             exchangeType = ExchangeType.BINANCE;
         }
 
-        awsRdsService = AwsRdsService.getInstance();
+        analysisApiService = AnalysisApiService.getInstance();
     }
 
     @Nullable
@@ -93,7 +91,7 @@ public class AnalysisFragment extends Fragment {
         // 분석 버튼 클릭 리스너 설정
         binding.btnStartAnalysis.setOnClickListener(v -> {
             if (coinInfo != null && coinInfo.getMarket() != null) {
-                loadAnalysisFromRds();
+                loadAnalysisFromApi();
             } else {
                 Toast.makeText(getContext(), "코인을 먼저 선택해주세요", Toast.LENGTH_SHORT).show();
             }
@@ -130,8 +128,8 @@ public class AnalysisFragment extends Fragment {
             binding.tvExchangeInfo.setText("거래소: " + exchangeType.getDisplayName() +
                     " / 통화단위: " + (exchangeType == ExchangeType.UPBIT ? "원" : "달러(USD)"));
 
-            // AWS RDS에서 분석 결과 로드
-            loadAnalysisFromRds();
+            // AWS Lambda API에서 분석 결과 로드
+            loadAnalysisFromApi();
 
             // 현재 가격 정보 업데이트
             updatePrice();
@@ -202,17 +200,19 @@ public class AnalysisFragment extends Fragment {
     }
 
     /**
-     * AWS RDS에서 분석 결과 로드
+     * AWS Lambda API에서 분석 결과 로드
      */
-    private void loadAnalysisFromRds() {
+    private void loadAnalysisFromApi() {
+        if (binding == null || coinInfo == null) return;
+
         binding.progressAnalysis.setVisibility(View.VISIBLE);
 
         // 분석 버튼 비활성화
         binding.btnStartAnalysis.setEnabled(false);
         binding.btnStartAnalysis.setText("분석 데이터 로딩 중...");
 
-        awsRdsService.getLatestAnalysis(coinInfo.getSymbol(), exchangeType.getCode(),
-                new AwsRdsService.OnAnalysisRetrievedListener() {
+        analysisApiService.getLatestAnalysis(coinInfo.getSymbol(), exchangeType,
+                new AnalysisApiService.OnAnalysisRetrievedListener() {
                     @Override
                     public void onAnalysisRetrieved(AnalysisResult result) {
                         if (getActivity() == null || binding == null) return;

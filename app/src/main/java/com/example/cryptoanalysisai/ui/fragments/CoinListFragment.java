@@ -24,11 +24,12 @@ import com.example.cryptoanalysisai.R;
 import com.example.cryptoanalysisai.api.BinanceApiService;
 import com.example.cryptoanalysisai.api.RetrofitClient;
 import com.example.cryptoanalysisai.databinding.FragmentCoinListBinding;
+import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.BinanceModels;
 import com.example.cryptoanalysisai.models.BinanceTicker;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
-import com.example.cryptoanalysisai.services.AwsRdsService;
+import com.example.cryptoanalysisai.services.AnalysisApiService;
 import com.example.cryptoanalysisai.utils.Constants;
 import com.google.android.material.card.MaterialCardView;
 
@@ -52,10 +53,12 @@ public class CoinListFragment extends Fragment {
     private CoinListAdapter adapter;
     private OnCoinSelectedListener listener;
     private ExchangeType exchangeType = ExchangeType.BINANCE; // 기본값을 바이낸스로 변경
-    private AwsRdsService awsRdsService;
+    private AnalysisApiService analysisApiService;
 
     // 코인 캐시 (빠른 액세스를 위한)
     private Map<String, CoinInfo> coinCache = new HashMap<>();
+    // 분석 결과 캐시
+    private Map<String, AnalysisResult> analysisCache = new HashMap<>();
 
     // 가격 업데이트 태스크
     private final Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
@@ -88,7 +91,7 @@ public class CoinListFragment extends Fragment {
             exchangeType = ExchangeType.BINANCE;
         }
 
-        awsRdsService = AwsRdsService.getInstance();
+        analysisApiService = AnalysisApiService.getInstance();
     }
 
     @Nullable
@@ -228,6 +231,37 @@ public class CoinListFragment extends Fragment {
 
         // 바이낸스에서 코인 목록 로드
         loadBinanceMarkets();
+
+        // 모든 코인의 분석 결과 로드
+        loadAllAnalyses();
+    }
+
+    /**
+     * 모든 코인의 분석 결과 로드
+     */
+    private void loadAllAnalyses() {
+        analysisApiService.getAllLatestAnalyses(exchangeType, new AnalysisApiService.OnAllAnalysesRetrievedListener() {
+            @Override
+            public void onAllAnalysesRetrieved(List<AnalysisResult> resultList) {
+                // 분석 결과 캐시에 저장
+                analysisCache.clear();
+                for (AnalysisResult result : resultList) {
+                    analysisCache.put(result.getCoinSymbol(), result);
+                }
+
+                // 어댑터에 분석 결과 추가
+                if (adapter != null && getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        adapter.notifyDataSetChanged();
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                Log.e(TAG, "분석 결과 로드 실패: " + errorMessage);
+            }
+        });
     }
 
     /**
@@ -379,7 +413,7 @@ public class CoinListFragment extends Fragment {
                     }
 
                     // 변경사항이 있는 경우만 UI 갱신
-                    if (dataChanged && adapter != null) {
+                    if (dataChanged && adapter != null && getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             adapter.notifyDataSetChanged();
                         });
@@ -408,7 +442,7 @@ public class CoinListFragment extends Fragment {
                     BinanceTicker ticker = response.body();
                     coinInfo.setPriceChange(ticker.getPriceChangePercent() / 100.0);
 
-                    if (adapter != null) {
+                    if (adapter != null && getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             adapter.notifyDataSetChanged();
                         });
@@ -453,7 +487,7 @@ public class CoinListFragment extends Fragment {
      * 오류 메시지 표시
      */
     private void showError(String message) {
-        if (getContext() != null) {
+        if (getContext() != null && binding != null) {
             Log.e(TAG, message);
             binding.tvEmpty.setText(message);
             binding.tvEmpty.setVisibility(View.VISIBLE);

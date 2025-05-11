@@ -3,15 +3,16 @@ import com.example.cryptoanalysisai.BuildConfig;
 public class Constants {
 
     // API 기본 URL
-    // API 기본 URL
     public static final String UPBIT_API_URL = "https://api.upbit.com/v1/";
     public static final String BINANCE_API_URL = "https://api.binance.com/api/v3/";
 
+    // AWS Lambda API 기본 URL (API Gateway 엔드포인트)
+    public static final String LAMBDA_API_URL = BuildConfig.LAMBDA_API_URL;
 
-    // AWS RDS 설정 (BuildConfig에서 가져옴)
-    public static final String DB_URL = BuildConfig.DB_URL;
-    public static final String DB_USER = BuildConfig.DB_USER;
-    public static final String DB_PASS = BuildConfig.DB_PASS;
+    // AWS RDS 설정 - 미사용 (Lambda API로 대체)
+    // public static final String DB_URL = BuildConfig.DB_URL;
+    // public static final String DB_USER = BuildConfig.DB_USER;
+    // public static final String DB_PASS = BuildConfig.DB_PASS;
 
     public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL"};
 
