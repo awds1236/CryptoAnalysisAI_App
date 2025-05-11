@@ -7,12 +7,14 @@ plugins {
 // local.properties 파일에서 민감한 정보 읽기
 def localPropertiesFile = rootProject.file("local.properties")
 def localProperties = new Properties()
+def lambdaApiUrl = ""
 def dbUrl = ""
 def dbUser = ""
 def dbPass = ""
 
 if (localPropertiesFile.exists()) {
     localProperties.load(new FileInputStream(localPropertiesFile))
+    lambdaApiUrl = localProperties.getProperty('aws.lambda.url', '')
     dbUrl = localProperties.getProperty('aws.rds.url', '')
     dbUser = localProperties.getProperty('aws.rds.user', '')
     dbPass = localProperties.getProperty('aws.rds.password', '')
@@ -31,7 +33,10 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // AWS RDS 연결 정보 (변수 참조)
+        // Lambda API URL
+        buildConfigField "String", "LAMBDA_API_URL", "\"${lambdaApiUrl}\""
+
+        // AWS RDS 연결 정보 (미사용)
         buildConfigField "String", "DB_URL", "\"${dbUrl}\""
         buildConfigField "String", "DB_USER", "\"${dbUser}\""
         buildConfigField "String", "DB_PASS", "\"${dbPass}\""
@@ -112,8 +117,8 @@ dependencies {
     // Coroutines 지원
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
 
-    // MariaDB JDBC 드라이버 추가
-    implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.4'
+    // MariaDB JDBC 드라이버 제거 (API로 대체)
+    // implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.4'
 
     // 테스트 라이브러리
     testImplementation 'junit:junit:4.13.2'

@@ -16,9 +16,11 @@ public class RetrofitClient {
 
     private static Retrofit upbitRetrofit;
     private static Retrofit binanceRetrofit;
+    private static Retrofit lambdaRetrofit;
 
     private static UpbitApiService upbitApiService;
     private static BinanceApiService binanceApiService;
+    private static LambdaApiService lambdaApiService;
 
     // OkHttpClient 생성
     private static OkHttpClient createOkHttpClient() {
@@ -61,6 +63,21 @@ public class RetrofitClient {
             binanceApiService = binanceRetrofit.create(BinanceApiService.class);
         }
         return binanceApiService;
+    }
+
+    // AWS Lambda API 클라이언트 생성
+    public static synchronized LambdaApiService getLambdaApiService() {
+        if (lambdaApiService == null) {
+            if (lambdaRetrofit == null) {
+                lambdaRetrofit = new Retrofit.Builder()
+                        .baseUrl(Constants.LAMBDA_API_URL)
+                        .client(createOkHttpClient())
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build();
+            }
+            lambdaApiService = lambdaRetrofit.create(LambdaApiService.class);
+        }
+        return lambdaApiService;
     }
 
     // 거래소 타입에 따른 API 서비스 선택
