@@ -7,6 +7,7 @@ public class Constants {
     public static final String UPBIT_API_URL = "https://api.upbit.com/v1/";
     public static final String BINANCE_API_URL = "https://api.binance.com/api/v3/";
 
+
     // AWS RDS 설정 (BuildConfig에서 가져옴)
     public static final String DB_URL = BuildConfig.DB_URL;
     public static final String DB_USER = BuildConfig.DB_USER;
@@ -14,14 +15,12 @@ public class Constants {
 
     public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL"};
 
-
-    // API 키 (실제 앱에서는 BuildConfig나 암호화하여 보관해야 함)
-    public static final String CLAUDE_API_KEY = BuildConfig.CLAUDE_API_KEY; // TODO: API 키 설정 필요
-
     // 기본 설정
     public static final int DEFAULT_CANDLE_COUNT = 30;
     public static final String DEFAULT_MARKET = "KRW-BTC";
     public static final String DEFAULT_BINANCE_SYMBOL = "BTCUSDT";
+
+    public static final int PRICE_REFRESH_INTERVAL = 3000; // 3초
 
     // 캔들 차트 간격
     public enum CandleInterval {
