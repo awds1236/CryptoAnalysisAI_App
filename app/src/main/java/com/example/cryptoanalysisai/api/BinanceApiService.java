@@ -19,6 +19,14 @@ public interface BinanceApiService {
     @GET("exchangeInfo")
     Call<BinanceModels.BinanceExchangeInfo> getTopSymbolsInfo(@Query("symbols") String symbolsJson);
 
+    // 거래소 정보 조회 (추가)
+    @GET("exchangeInfo")
+    Call<BinanceModels.BinanceExchangeInfo> getExchangeInfo();
+
+    // 모든 심볼의 현재가 조회 (추가)
+    @GET("ticker/price")
+    Call<List<BinanceTicker>> getAllTickers();
+
     // 현재가 조회 (전체) - 이 메서드는 사용하지 말 것!
     // @GET("ticker/price")
     // Call<List<BinanceTicker>> getAllTickers();
@@ -53,4 +61,6 @@ public interface BinanceApiService {
             @Query("symbol") String symbol,
             @Query("limit") Integer limit
     );
+
+
 }

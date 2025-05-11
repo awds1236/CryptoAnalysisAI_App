@@ -54,6 +54,13 @@ android {
         viewBinding true
         buildConfig true
     }
+
+    // 패키징 옵션 추가
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/AL2.0', 'META-INF/LGPL2.1']
+        }
+    }
 }
 
 dependencies {
