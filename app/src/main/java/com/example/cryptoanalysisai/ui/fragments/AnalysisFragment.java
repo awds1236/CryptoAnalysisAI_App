@@ -211,7 +211,7 @@ public class AnalysisFragment extends Fragment {
         binding.btnStartAnalysis.setEnabled(false);
         binding.btnStartAnalysis.setText("분석 데이터 로딩 중...");
 
-        analysisApiService.getLatestAnalysis(coinInfo.getSymbol(), exchangeType,
+        analysisApiService.getLatestAnalysis(coinInfo.getSymbol(),
                 new AnalysisApiService.OnAnalysisRetrievedListener() {
                     @Override
                     public void onAnalysisRetrieved(AnalysisResult result) {

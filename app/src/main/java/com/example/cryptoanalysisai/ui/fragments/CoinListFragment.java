@@ -240,7 +240,7 @@ public class CoinListFragment extends Fragment {
      * 모든 코인의 분석 결과 로드
      */
     private void loadAllAnalyses() {
-        analysisApiService.getAllLatestAnalyses(exchangeType, new AnalysisApiService.OnAllAnalysesRetrievedListener() {
+        analysisApiService.getAllLatestAnalyses(new AnalysisApiService.OnAllAnalysesRetrievedListener() {
             @Override
             public void onAllAnalysesRetrieved(List<AnalysisResult> resultList) {
                 // 분석 결과 캐시에 저장

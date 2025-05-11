@@ -13,23 +13,20 @@ import retrofit2.http.Query;
  * API interface for AWS Lambda endpoints through API Gateway
  */
 public interface LambdaApiService {
-
     /**
      * Get the latest analysis for a specific coin
-     * @param coinSymbol Symbol of the coin (e.g., "BTC")
-     * @param exchange Exchange name, defaults to "binance"
+     * @param coinPath 코인 심볼을 포함한 경로 (예: BTC/)
      */
-    @GET("analyses/{coin_symbol}")
+    @GET("analyses")
     Call<AnalysisResult> getLatestAnalysis(
-            @Path("coin_symbol") String coinSymbol,
+            @Query(value = "", encoded = true) String coinPath,
             @Query("exchange") String exchange
     );
 
     /**
      * Get the latest analyses for all coins
-     * @param exchange Exchange name, defaults to "binance"
      */
-    @GET("analyses")
+    @GET("api/analyses")
     Call<List<AnalysisResult>> getAllLatestAnalyses(
             @Query("exchange") String exchange
     );

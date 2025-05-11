@@ -36,6 +36,17 @@ public class AnalysisResult {
     @SerializedName("위험_요소")
     private List<String> riskFactors;
 
+    @SerializedName("coin_symbol")
+    private String coinSymbol;
+
+
+    public String getCoinSymbol() {
+        return coinSymbol;
+    }
+
+    public void setCoinSymbol(String coinSymbol) {
+        this.coinSymbol = coinSymbol;
+    }
     // 내부 클래스 정의
 
     public static class Recommendation {
@@ -95,6 +106,8 @@ public class AnalysisResult {
         public void setReason(String reason) {
             this.reason = reason;
         }
+
+
     }
 
     public static class Strategy {
@@ -165,6 +178,8 @@ public class AnalysisResult {
         public void setSellSteps(List<TradingStep> sellSteps) {
             this.sellSteps = sellSteps;
         }
+
+
 
         // 매매 단계 클래스
         public static class TradingStep {
@@ -456,4 +471,6 @@ public class AnalysisResult {
     public void setRiskFactors(List<String> riskFactors) {
         this.riskFactors = riskFactors;
     }
+
+
 }
