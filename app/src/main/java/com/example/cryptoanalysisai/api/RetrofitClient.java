@@ -10,8 +10,10 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.http.GET;
 
 public class RetrofitClient {
 
@@ -24,6 +26,8 @@ public class RetrofitClient {
     private static UpbitApiService upbitApiService;
     private static BinanceApiService binanceApiService;
     private static LambdaApiService lambdaApiService;
+
+
 
     // OkHttpClient 생성
     private static OkHttpClient createOkHttpClient() {
@@ -118,5 +122,21 @@ public class RetrofitClient {
             default:
                 return getUpbitApiService();
         }
+    }
+
+    public interface ExchangeRateApiService {
+        @GET("api/exchange-rate")
+        Call<ExchangeRateResponse> getExchangeRate();
+    }
+
+    // RetrofitClient 클래스에 메서드 추가
+    public static ExchangeRateApiService getExchangeRateApiService() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://479kz18ike.execute-api.ap-northeast-2.amazonaws.com/prod/")
+                .client(createOkHttpClient())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        return retrofit.create(ExchangeRateApiService.class);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.cryptoanalysisai;
 
+import static android.content.ContentValues.TAG;
 import static androidx.core.content.ContextCompat.startActivity;
 
 import androidx.annotation.NonNull;
@@ -14,6 +15,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -22,6 +24,7 @@ import com.example.cryptoanalysisai.databinding.ActivityMainBinding;
 import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
+import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.LoginActivity;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
@@ -68,6 +71,8 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
         // 3초마다 가격 갱신 시작
         startPriceUpdates();
+
+        loadExchangeRate();
     }
 
     @Override
@@ -317,5 +322,20 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     private boolean isUserSignedIn() {
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         return prefs.getBoolean(Constants.PREF_IS_LOGGED_IN, false);
+    }
+
+    private void loadExchangeRate() {
+        ExchangeRateManager.getInstance().fetchExchangeRate(new ExchangeRateManager.OnExchangeRateListener() {
+            @Override
+            public void onExchangeRateUpdated(double rate) {
+                Log.d(TAG, "환율 업데이트 완료: 1 USD = " + rate + " KRW");
+                // 필요한 경우 UI 업데이트
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Log.e(TAG, "환율 업데이트 실패: " + errorMessage);
+            }
+        });
     }
 }

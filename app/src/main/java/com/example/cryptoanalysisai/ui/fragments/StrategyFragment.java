@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Html;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.cryptoanalysisai.R;
 import com.example.cryptoanalysisai.models.AnalysisResult;
+import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 
@@ -50,6 +52,8 @@ public class StrategyFragment extends Fragment {
     private View btnSubscribe;
     private View contentArea;
 
+    private ExchangeRateManager exchangeRateManager;
+
     public static StrategyFragment newInstance(int strategyType, String currencySymbol) {
         StrategyFragment fragment = new StrategyFragment();
         Bundle args = new Bundle();
@@ -68,6 +72,7 @@ public class StrategyFragment extends Fragment {
         }
 
         subscriptionManager = SubscriptionManager.getInstance(requireContext());
+        exchangeRateManager = ExchangeRateManager.getInstance(); // 추가
     }
 
     @Nullable
@@ -131,7 +136,7 @@ public class StrategyFragment extends Fragment {
             // 매수 단계 표시 - 모든 데이터 표시
             displayBuySteps(layoutBuySteps, strategy.getBuySteps());
 
-            // 목표가 표시
+            // 목표가 표시 수정
             if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
                 StringBuilder targetPrices = new StringBuilder();
                 for (int i = 0; i < strategy.getTargetPrices().size(); i++) {
@@ -140,18 +145,31 @@ public class StrategyFragment extends Fragment {
                         targetPrices.append("<br>");
                     }
 
-                    // 목표 번호와 가격
-                    String targetLabel = String.format(Locale.getDefault(), "목표 %d: %s%,.2f",
-                            i + 1, currencySymbol, targetPrice);
+                    // 달러 기본 가격 포맷
+                    String basePrice = String.format(Locale.getDefault(), "%s%,.2f",
+                            currencySymbol, targetPrice);
 
-                    // 첫 번째 목표는 녹색, 두 번째는 주황색, 세 번째 이상은 빨간색
+                    // 원화 환산 추가
+                    String displayPrice;
+                    if ("$".equals(currencySymbol) && exchangeRateManager.getUsdToKrwRate() > 0) {
+                        double krwPrice = exchangeRateManager.convertUsdToKrw(targetPrice);
+                        displayPrice = String.format("%s (₩%,.0f)", basePrice, krwPrice);
+                    } else {
+                        displayPrice = basePrice;
+                    }
+
+                    // 목표 번호와 가격
+                    String targetLabel = String.format(Locale.getDefault(), "목표 %d: %s",
+                            i + 1, displayPrice);
+
+                    // 색상 코드 등 기존 표시 로직 유지
                     String colorCode;
                     if (i == 0) {
-                        colorCode = "#4CAF50"; // 녹색 - 첫 번째 목표
+                        colorCode = "#4CAF50";
                     } else if (i == 1) {
-                        colorCode = "#FF9800"; // 주황색 - 두 번째 목표
+                        colorCode = "#FF9800";
                     } else {
-                        colorCode = "#F44336"; // 빨간색 - 세 번째 이상 목표
+                        colorCode = "#F44336";
                     }
 
                     targetPrices.append("<font color='")
@@ -167,8 +185,20 @@ public class StrategyFragment extends Fragment {
 
             // 손절매 라인 표시
             if (strategy.getStopLoss() > 0) {
-                String stopLossText = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, strategy.getStopLoss());
-                tvStopLoss.setText(Html.fromHtml("<font color='#F44336'><b>" + stopLossText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
+                double stopLoss = strategy.getStopLoss();
+                String baseStopLoss = String.format(Locale.getDefault(), "%s%,.2f",
+                        currencySymbol, stopLoss);
+
+                String displayStopLoss;
+                if ("$".equals(currencySymbol) && exchangeRateManager.getUsdToKrwRate() > 0) {
+                    double krwStopLoss = exchangeRateManager.convertUsdToKrw(stopLoss);
+                    displayStopLoss = String.format("%s (₩%,.0f)", baseStopLoss, krwStopLoss);
+                } else {
+                    displayStopLoss = baseStopLoss;
+                }
+
+                tvStopLoss.setText(Html.fromHtml("<font color='#F44336'><b>" + displayStopLoss +
+                        "</b></font>", Html.FROM_HTML_MODE_LEGACY));
             } else {
                 tvStopLoss.setText("설정된 손절매 라인 없음");
             }
@@ -218,7 +248,7 @@ public class StrategyFragment extends Fragment {
             additionalBlurLayer.setBackgroundColor(Color.parseColor("#B3000000")); // 더 진한 검은색 반투명(70%)
 
             // 콘텐츠 자체를 더 흐리게 처리
-            contentArea.setAlpha(0.05f);  // 콘텐츠 거의 완전히 숨김
+            contentArea.setAlpha(0.5f);  // 콘텐츠 거의 완전히 숨김
 
             // 추가: 텍스트 내용을 별표나 의미 없는 문자로 대체하여 이중으로 보호
             if (strategy != null) {
@@ -257,6 +287,35 @@ public class StrategyFragment extends Fragment {
             contentArea.setAlpha(1.0f);  // 완전 불투명 (정상 표시)
             btnSubscribe.setVisibility(View.GONE);
         }
+
+        // 환율 정보 갱신 (이미 최신 정보가 있다면 불필요한 API 호출 방지)
+        if (exchangeRateManager.getUsdToKrwRate() <= 0) {
+            exchangeRateManager.fetchExchangeRate(new ExchangeRateManager.OnExchangeRateListener() {
+                @Override
+                public void onExchangeRateUpdated(double rate) {
+                    // 환율 정보가 업데이트되면 UI 새로고침
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            updateUI();
+                        });
+                    }
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    // 에러 처리 (필요시 사용자에게 알림)
+                    Log.e("StrategyFragment", "환율 정보 로드 실패: " + errorMessage);
+                }
+            });
+        }
+    }
+
+    // UI 업데이트를 위한 헬퍼 메서드
+    private void updateUI() {
+        if (strategy != null) {
+            displayBuySteps(layoutBuySteps, strategy.getBuySteps());
+            // 기타 UI 업데이트 로직...
+        }
     }
 
     /**
@@ -279,7 +338,7 @@ public class StrategyFragment extends Fragment {
         String emoji = "1️⃣ ";
         String price = String.format("%s%,.2f", currencySymbol, step.getPrice());
         // 가격 일부만 보이게 처리
-        String maskedPrice = price.substring(0, Math.min(price.length(), 5)) + "********";
+        String maskedPrice = price.substring(0, Math.min(price.length(), 2)) + "********";
         String title = emoji + "진입점: " + maskedPrice;
 
         tvBuyStepTitle.setText(title);
@@ -370,7 +429,20 @@ public class StrategyFragment extends Fragment {
                 emoji = "3️⃣ ";
             }
 
-            String title = emoji + String.format("진입점: %s%,.2f", currencySymbol, step.getPrice());
+            // 진입점 표시 부분 수정
+            double price = step.getPrice();
+            String formattedUsdPrice = String.format("%s%.2f", currencySymbol, price);
+            String formattedPrice;
+
+            // 달러 가격에 원화 추가
+            if ("$".equals(currencySymbol) && exchangeRateManager.getUsdToKrwRate() > 0) {
+                double krwPrice = exchangeRateManager.convertUsdToKrw(price);
+                formattedPrice = String.format("%s (₩%,.0f)", formattedUsdPrice, krwPrice);
+            } else {
+                formattedPrice = formattedUsdPrice;
+            }
+
+            String title = emoji + "진입점: " + formattedPrice;
             tvBuyStepTitle.setText(title);
             tvBuyStepTitle.setTextColor(titleColor);
 
@@ -387,7 +459,8 @@ public class StrategyFragment extends Fragment {
             // 매수 단계 카드 배경색 설정 (매우 연한 색상)
             CardView cardView = new CardView(getContext());
             cardView.setRadius(16f); // 둥근 모서리
-            cardView.setCardElevation(4f); // 약간의 그림자
+            cardView.setCardElevation(0f); // 그림자 제거
+            cardView.setUseCompatPadding(false); // 호환성 패딩 제거
 
             // 배경색 설정 (매우 투명한 색상)
             int backgroundColor;
@@ -399,6 +472,7 @@ public class StrategyFragment extends Fragment {
                 backgroundColor = Color.parseColor("#109C27B0"); // 보라색 10% 투명도
             }
             cardView.setCardBackgroundColor(backgroundColor);
+            cardView.setForeground(null); // 포그라운드 제거 (API 23 이상에서만 동작)
 
             // 카드뷰에 내용 추가
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
