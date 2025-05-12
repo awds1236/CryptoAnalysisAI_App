@@ -1,5 +1,7 @@
 package com.example.cryptoanalysisai;
 
+import static androidx.core.content.ContextCompat.startActivity;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -7,6 +9,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,10 +22,14 @@ import com.example.cryptoanalysisai.databinding.ActivityMainBinding;
 import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
+import com.example.cryptoanalysisai.services.SubscriptionManager;
+import com.example.cryptoanalysisai.ui.activities.LoginActivity;
+import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.example.cryptoanalysisai.ui.fragments.AnalysisFragment;
 import com.example.cryptoanalysisai.ui.fragments.CoinListFragment;
 import com.example.cryptoanalysisai.utils.Constants;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity implements CoinListFragment.OnCoinSelectedListener {
 
@@ -40,14 +47,21 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 로그인 상태 확인
+        if (!isUserSignedIn()) {
+            // 로그인되지 않은 경우 로그인 화면으로 이동
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         // 툴바 설정
         setSupportActionBar(binding.toolbar);
-
-        // 바이낸스로 고정하므로 저장된 설정은 필요없음
-        // loadPreferences();
 
         // ViewPager 설정
         setupViewPager();
@@ -68,8 +82,6 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         super.onPause();
         isAutoRefreshEnabled = false;
         stopPriceUpdates();
-        // 설정 저장 필요 없음
-        // savePreferences();
     }
 
     @Override
@@ -151,35 +163,6 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     }
 
     /**
-     * 저장된 설정 불러오기 - 필요 없음 (바이낸스로 고정)
-     */
-    /*
-    private void loadPreferences() {
-        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
-        String exchangeCode = prefs.getString(Constants.PREF_EXCHANGE_TYPE, ExchangeType.BINANCE.getCode());
-        selectedExchange = ExchangeType.fromCode(exchangeCode);
-
-        // 바이낸스로 고정
-        selectedExchange = ExchangeType.BINANCE;
-    }
-    */
-
-    /**
-     * 설정 저장하기 - 필요 없음 (바이낸스로 고정)
-     */
-    /*
-    private void savePreferences() {
-        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(Constants.PREF_EXCHANGE_TYPE, selectedExchange.getCode());
-        if (selectedCoin != null) {
-            editor.putString(Constants.PREF_LAST_MARKET, selectedCoin.getMarket());
-        }
-        editor.apply();
-    }
-    */
-
-    /**
      * 코인 선택 이벤트 처리
      */
     @Override
@@ -250,6 +233,16 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        // 구독 메뉴 아이템 추가
+        menu.add(Menu.NONE, R.id.action_subscription, Menu.NONE, "구독 관리")
+                .setIcon(android.R.drawable.ic_menu_more)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+
+        // 로그아웃 메뉴 아이템 추가
+        menu.add(Menu.NONE, R.id.action_logout, Menu.NONE, "로그아웃")
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
+
         return true;
     }
 
@@ -264,9 +257,37 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             // 설정 화면 구현 없음
             Toast.makeText(this, "바이낸스 거래소의 4개 코인에 대한 데이터만 표시합니다.", Toast.LENGTH_SHORT).show();
             return true;
+        } else if (id == R.id.action_subscription) {
+            // 구독 관리 화면으로 이동
+            Intent intent = new Intent(this, SubscriptionActivity.class);
+            startActivity(intent);
+            return true;
+        } else if (id == R.id.action_logout) {
+            // 로그아웃 처리
+            logout();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * 로그아웃 처리
+     */
+    private void logout() {
+        // Firebase 로그아웃
+        FirebaseAuth.getInstance().signOut();
+
+        // SharedPreferences 로그인 상태 제거
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(Constants.PREF_IS_LOGGED_IN, false);
+        editor.apply();
+
+        // 로그인 화면으로 이동
+        Intent intent = new Intent(this, LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     /**
@@ -291,5 +312,10 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
                 }
                 break;
         }
+    }
+
+    private boolean isUserSignedIn() {
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        return prefs.getBoolean(Constants.PREF_IS_LOGGED_IN, false);
     }
 }
