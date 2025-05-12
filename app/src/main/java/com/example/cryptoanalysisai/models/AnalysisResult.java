@@ -47,6 +47,17 @@ public class AnalysisResult {
         this.coinSymbol = coinSymbol;
     }
 
+    @SerializedName("timestamp")
+    private long timestamp;
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
     // 내부 클래스 정의
     public static class Recommendation {
         @SerializedName("매수_확률")
