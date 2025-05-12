@@ -1,5 +1,6 @@
 package com.example.cryptoanalysisai.ui.fragments;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,7 +11,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
 
+import com.example.cryptoanalysisai.R;
 import com.example.cryptoanalysisai.api.BinanceApiService;
 import com.example.cryptoanalysisai.api.RetrofitClient;
 import com.example.cryptoanalysisai.databinding.FragmentAnalysisBinding;
@@ -20,7 +23,9 @@ import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.services.AnalysisApiService;
 import com.example.cryptoanalysisai.utils.Constants;
+import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import retrofit2.Call;
@@ -38,6 +43,12 @@ public class AnalysisFragment extends Fragment {
     private ExchangeType exchangeType = ExchangeType.BINANCE;
     private AnalysisResult analysisResult;
     private AnalysisApiService analysisApiService;
+
+    // 전략 프래그먼트
+    private StrategyFragment shortTermFragment;
+    private StrategyFragment midTermFragment;
+    private StrategyFragment longTermFragment;
+    private StrategiesAdapter strategiesAdapter;
 
     public AnalysisFragment() {
         // 기본 생성자
@@ -77,6 +88,11 @@ public class AnalysisFragment extends Fragment {
         }
 
         analysisApiService = AnalysisApiService.getInstance();
+
+        // 전략 프래그먼트 초기화
+        shortTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_SHORT_TERM, "$");
+        midTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_MID_TERM, "$");
+        longTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_LONG_TERM, "$");
     }
 
     @Nullable
@@ -89,6 +105,9 @@ public class AnalysisFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // 전략 탭 설정
+        setupStrategyTabs();
 
         // 분석 버튼 클릭 리스너 설정
         binding.btnStartAnalysis.setOnClickListener(v -> {
@@ -112,6 +131,28 @@ public class AnalysisFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+    }
+
+    /**
+     * 전략 탭 설정
+     */
+    private void setupStrategyTabs() {
+        strategiesAdapter = new StrategiesAdapter(this);
+        binding.viewPagerStrategy.setAdapter(strategiesAdapter);
+
+        new TabLayoutMediator(binding.tabsStrategy, binding.viewPagerStrategy, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("단기 (24시간)");
+                    break;
+                case 1:
+                    tab.setText("중기 (1주일)");
+                    break;
+                case 2:
+                    tab.setText("장기 (1개월)");
+                    break;
+            }
+        }).attach();
     }
 
     /**
@@ -213,9 +254,6 @@ public class AnalysisFragment extends Fragment {
         binding.btnStartAnalysis.setEnabled(false);
         binding.btnStartAnalysis.setText("분석 데이터 로딩 중...");
 
-        // 요청에 대한 로그 추가
-        Log.d(TAG, "분석 결과 요청: " + coinInfo.getSymbol() + ", exchange: binance");
-
         analysisApiService.getLatestAnalysis(coinInfo.getSymbol(),
                 new AnalysisApiService.OnAnalysisRetrievedListener() {
                     @Override
@@ -223,9 +261,6 @@ public class AnalysisFragment extends Fragment {
                         if (getActivity() == null || binding == null) return;
 
                         analysisResult = result;
-
-                        // 받은 응답 로그 출력
-                        Log.d(TAG, "분석 결과 수신: " + (result != null ? result.toString() : "null"));
 
                         // UI 업데이트
                         getActivity().runOnUiThread(() -> {
@@ -240,8 +275,6 @@ public class AnalysisFragment extends Fragment {
                     public void onNoAnalysisFound() {
                         if (getActivity() == null || binding == null) return;
 
-                        Log.d(TAG, "분석 결과 없음");
-
                         getActivity().runOnUiThread(() -> {
                             Toast.makeText(getContext(), "저장된 분석 결과가 없습니다", Toast.LENGTH_SHORT).show();
                             binding.progressAnalysis.setVisibility(View.GONE);
@@ -253,8 +286,6 @@ public class AnalysisFragment extends Fragment {
                     @Override
                     public void onFailure(String errorMessage) {
                         if (getActivity() == null || binding == null) return;
-
-                        Log.e(TAG, "분석 결과 로드 실패: " + errorMessage);
 
                         getActivity().runOnUiThread(() -> {
                             Toast.makeText(getContext(), "분석 결과 로드 실패: " + errorMessage, Toast.LENGTH_SHORT).show();
@@ -280,127 +311,152 @@ public class AnalysisFragment extends Fragment {
     private void updateAnalysisUI() {
         if (binding == null || analysisResult == null) return;
 
-        Log.d(TAG, "분석 결과 업데이트: " + analysisResult.toString());
+        // 분석 요약
+        binding.tvAnalysisSummary.setText(analysisResult.getSummary());
 
-        try {
-            // 분석 요약
-            binding.tvAnalysisSummary.setText(analysisResult.getSummary());
-
-            // 매수/매도 추천
+        // 매수/매도 추천
+        AnalysisResult.Recommendation recommendation = analysisResult.getRecommendation();
+        if (recommendation != null) {
             // 추천 타입에 따라 색상 변경
-            Constants.RecommendationType recommendType = Constants.RecommendationType.fromString(analysisResult.getRecommendation());
+            Constants.RecommendationType recommendType = Constants.RecommendationType.fromString(recommendation.getRecommendation());
             binding.tvRecommendation.setText(recommendType.getDisplayName() + " 추천");
             binding.tvRecommendation.setTextColor(recommendType.getColor());
 
             // 확률 막대 업데이트
-            int buyProgress = (int) Math.round(analysisResult.getBuyProbability());
+            int buyProgress = (int) Math.round(recommendation.getBuyProbability());
             binding.progressProbability.setProgress(buyProgress);
 
             // 확률 텍스트 업데이트
             binding.tvProbabilityText.setText(String.format("매수: %.1f%% / 매도: %.1f%%",
-                    analysisResult.getBuyProbability(), analysisResult.getSellProbability()));
+                    recommendation.getBuyProbability(), recommendation.getSellProbability()));
 
             // 신뢰도 업데이트
-            binding.ratingBar.setRating((float) analysisResult.getConfidence() / 2); // 0-10 -> 0-5 변환
+            binding.ratingBar.setRating((float) recommendation.getConfidence() / 2); // 0-10 -> 0-5 변환
 
-            // 근거 업데이트 - 적절한, 읽기 좋은 텍스트를 표시하도록 수정
-            // 이 부분은 API 응답에서 직접적으로 제공하지 않으므로 다른 필드의 정보를 조합해서 표시
-            String reason = "현재 " + analysisResult.getTrendStrength() + "한 추세에 있으며, 현재가("
-                    + analysisResult.getCurrencySymbol() + String.format("%,.0f", analysisResult.getCurrentPrice())
-                    + ")는 지지선/저항선 대비 " + (analysisResult.getBuyProbability() > analysisResult.getSellProbability()
-                    ? "매수 유리한 위치" : "매도 유리한 위치") + "에 있습니다.";
-            binding.tvReason.setText(reason);
+            // 근거 업데이트
+            binding.tvReason.setText(recommendation.getReason());
+        }
 
-            // 매매 전략
-            // 수익실현 목표가
-            List<Double> targetPrices = analysisResult.getTargetPrices();
-            if (targetPrices != null && !targetPrices.isEmpty()) {
-                StringBuilder targetPricesText = new StringBuilder();
-                String currencySymbol = analysisResult.getCurrencySymbol();
+        // 각 전략 프래그먼트 데이터 설정
+        updateStrategyFragments();
 
-                for (int i = 0; i < targetPrices.size(); i++) {
-                    if (i > 0) targetPricesText.append(", ");
-                    targetPricesText.append(currencySymbol).append(String.format("%,.0f", targetPrices.get(i)));
-                }
-
-                binding.tvTargetPrice.setText(targetPricesText.toString());
-            }
-
-            // 손절매 라인
-            binding.tvStopLoss.setText(analysisResult.getCurrencySymbol() +
-                    String.format("%,.0f", analysisResult.getStopLoss()));
-
-            // 리스크 대비 보상 비율
-            binding.tvRiskReward.setText(String.format("%.1f", analysisResult.getRiskRewardRatio()) + ":1");
-
-            // 전략 설명
-            binding.tvStrategyDetail.setText(analysisResult.getStrategyExplanation());
-
-            // 시간별 전망
+        // 시간별 전망
+        AnalysisResult.Outlook outlook = analysisResult.getOutlook();
+        if (outlook != null) {
             // 단기 전망
-            binding.tvShortTerm.setText(analysisResult.getShortTermOutlook());
+            binding.tvShortTerm.setText(outlook.getShortTerm());
 
             // 중기 전망
-            binding.tvMidTerm.setText(analysisResult.getMidTermOutlook());
+            binding.tvMidTerm.setText(outlook.getMidTerm());
 
             // 장기 전망
-            binding.tvLongTerm.setText(analysisResult.getLongTermOutlook());
+            binding.tvLongTerm.setText(outlook.getLongTerm());
+        }
 
-            // 기술적 분석
+        // 기술적 분석
+        AnalysisResult.TechnicalAnalysis technicalAnalysis = analysisResult.getTechnicalAnalysis();
+        if (technicalAnalysis != null) {
             // 지지선
-            List<Double> supportLevels = analysisResult.getSupportLevels();
-            if (supportLevels != null && !supportLevels.isEmpty()) {
-                StringBuilder supportLevelsText = new StringBuilder();
+            if (technicalAnalysis.getSupportLevels() != null && !technicalAnalysis.getSupportLevels().isEmpty()) {
+                StringBuilder supportLevels = new StringBuilder();
                 String currencySymbol = analysisResult.getCurrencySymbol();
 
-                for (int i = 0; i < supportLevels.size(); i++) {
-                    if (i > 0) supportLevelsText.append(", ");
-                    supportLevelsText.append(currencySymbol)
-                            .append(String.format("%,.0f", supportLevels.get(i)));
+                for (int i = 0; i < technicalAnalysis.getSupportLevels().size(); i++) {
+                    if (i > 0) supportLevels.append(", ");
+                    supportLevels.append(currencySymbol)
+                            .append(String.format("%,.2f", technicalAnalysis.getSupportLevels().get(i)));
                 }
 
-                binding.tvSupport.setText(supportLevelsText.toString());
+                binding.tvSupport.setText(supportLevels.toString());
             }
 
             // 저항선
-            List<Double> resistanceLevels = analysisResult.getResistanceLevels();
-            if (resistanceLevels != null && !resistanceLevels.isEmpty()) {
-                StringBuilder resistanceLevelsText = new StringBuilder();
+            if (technicalAnalysis.getResistanceLevels() != null && !technicalAnalysis.getResistanceLevels().isEmpty()) {
+                StringBuilder resistanceLevels = new StringBuilder();
                 String currencySymbol = analysisResult.getCurrencySymbol();
 
-                for (int i = 0; i < resistanceLevels.size(); i++) {
-                    if (i > 0) resistanceLevelsText.append(", ");
-                    resistanceLevelsText.append(currencySymbol)
-                            .append(String.format("%,.0f", resistanceLevels.get(i)));
+                for (int i = 0; i < technicalAnalysis.getResistanceLevels().size(); i++) {
+                    if (i > 0) resistanceLevels.append(", ");
+                    resistanceLevels.append(currencySymbol)
+                            .append(String.format("%,.2f", technicalAnalysis.getResistanceLevels().get(i)));
                 }
 
-                binding.tvResistance.setText(resistanceLevelsText.toString());
+                binding.tvResistance.setText(resistanceLevels.toString());
             }
 
             // 추세 강도
-            binding.tvTrendStrength.setText(analysisResult.getTrendStrength());
+            binding.tvTrendStrength.setText(technicalAnalysis.getTrendStrength());
 
             // 주요 패턴
-            binding.tvPattern.setText(analysisResult.getPattern());
+            binding.tvPattern.setText(technicalAnalysis.getPattern());
+        }
 
-            // 위험 요소
-            List<String> riskFactors = analysisResult.getRiskFactors();
-            if (riskFactors != null && !riskFactors.isEmpty()) {
-                StringBuilder riskFactorsText = new StringBuilder();
+        // 위험 요소
+        if (analysisResult.getRiskFactors() != null && !analysisResult.getRiskFactors().isEmpty()) {
+            StringBuilder riskFactors = new StringBuilder();
 
-                for (int i = 0; i < riskFactors.size(); i++) {
-                    riskFactorsText.append("• ").append(riskFactors.get(i));
-                    if (i < riskFactors.size() - 1) {
-                        riskFactorsText.append("\n\n");
-                    }
+            for (int i = 0; i < analysisResult.getRiskFactors().size(); i++) {
+                riskFactors.append("• ").append(analysisResult.getRiskFactors().get(i));
+                if (i < analysisResult.getRiskFactors().size() - 1) {
+                    riskFactors.append("\n\n");
                 }
-
-                binding.tvRiskFactors.setText(riskFactorsText.toString());
             }
-        } catch (Exception e) {
-            Log.e(TAG, "UI 업데이트 중 오류 발생: " + e.getMessage());
-            e.printStackTrace();
-            Toast.makeText(getContext(), "분석 데이터 처리 중 오류 발생", Toast.LENGTH_SHORT).show();
+
+            binding.tvRiskFactors.setText(riskFactors.toString());
+        }
+    }
+
+    /**
+     * 전략 프래그먼트 업데이트
+     */
+    private void updateStrategyFragments() {
+        if (analysisResult == null) return;
+
+        String currencySymbol = analysisResult.getCurrencySymbol();
+
+        // 단기 전략 업데이트
+        if (shortTermFragment != null && analysisResult.getShortTermStrategy() != null) {
+            shortTermFragment.setStrategy(analysisResult.getShortTermStrategy());
+        }
+
+        // 중기 전략 업데이트
+        if (midTermFragment != null && analysisResult.getMidTermStrategy() != null) {
+            midTermFragment.setStrategy(analysisResult.getMidTermStrategy());
+        }
+
+        // 장기 전략 업데이트
+        if (longTermFragment != null && analysisResult.getLongTermStrategy() != null) {
+            longTermFragment.setStrategy(analysisResult.getLongTermStrategy());
+        }
+    }
+
+    /**
+     * 전략 탭에 대한 어댑터
+     */
+    private class StrategiesAdapter extends FragmentStateAdapter {
+
+        public StrategiesAdapter(@NonNull Fragment fragment) {
+            super(fragment);
+        }
+
+        @NonNull
+        @Override
+        public Fragment createFragment(int position) {
+            switch (position) {
+                case 0:
+                    return shortTermFragment;
+                case 1:
+                    return midTermFragment;
+                case 2:
+                    return longTermFragment;
+                default:
+                    return shortTermFragment;
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return 3; // 단기, 중기, 장기
         }
     }
 }

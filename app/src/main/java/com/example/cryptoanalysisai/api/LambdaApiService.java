@@ -15,8 +15,6 @@ import retrofit2.http.Query;
 public interface LambdaApiService {
     /**
      * Get the latest analysis for a specific coin
-     * @param coinSymbol The coin symbol (e.g., BTC)
-     * @param exchange The exchange name (e.g., binance)
      */
     @GET("api/analyses/{coin_symbol}")
     Call<AnalysisResult> getLatestAnalysis(

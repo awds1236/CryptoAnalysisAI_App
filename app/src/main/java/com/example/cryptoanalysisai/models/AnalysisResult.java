@@ -1,108 +1,43 @@
 package com.example.cryptoanalysisai.models;
 
-import android.util.Log;
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
-
-import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
 
 public class AnalysisResult {
 
-    private static final String TAG = "AnalysisResult";
+    @SerializedName("통화단위")
+    private String currencySymbol;
 
-    @SerializedName("id")
-    private int id;
+    @SerializedName("거래소")
+    private String exchange;
+
+    @SerializedName("분석_요약")
+    private String summary;
+
+    @SerializedName("매수매도_추천")
+    private Recommendation recommendation;
+
+    // 단기/중기/장기 전략으로 분리
+    @SerializedName("단기_전략")
+    private Strategy shortTermStrategy;
+
+    @SerializedName("중기_전략")
+    private Strategy midTermStrategy;
+
+    @SerializedName("장기_전략")
+    private Strategy longTermStrategy;
+
+    @SerializedName("시간별_전망")
+    private Outlook outlook;
+
+    @SerializedName("기술적_분석")
+    private TechnicalAnalysis technicalAnalysis;
+
+    @SerializedName("위험_요소")
+    private List<String> riskFactors;
 
     @SerializedName("coin_symbol")
     private String coinSymbol;
-
-    @SerializedName("coin_name")
-    private String coinName;
-
-    @SerializedName("market")
-    private String market;
-
-    @SerializedName("exchange")
-    private String exchange;
-
-    @SerializedName("timestamp")
-    private long timestamp;
-
-    @SerializedName("current_price")
-    private double currentPrice;
-
-    @SerializedName("change_rate")
-    private double changeRate;
-
-    @SerializedName("currency_symbol")
-    private String currencySymbol;
-
-    @SerializedName("summary")
-    private String summary;
-
-    @SerializedName("buy_probability")
-    private double buyProbability;
-
-    @SerializedName("sell_probability")
-    private double sellProbability;
-
-    @SerializedName("recommendation")
-    private String recommendation;
-
-    @SerializedName("confidence")
-    private double confidence;
-
-    @SerializedName("target_prices")
-    private String targetPricesJson;
-
-    @SerializedName("stop_loss")
-    private double stopLoss;
-
-    @SerializedName("risk_reward_ratio")
-    private double riskRewardRatio;
-
-    @SerializedName("strategy_explanation")
-    private String strategyExplanation;
-
-    @SerializedName("short_term_outlook")
-    private String shortTermOutlook;
-
-    @SerializedName("mid_term_outlook")
-    private String midTermOutlook;
-
-    @SerializedName("long_term_outlook")
-    private String longTermOutlook;
-
-    @SerializedName("support_levels")
-    private String supportLevelsJson;
-
-    @SerializedName("resistance_levels")
-    private String resistanceLevelsJson;
-
-    @SerializedName("trend_strength")
-    private String trendStrength;
-
-    @SerializedName("pattern")
-    private String pattern;
-
-    @SerializedName("risk_factors")
-    private String riskFactorsJson;
-
-    @SerializedName("created_at")
-    private String createdAt;
-
-    // Getters and Setters
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public String getCoinSymbol() {
         return coinSymbol;
@@ -112,20 +47,261 @@ public class AnalysisResult {
         this.coinSymbol = coinSymbol;
     }
 
-    public String getCoinName() {
-        return coinName;
+    // 내부 클래스 정의
+    public static class Recommendation {
+        @SerializedName("매수_확률")
+        private double buyProbability;
+
+        @SerializedName("매도_확률")
+        private double sellProbability;
+
+        @SerializedName("추천")
+        private String recommendation;
+
+        @SerializedName("신뢰도")
+        private double confidence;
+
+        @SerializedName("근거")
+        private String reason;
+
+        // Getters and Setters
+        public double getBuyProbability() {
+            return buyProbability;
+        }
+
+        public void setBuyProbability(double buyProbability) {
+            this.buyProbability = buyProbability;
+        }
+
+        public double getSellProbability() {
+            return sellProbability;
+        }
+
+        public void setSellProbability(double sellProbability) {
+            this.sellProbability = sellProbability;
+        }
+
+        public String getRecommendation() {
+            return recommendation;
+        }
+
+        public void setRecommendation(String recommendation) {
+            this.recommendation = recommendation;
+        }
+
+        public double getConfidence() {
+            return confidence;
+        }
+
+        public void setConfidence(double confidence) {
+            this.confidence = confidence;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public void setReason(String reason) {
+            this.reason = reason;
+        }
     }
 
-    public void setCoinName(String coinName) {
-        this.coinName = coinName;
+    public static class Strategy {
+        @SerializedName("기간")
+        private String period;
+
+        @SerializedName("매수_분할")
+        private List<TradingStep> buySteps;
+
+        @SerializedName("수익실현_목표가")
+        private List<Double> targetPrices;
+
+        @SerializedName("손절매_라인")
+        private double stopLoss;
+
+        @SerializedName("리스크_보상_비율")
+        private double riskRewardRatio;
+
+        @SerializedName("전략_설명")
+        private String explanation;
+
+        // Getters and Setters
+        public String getPeriod() {
+            return period;
+        }
+
+        public void setPeriod(String period) {
+            this.period = period;
+        }
+
+        public List<TradingStep> getBuySteps() {
+            return buySteps;
+        }
+
+        public void setBuySteps(List<TradingStep> buySteps) {
+            this.buySteps = buySteps;
+        }
+
+        public List<Double> getTargetPrices() {
+            return targetPrices;
+        }
+
+        public void setTargetPrices(List<Double> targetPrices) {
+            this.targetPrices = targetPrices;
+        }
+
+        public double getStopLoss() {
+            return stopLoss;
+        }
+
+        public void setStopLoss(double stopLoss) {
+            this.stopLoss = stopLoss;
+        }
+
+        public double getRiskRewardRatio() {
+            return riskRewardRatio;
+        }
+
+        public void setRiskRewardRatio(double riskRewardRatio) {
+            this.riskRewardRatio = riskRewardRatio;
+        }
+
+        public String getExplanation() {
+            return explanation;
+        }
+
+        public void setExplanation(String explanation) {
+            this.explanation = explanation;
+        }
+
+        // 매매 단계 클래스
+        public static class TradingStep {
+            @SerializedName("가격")
+            private double price;
+
+            @SerializedName("비율")
+            private int percentage;
+
+            @SerializedName("설명")
+            private String description;
+
+            // Getters and Setters
+            public double getPrice() {
+                return price;
+            }
+
+            public void setPrice(double price) {
+                this.price = price;
+            }
+
+            public int getPercentage() {
+                return percentage;
+            }
+
+            public void setPercentage(int percentage) {
+                this.percentage = percentage;
+            }
+
+            public String getDescription() {
+                return description;
+            }
+
+            public void setDescription(String description) {
+                this.description = description;
+            }
+        }
     }
 
-    public String getMarket() {
-        return market;
+    public static class Outlook {
+        @SerializedName("단기_24시간")
+        private String shortTerm;
+
+        @SerializedName("중기_1주일")
+        private String midTerm;
+
+        @SerializedName("장기_1개월")
+        private String longTerm;
+
+        // Getters and Setters
+        public String getShortTerm() {
+            return shortTerm;
+        }
+
+        public void setShortTerm(String shortTerm) {
+            this.shortTerm = shortTerm;
+        }
+
+        public String getMidTerm() {
+            return midTerm;
+        }
+
+        public void setMidTerm(String midTerm) {
+            this.midTerm = midTerm;
+        }
+
+        public String getLongTerm() {
+            return longTerm;
+        }
+
+        public void setLongTerm(String longTerm) {
+            this.longTerm = longTerm;
+        }
     }
 
-    public void setMarket(String market) {
-        this.market = market;
+    public static class TechnicalAnalysis {
+        @SerializedName("주요_지지선")
+        private List<Double> supportLevels;
+
+        @SerializedName("주요_저항선")
+        private List<Double> resistanceLevels;
+
+        @SerializedName("추세_강도")
+        private String trendStrength;
+
+        @SerializedName("주요_패턴")
+        private String pattern;
+
+        // Getters and Setters
+        public List<Double> getSupportLevels() {
+            return supportLevels;
+        }
+
+        public void setSupportLevels(List<Double> supportLevels) {
+            this.supportLevels = supportLevels;
+        }
+
+        public List<Double> getResistanceLevels() {
+            return resistanceLevels;
+        }
+
+        public void setResistanceLevels(List<Double> resistanceLevels) {
+            this.resistanceLevels = resistanceLevels;
+        }
+
+        public String getTrendStrength() {
+            return trendStrength;
+        }
+
+        public void setTrendStrength(String trendStrength) {
+            this.trendStrength = trendStrength;
+        }
+
+        public String getPattern() {
+            return pattern;
+        }
+
+        public void setPattern(String pattern) {
+            this.pattern = pattern;
+        }
+    }
+
+    // Main class Getters and Setters
+    public String getCurrencySymbol() {
+        return currencySymbol;
+    }
+
+    public void setCurrencySymbol(String currencySymbol) {
+        this.currencySymbol = currencySymbol;
     }
 
     public String getExchange() {
@@ -136,38 +312,6 @@ public class AnalysisResult {
         this.exchange = exchange;
     }
 
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public double getCurrentPrice() {
-        return currentPrice;
-    }
-
-    public void setCurrentPrice(double currentPrice) {
-        this.currentPrice = currentPrice;
-    }
-
-    public double getChangeRate() {
-        return changeRate;
-    }
-
-    public void setChangeRate(double changeRate) {
-        this.changeRate = changeRate;
-    }
-
-    public String getCurrencySymbol() {
-        return currencySymbol;
-    }
-
-    public void setCurrencySymbol(String currencySymbol) {
-        this.currencySymbol = currencySymbol;
-    }
-
     public String getSummary() {
         return summary;
     }
@@ -176,196 +320,59 @@ public class AnalysisResult {
         this.summary = summary;
     }
 
-    public double getBuyProbability() {
-        return buyProbability;
-    }
-
-    public void setBuyProbability(double buyProbability) {
-        this.buyProbability = buyProbability;
-    }
-
-    public double getSellProbability() {
-        return sellProbability;
-    }
-
-    public void setSellProbability(double sellProbability) {
-        this.sellProbability = sellProbability;
-    }
-
-    public String getRecommendation() {
+    public Recommendation getRecommendation() {
         return recommendation;
     }
 
-    public void setRecommendation(String recommendation) {
+    public void setRecommendation(Recommendation recommendation) {
         this.recommendation = recommendation;
     }
 
-    public double getConfidence() {
-        return confidence;
+    public Strategy getShortTermStrategy() {
+        return shortTermStrategy;
     }
 
-    public void setConfidence(double confidence) {
-        this.confidence = confidence;
+    public void setShortTermStrategy(Strategy shortTermStrategy) {
+        this.shortTermStrategy = shortTermStrategy;
     }
 
-    public String getStrategyExplanation() {
-        return strategyExplanation;
+    public Strategy getMidTermStrategy() {
+        return midTermStrategy;
     }
 
-    public void setStrategyExplanation(String strategyExplanation) {
-        this.strategyExplanation = strategyExplanation;
+    public void setMidTermStrategy(Strategy midTermStrategy) {
+        this.midTermStrategy = midTermStrategy;
     }
 
-    public String getShortTermOutlook() {
-        return shortTermOutlook;
+    public Strategy getLongTermStrategy() {
+        return longTermStrategy;
     }
 
-    public void setShortTermOutlook(String shortTermOutlook) {
-        this.shortTermOutlook = shortTermOutlook;
+    public void setLongTermStrategy(Strategy longTermStrategy) {
+        this.longTermStrategy = longTermStrategy;
     }
 
-    public String getMidTermOutlook() {
-        return midTermOutlook;
+    public Outlook getOutlook() {
+        return outlook;
     }
 
-    public void setMidTermOutlook(String midTermOutlook) {
-        this.midTermOutlook = midTermOutlook;
+    public void setOutlook(Outlook outlook) {
+        this.outlook = outlook;
     }
 
-    public String getLongTermOutlook() {
-        return longTermOutlook;
+    public TechnicalAnalysis getTechnicalAnalysis() {
+        return technicalAnalysis;
     }
 
-    public void setLongTermOutlook(String longTermOutlook) {
-        this.longTermOutlook = longTermOutlook;
-    }
-
-    public String getTrendStrength() {
-        return trendStrength;
-    }
-
-    public void setTrendStrength(String trendStrength) {
-        this.trendStrength = trendStrength;
-    }
-
-    public String getPattern() {
-        return pattern;
-    }
-
-    public void setPattern(String pattern) {
-        this.pattern = pattern;
-    }
-
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    // JSON 파싱 메서드들
-    public List<Double> getTargetPrices() {
-        try {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<Double>>(){}.getType();
-            return gson.fromJson(targetPricesJson, type);
-        } catch (JsonSyntaxException e) {
-            Log.e(TAG, "타겟 가격 파싱 오류: " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
-    public List<Double> getSupportLevels() {
-        try {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<Double>>(){}.getType();
-            return gson.fromJson(supportLevelsJson, type);
-        } catch (JsonSyntaxException e) {
-            Log.e(TAG, "지지선 파싱 오류: " + e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
-    public List<Double> getResistanceLevels() {
-        try {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<Double>>(){}.getType();
-            return gson.fromJson(resistanceLevelsJson, type);
-        } catch (JsonSyntaxException e) {
-            Log.e(TAG, "저항선 파싱 오류: " + e.getMessage());
-            return new ArrayList<>();
-        }
+    public void setTechnicalAnalysis(TechnicalAnalysis technicalAnalysis) {
+        this.technicalAnalysis = technicalAnalysis;
     }
 
     public List<String> getRiskFactors() {
-        try {
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<String>>(){}.getType();
-            List<String> riskFactors = gson.fromJson(riskFactorsJson, type);
-
-            // JSON 이스케이프 문자 처리
-            List<String> decodedRiskFactors = new ArrayList<>();
-            for (String risk : riskFactors) {
-                // UTF-8 인코딩된 문자열을 다시 디코딩
-                decodedRiskFactors.add(decodeUnicodeEscapes(risk));
-            }
-            return decodedRiskFactors;
-        } catch (JsonSyntaxException e) {
-            Log.e(TAG, "위험 요소 파싱 오류: " + e.getMessage());
-            return new ArrayList<>();
-        }
+        return riskFactors;
     }
 
-    // 유니코드 이스케이프 시퀀스를 실제 문자로 변환
-    private String decodeUnicodeEscapes(String input) {
-        StringBuilder builder = new StringBuilder();
-        int i = 0;
-        while (i < input.length()) {
-            if (input.charAt(i) == '\\' && i + 1 < input.length() && input.charAt(i + 1) == 'u') {
-                if (i + 5 < input.length()) {
-                    String hex = input.substring(i + 2, i + 6);
-                    try {
-                        int code = Integer.parseInt(hex, 16);
-                        builder.append((char) code);
-                        i += 6;
-                        continue;
-                    } catch (NumberFormatException ignored) {
-                        // 유효한 유니코드가 아니면 그냥 원래 문자로 처리
-                    }
-                }
-            }
-            // 일반 문자 또는 유효하지 않은 이스케이프 시퀀스
-            builder.append(input.charAt(i));
-            i++;
-        }
-        return builder.toString();
-    }
-
-    public double getStopLoss() {
-        return stopLoss;
-    }
-
-    public void setStopLoss(double stopLoss) {
-        this.stopLoss = stopLoss;
-    }
-
-    public double getRiskRewardRatio() {
-        return riskRewardRatio;
-    }
-
-    public void setRiskRewardRatio(double riskRewardRatio) {
-        this.riskRewardRatio = riskRewardRatio;
-    }
-
-    @Override
-    public String toString() {
-        return "AnalysisResult{" +
-                "id=" + id +
-                ", coinSymbol='" + coinSymbol + '\'' +
-                ", market='" + market + '\'' +
-                ", currentPrice=" + currentPrice +
-                ", recommendation='" + recommendation + '\'' +
-                '}';
+    public void setRiskFactors(List<String> riskFactors) {
+        this.riskFactors = riskFactors;
     }
 }
