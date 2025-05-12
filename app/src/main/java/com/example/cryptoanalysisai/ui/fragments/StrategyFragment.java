@@ -2,6 +2,7 @@ package com.example.cryptoanalysisai.ui.fragments;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -37,6 +38,18 @@ public class StrategyFragment extends Fragment {
     private AnalysisResult.Strategy strategy;
     private SubscriptionManager subscriptionManager;
 
+    // UI 요소 참조
+    private TextView tvStrategyTitle;
+    private LinearLayout layoutBuySteps;
+    private TextView tvTargetPrice;
+    private TextView tvStopLoss;
+    private TextView tvRiskReward;
+    private TextView tvStrategyDetail;
+    private View blurOverlay;
+    private View pixelatedOverlay;
+    private View btnSubscribe;
+    private View contentArea;
+
     public static StrategyFragment newInstance(int strategyType, String currencySymbol) {
         StrategyFragment fragment = new StrategyFragment();
         Bundle args = new Bundle();
@@ -67,15 +80,17 @@ public class StrategyFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        TextView tvStrategyTitle = view.findViewById(R.id.tvStrategyTitle);
-        LinearLayout layoutBuySteps = view.findViewById(R.id.layoutBuySteps);
-        TextView tvTargetPrice = view.findViewById(R.id.tvTargetPrice);
-        TextView tvStopLoss = view.findViewById(R.id.tvStopLoss);
-        TextView tvRiskReward = view.findViewById(R.id.tvRiskReward);
-        TextView tvStrategyDetail = view.findViewById(R.id.tvStrategyDetail);
-        View blurOverlay = view.findViewById(R.id.blurOverlay);
-        View pixelatedOverlay = view.findViewById(R.id.pixelatedOverlay);
-        View btnSubscribe = view.findViewById(R.id.btnSubscribe);
+        // UI 요소 초기화
+        tvStrategyTitle = view.findViewById(R.id.tvStrategyTitle);
+        layoutBuySteps = view.findViewById(R.id.layoutBuySteps);
+        tvTargetPrice = view.findViewById(R.id.tvTargetPrice);
+        tvStopLoss = view.findViewById(R.id.tvStopLoss);
+        tvRiskReward = view.findViewById(R.id.tvRiskReward);
+        tvStrategyDetail = view.findViewById(R.id.tvStrategyDetail);
+        blurOverlay = view.findViewById(R.id.blurOverlay);
+        pixelatedOverlay = view.findViewById(R.id.pixelatedOverlay);
+        btnSubscribe = view.findViewById(R.id.btnSubscribe);
+        contentArea = view.findViewById(R.id.contentArea);
 
         // 타이틀 설정
         String title;
@@ -111,32 +126,12 @@ public class StrategyFragment extends Fragment {
         // 구독 상태 확인
         boolean isSubscribed = subscriptionManager.isSubscribed();
 
-        // 구독 상태에 따라 콘텐츠 모자이크 처리
-        if (!isSubscribed) {
-            // 모자이크 오버레이 표시
-            blurOverlay.setVisibility(View.VISIBLE);
-            pixelatedOverlay.setVisibility(View.VISIBLE);
-
-            // 구독 버튼 표시
-            btnSubscribe.setVisibility(View.VISIBLE);
-            btnSubscribe.setOnClickListener(v -> {
-                // 구독 화면으로 이동
-                Intent intent = new Intent(getActivity(), SubscriptionActivity.class);
-                startActivity(intent);
-            });
-        } else {
-            // 구독된 경우 일반 콘텐츠 표시
-            blurOverlay.setVisibility(View.GONE);
-            pixelatedOverlay.setVisibility(View.GONE);
-            btnSubscribe.setVisibility(View.GONE);
-        }
-
-        // 전략 데이터가 설정되었으면 표시
+        // 전략 데이터가 있으면 모든 내용 표시 (구독 여부 상관없이)
         if (strategy != null) {
-            // 매수 단계 표시
+            // 매수 단계 표시 - 모든 데이터 표시
             displayBuySteps(layoutBuySteps, strategy.getBuySteps());
 
-            // 목표가 표시 - 현재가와 비교하여 색상 표시
+            // 목표가 표시
             if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
                 StringBuilder targetPrices = new StringBuilder();
                 for (int i = 0; i < strategy.getTargetPrices().size(); i++) {
@@ -170,7 +165,7 @@ public class StrategyFragment extends Fragment {
                 tvTargetPrice.setText("설정된 목표가 없음");
             }
 
-            // 손절매 라인 표시 - 현재가와 비교
+            // 손절매 라인 표시
             if (strategy.getStopLoss() > 0) {
                 String stopLossText = String.format(Locale.getDefault(), "%s%,.2f", currencySymbol, strategy.getStopLoss());
                 tvStopLoss.setText(Html.fromHtml("<font color='#F44336'><b>" + stopLossText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
@@ -178,7 +173,7 @@ public class StrategyFragment extends Fragment {
                 tvStopLoss.setText("설정된 손절매 라인 없음");
             }
 
-            // 리스크 대비 보상 비율 표시 - 색상으로 표시
+            // 리스크 대비 보상 비율 표시
             if (strategy.getRiskRewardRatio() > 0) {
                 String colorCode;
                 if (strategy.getRiskRewardRatio() >= 3.0) {
@@ -195,7 +190,7 @@ public class StrategyFragment extends Fragment {
                 tvRiskReward.setText("정보 없음");
             }
 
-            // 전략 설명 표시 - 키워드 강조
+            // 전략 설명 표시
             if (strategy.getExplanation() != null && !strategy.getExplanation().isEmpty()) {
                 String explanation = highlightStrategyText(strategy.getExplanation());
                 tvStrategyDetail.setText(Html.fromHtml(explanation, Html.FROM_HTML_MODE_LEGACY));
@@ -209,6 +204,106 @@ public class StrategyFragment extends Fragment {
             tvRiskReward.setText("데이터 없음");
             tvStrategyDetail.setText("데이터 없음");
         }
+
+        // onViewCreated() 메서드 내에서 구독 상태 체크 부분 수정
+        // 구독 상태에 따라 콘텐츠 블러 처리
+        if (!isSubscribed) {
+            // 블러 오버레이 표시 - 제목 부분만 제외하고 나머지 전체에 적용
+            blurOverlay.setVisibility(View.VISIBLE);
+            pixelatedOverlay.setVisibility(View.VISIBLE);
+
+            // 추가 블러 레이어 표시 - 더 진한 색상으로 설정
+            View additionalBlurLayer = view.findViewById(R.id.additionalBlurLayer);
+            additionalBlurLayer.setVisibility(View.VISIBLE);
+            additionalBlurLayer.setBackgroundColor(Color.parseColor("#B3000000")); // 더 진한 검은색 반투명(70%)
+
+            // 콘텐츠 자체를 더 흐리게 처리
+            contentArea.setAlpha(0.05f);  // 콘텐츠 거의 완전히 숨김
+
+            // 추가: 텍스트 내용을 별표나 의미 없는 문자로 대체하여 이중으로 보호
+            if (strategy != null) {
+                // 목표가, 손절매 등에 별표 처리 추가
+                tvTargetPrice.setText("목표 1: **********\n목표 2: **********");
+                tvStopLoss.setText("**********");
+                tvRiskReward.setText("*.**:*");
+                tvStrategyDetail.setText("**************** ******** ***** ************\n****************** ************");
+
+                // 진입 지점 정보 숨기기 (첫 번째만 제외하고)
+                if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
+                    displayFirstBuyStepWithBlur(layoutBuySteps, strategy.getBuySteps().get(0));
+                }
+            }
+
+            // 구독 버튼 표시 - 강조 표시 및 셰도우 효과 추가
+            btnSubscribe.setVisibility(View.VISIBLE);
+            btnSubscribe.setElevation(24f);  // 입체감 더 강화
+
+            // 버튼 주변에 빛나는 효과 추가 (드로어블 리소스로 배경 교체)
+            btnSubscribe.setBackgroundResource(R.drawable.glowing_button);
+
+            btnSubscribe.setOnClickListener(v -> {
+                // 구독 화면으로 이동
+                Intent intent = new Intent(getActivity(), SubscriptionActivity.class);
+                startActivity(intent);
+            });
+        } else {
+            // 구독된 경우 일반 콘텐츠 표시
+            blurOverlay.setVisibility(View.GONE);
+            pixelatedOverlay.setVisibility(View.GONE);
+
+            View additionalBlurLayer = view.findViewById(R.id.additionalBlurLayer);
+            additionalBlurLayer.setVisibility(View.GONE);
+
+            contentArea.setAlpha(1.0f);  // 완전 불투명 (정상 표시)
+            btnSubscribe.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * 첫 번째 매수 단계만 블러 처리된 상태로 표시 (미끼용)
+     */
+    private void displayFirstBuyStepWithBlur(LinearLayout container, AnalysisResult.Strategy.TradingStep step) {
+        container.removeAllViews();
+
+        if (step == null) {
+            return;
+        }
+
+        View itemView = getLayoutInflater().inflate(R.layout.item_buy_step, null, false);
+
+        TextView tvBuyStepTitle = itemView.findViewById(R.id.tvBuyStepTitle);
+        TextView tvBuyStepPercentage = itemView.findViewById(R.id.tvBuyStepPercentage);
+        TextView tvBuyStepDescription = itemView.findViewById(R.id.tvBuyStepDescription);
+
+        // 첫 진입점 표시 - 일부만 보이고 나머지는 별표로
+        String emoji = "1️⃣ ";
+        String price = String.format("%s%,.2f", currencySymbol, step.getPrice());
+        // 가격 일부만 보이게 처리
+        String maskedPrice = price.substring(0, Math.min(price.length(), 5)) + "********";
+        String title = emoji + "진입점: " + maskedPrice;
+
+        tvBuyStepTitle.setText(title);
+        tvBuyStepTitle.setTextColor(Color.parseColor("#4CAF50")); // 녹색
+
+        tvBuyStepPercentage.setText("**%");
+
+        // 설명 모두 마스킹
+        tvBuyStepDescription.setText("*** *** ***** (프리미엄 구독 시 확인 가능)");
+
+        // 아이템 반투명하게 설정
+        itemView.setAlpha(0.3f);
+
+        // 컨테이너에 추가
+        container.addView(itemView);
+
+        // "더 보기" 텍스트 추가
+        TextView tvMore = new TextView(getContext());
+        tvMore.setText("+ 더 많은 전략 정보는 구독 후 확인 가능");
+        tvMore.setTextSize(14);
+        tvMore.setTypeface(null, Typeface.ITALIC);
+        tvMore.setTextColor(Color.GRAY);
+        tvMore.setPadding(0, 16, 0, 16);
+        container.addView(tvMore);
     }
 
     /**
@@ -255,7 +350,7 @@ public class StrategyFragment extends Fragment {
 
         for (int i = 0; i < buySteps.size(); i++) {
             AnalysisResult.Strategy.TradingStep step = buySteps.get(i);
-            View itemView = getLayoutInflater().inflate(R.layout.item_buy_step, container, false);
+            View itemView = getLayoutInflater().inflate(R.layout.item_buy_step, null, false);
 
             TextView tvBuyStepTitle = itemView.findViewById(R.id.tvBuyStepTitle);
             TextView tvBuyStepPercentage = itemView.findViewById(R.id.tvBuyStepPercentage);
@@ -313,10 +408,10 @@ public class StrategyFragment extends Fragment {
             params.setMargins(0, 8, 0, 8);  // 상하 마진 추가
             cardView.setLayoutParams(params);
 
-            // 아이템 뷰를 카드뷰에 추가
-            ((ViewGroup) itemView.getParent()).removeView(itemView); // 기존 부모에서 제거
+            // 아이템 뷰를 카드뷰에 추가 - 이전 버그 수정
             cardView.addView(itemView);
 
+            // 컨테이너에 카드뷰 추가
             container.addView(cardView);
         }
     }

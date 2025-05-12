@@ -69,4 +69,7 @@
     <string name="subscribe_button">구독하기</string>
     <string name="cancel_subscription">구독 취소하기</string>
     <string name="close">닫기</string>
+
+    <!-- app/src/main/res/values/strings.xml 에 추가 -->
+    <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>
 </resources>

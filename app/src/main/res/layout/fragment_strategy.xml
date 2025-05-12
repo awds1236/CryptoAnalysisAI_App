@@ -18,115 +18,143 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- 제목 부분 - 블러 처리 제외 -->
             <TextView
                 android:id="@+id/tvStrategyTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="매매 전략"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:elevation="10dp"
+                android:translationZ="10dp"
+                android:zAdjustment="top" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="진입 전략"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
+            <!-- 콘텐츠 영역 - 블러 처리 대상 -->
             <LinearLayout
-                android:id="@+id/layoutBuySteps"
+                android:id="@+id/contentArea"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical" />
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="수익실현 목표가"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvTargetPrice"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="14sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="진입 전략"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="손절매 라인"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <LinearLayout
+                    android:id="@+id/layoutBuySteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical" />
 
-            <TextView
-                android:id="@+id/tvStopLoss"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="14sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="수익실현 목표가"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="리스크 대비 보상 비율"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvTargetPrice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/tvRiskReward"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="14sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="손절매 라인"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="전략 설명"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/tvStopLoss"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/tvStrategyDetail"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textSize="14sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="리스크 대비 보상 비율"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvRiskReward"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="전략 설명"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvStrategyDetail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp" />
+            </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- 모자이크 오버레이 -->
+    <!-- 모자이크 오버레이 - 제목 부분은 제외하고 적용 -->
     <View
         android:id="@+id/blurOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#D9FFFFFF"
+        android:layout_marginTop="50dp"
+        android:background="#E6FFFFFF"
         android:visibility="gone" />
 
-    <!-- 가상의 픽셀화 효과를 주기 위한 격자 이미지 -->
+    <View
+        android:id="@+id/additionalBlurLayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="50dp"
+        android:background="#80000000"
+        android:visibility="gone" />
+
+    <!-- 가상의 픽셀화 효과를 주기 위한 격자 이미지 - 제목 제외 -->
     <ImageView
         android:id="@+id/pixelatedOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="50dp"
         android:scaleType="centerCrop"
         android:src="@drawable/pixelated_overlay"
         android:visibility="gone" />
 
-    <!-- 구독 버튼 -->
+    <!-- 구독 버튼에 강조 효과 추가 -->
     <Button
         android:id="@+id/btnSubscribe"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="70dp"
+        android:background="@drawable/rounded_button"
+        android:padding="12dp"
         android:text="프리미엄 구독으로 전략 보기"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:elevation="10dp"
         android:visibility="gone" />
-
 </FrameLayout>
