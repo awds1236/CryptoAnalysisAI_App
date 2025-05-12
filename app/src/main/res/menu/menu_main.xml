@@ -17,12 +17,12 @@
     <item
         android:id="@+id/action_subscription"
         android:orderInCategory="100"
-        android:title="구독 관리"
+        android:title=""
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_logout"
         android:orderInCategory="101"
-        android:title="로그아웃"
+        android:title=""
         app:showAsAction="never" />
 </menu>
