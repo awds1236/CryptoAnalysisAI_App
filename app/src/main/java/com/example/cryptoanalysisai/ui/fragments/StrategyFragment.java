@@ -1,5 +1,6 @@
 package com.example.cryptoanalysisai.ui.fragments;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Html;
@@ -16,6 +17,8 @@ import androidx.fragment.app.Fragment;
 
 import com.example.cryptoanalysisai.R;
 import com.example.cryptoanalysisai.models.AnalysisResult;
+import com.example.cryptoanalysisai.services.SubscriptionManager;
+import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +35,7 @@ public class StrategyFragment extends Fragment {
     private int strategyType;
     private String currencySymbol;
     private AnalysisResult.Strategy strategy;
+    private SubscriptionManager subscriptionManager;
 
     public static StrategyFragment newInstance(int strategyType, String currencySymbol) {
         StrategyFragment fragment = new StrategyFragment();
@@ -49,6 +53,8 @@ public class StrategyFragment extends Fragment {
             strategyType = getArguments().getInt(ARG_STRATEGY_TYPE);
             currencySymbol = getArguments().getString(ARG_CURRENCY_SYMBOL, "$");
         }
+
+        subscriptionManager = SubscriptionManager.getInstance(requireContext());
     }
 
     @Nullable
@@ -67,6 +73,9 @@ public class StrategyFragment extends Fragment {
         TextView tvStopLoss = view.findViewById(R.id.tvStopLoss);
         TextView tvRiskReward = view.findViewById(R.id.tvRiskReward);
         TextView tvStrategyDetail = view.findViewById(R.id.tvStrategyDetail);
+        View blurOverlay = view.findViewById(R.id.blurOverlay);
+        View pixelatedOverlay = view.findViewById(R.id.pixelatedOverlay);
+        View btnSubscribe = view.findViewById(R.id.btnSubscribe);
 
         // 타이틀 설정
         String title;
@@ -98,6 +107,29 @@ public class StrategyFragment extends Fragment {
 
         tvStrategyTitle.setText(emoji + " " + title);
         tvStrategyTitle.setTextColor(titleColor);
+
+        // 구독 상태 확인
+        boolean isSubscribed = subscriptionManager.isSubscribed();
+
+        // 구독 상태에 따라 콘텐츠 모자이크 처리
+        if (!isSubscribed) {
+            // 모자이크 오버레이 표시
+            blurOverlay.setVisibility(View.VISIBLE);
+            pixelatedOverlay.setVisibility(View.VISIBLE);
+
+            // 구독 버튼 표시
+            btnSubscribe.setVisibility(View.VISIBLE);
+            btnSubscribe.setOnClickListener(v -> {
+                // 구독 화면으로 이동
+                Intent intent = new Intent(getActivity(), SubscriptionActivity.class);
+                startActivity(intent);
+            });
+        } else {
+            // 구독된 경우 일반 콘텐츠 표시
+            blurOverlay.setVisibility(View.GONE);
+            pixelatedOverlay.setVisibility(View.GONE);
+            btnSubscribe.setVisibility(View.GONE);
+        }
 
         // 전략 데이터가 설정되었으면 표시
         if (strategy != null) {

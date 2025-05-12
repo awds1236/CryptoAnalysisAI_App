@@ -80,6 +80,7 @@ dependencies {
     implementation libs.androidx.credentials
     implementation libs.androidx.credentials.play.services.auth
     implementation libs.googleid
+    implementation libs.play.services.auth
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
@@ -126,4 +127,16 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+
+    // Firebase
+    implementation 'com.google.firebase:firebase-auth:23.2.0'
+    implementation 'com.google.firebase:firebase-core:21.1.1'
+
+    // Android Credentials Manager
+    implementation 'androidx.credentials:credentials:1.2.0'
+    implementation 'androidx.credentials:credentials-play-services-auth:1.2.0'
+
+    implementation 'com.google.android.gms:play-services-identity:18.0.1'
 }
+
+apply plugin: 'com.google.gms.google-services'

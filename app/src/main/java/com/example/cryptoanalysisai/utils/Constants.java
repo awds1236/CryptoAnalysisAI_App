@@ -9,6 +9,22 @@ public class Constants {
     // AWS Lambda API 기본 URL (API Gateway 엔드포인트)
     public static final String LAMBDA_API_URL = BuildConfig.LAMBDA_API_URL;
 
+    // 로그인 및 사용자 관련 상수
+    public static final String PREF_IS_LOGGED_IN = "pref_is_logged_in";
+    public static final String PREF_USER_EMAIL = "pref_user_email";
+    public static final String PREF_USER_DISPLAY_NAME = "pref_user_display_name";
+    public static final String PREF_USER_ID = "pref_user_id";
+
+    // 구독 관련 상수
+    public static final String PREF_IS_SUBSCRIBED = "pref_is_subscribed";
+    public static final String PREF_SUBSCRIPTION_EXPIRY = "pref_subscription_expiry";
+    public static final String PREF_SUBSCRIPTION_TYPE = "pref_subscription_type";
+
+    // 구독 유형
+    public static final String SUBSCRIPTION_MONTHLY = "monthly";
+    public static final String SUBSCRIPTION_YEARLY = "yearly";
+    public static final String SUBSCRIPTION_NONE = "none";
+
     // AWS RDS 설정 - 미사용 (Lambda API로 대체)
     // public static final String DB_URL = BuildConfig.DB_URL;
     // public static final String DB_USER = BuildConfig.DB_USER;

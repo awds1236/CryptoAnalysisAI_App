@@ -50,4 +50,23 @@
     <string name="exchange_info">거래소: %1$s / 통화단위: %2$s</string>
     <string name="krw_unit">원</string>
     <string name="usd_unit">달러(USD)</string>
+
+    <!-- Google 로그인 관련 -->
+    <string name="google_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
+    <string name="login_welcome">암호화폐 분석 AI에 오신 것을 환영합니다</string>
+    <string name="login_description">AI가 분석한 암호화폐 시장 분석 및 투자 전략</string>
+    <string name="login_with_google">Google 계정으로 로그인</string>
+    <string name="login_terms">로그인함으로써 이용약관 및 개인정보처리방침에 동의합니다.</string>
+
+    <!-- 구독 관련 -->
+    <string name="subscription_title">프리미엄 구독</string>
+    <string name="subscription_description">프리미엄 구독자만 암호화폐 AI 매매 전략을 확인할 수 있습니다.</string>
+    <string name="subscription_monthly">월간 구독</string>
+    <string name="subscription_yearly">연간 구독 (20% 할인)</string>
+    <string name="subscription_monthly_price">월 9,900원</string>
+    <string name="subscription_yearly_price">연 95,000원 (월 7,920원)</string>
+    <string name="subscription_features">• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인</string>
+    <string name="subscribe_button">구독하기</string>
+    <string name="cancel_subscription">구독 취소하기</string>
+    <string name="close">닫기</string>
 </resources>
