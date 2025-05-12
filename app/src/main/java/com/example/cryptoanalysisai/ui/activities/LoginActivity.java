@@ -22,9 +22,14 @@ import com.google.android.gms.auth.api.identity.BeginSignInResult;
 import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.auth.api.identity.SignInClient;
 import com.google.android.gms.auth.api.identity.SignInCredential;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -39,18 +44,20 @@ public class LoginActivity extends AppCompatActivity {
     private SignInClient oneTapClient;
     private BeginSignInRequest signInRequest;
 
-    private final ActivityResultLauncher<IntentSenderRequest> signInLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartIntentSenderForResult(),
+    // ActivityResultLauncher 변경
+    private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 try {
-                    SignInCredential credential = oneTapClient.getSignInCredentialFromIntent(result.getData());
-                    String idToken = credential.getGoogleIdToken();
-                    if (idToken != null) {
-                        // Got an ID token from Google. Use it to authenticate with Firebase.
-                        firebaseAuthWithGoogle(idToken);
+                    Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+                    GoogleSignInAccount account = task.getResult(ApiException.class);
+
+                    // 계정 정보로 Firebase 인증
+                    if (account != null) {
+                        firebaseAuthWithGoogle(account.getIdToken());
                     }
                 } catch (ApiException e) {
-                    Log.e(TAG, "Google 로그인 실패: " + e.getMessage(), e);
+                    Log.e(TAG, "Google 로그인 실패: " + e.getStatusCode() + ": " + e.getMessage(), e);
                     handleSignInFailure("Google 로그인에 실패했습니다.");
                 }
             }
@@ -87,32 +94,26 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+    // 기존 One Tap 코드 대신 아래 코드 사용
     private void signInWithGoogle() {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnGoogleSignIn.setEnabled(false);
 
-        oneTapClient.beginSignIn(signInRequest)
-                .addOnSuccessListener(this, new OnSuccessListener<BeginSignInResult>() {
-                    @Override
-                    public void onSuccess(BeginSignInResult result) {
-                        try {
-                            IntentSenderRequest intentSenderRequest =
-                                    new IntentSenderRequest.Builder(result.getPendingIntent().getIntentSender()).build();
-                            signInLauncher.launch(intentSenderRequest);
-                        } catch (Exception e) {
-                            Log.e(TAG, "Google 로그인 실행 오류: " + e.getMessage(), e);
-                            handleSignInFailure("Google 로그인 시작에 실패했습니다.");
-                        }
-                    }
-                })
-                .addOnFailureListener(this, new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Google One Tap 로그인 실패: " + e.getMessage(), e);
-                        handleSignInFailure("Google 로그인 요청이 실패했습니다.");
-                    }
-                });
+        // 표준 Google 로그인 구성
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestIdToken(getString(R.string.default_web_client_id))
+                .requestEmail()
+                .build();
+
+        GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        // 계정 선택 화면을 항상 보여주도록 설정
+        googleSignInClient.signOut().addOnCompleteListener(task -> {
+            Intent signInIntent = googleSignInClient.getSignInIntent();
+            signInLauncher.launch(signInIntent);
+        });
     }
+
 
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);

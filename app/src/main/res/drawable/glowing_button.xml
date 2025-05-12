@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 그림자 효과 (버튼 아래) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#50FFFFFF" />
+            <corners android:radius="24dp" />
+            <padding android:bottom="3dp" />
+        </shape>
+    </item>
+
+    <!-- 빛나는 주변 효과 -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#806200EE"
+                android:endColor="#309C27B0"
+                android:type="radial"
+                android:gradientRadius="150%p" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+
+    <!-- 버튼 본체 -->
+    <item android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#6200EE" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+</layer-list>
