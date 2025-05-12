@@ -12,14 +12,34 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvCoinTitle"
+        <!-- 코인 제목과 분석 시간을 함께 표시하는 레이아웃 -->
+        <LinearLayout
+            android:id="@+id/layoutTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="비트코인 (BTC) 분석" />
+            android:orientation="horizontal"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/tvCoinTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="비트코인 (BTC) 분석" />
+
+            <TextView
+                android:id="@+id/tvAnalysisTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"
+                android:textSize="12sp"
+                android:textStyle="italic"
+                android:textColor="#666666"
+                tools:text="16분 전" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvExchangeInfo"
@@ -27,8 +47,8 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="14sp"
-            app:layout_constraintTop_toBottomOf="@id/tvCoinTitle"
-            tools:text="거래소: 업비트 / 통화단위: 원" />
+            app:layout_constraintTop_toBottomOf="@id/layoutTitle"
+            tools:text="거래소: 바이낸스 / 통화단위: 달러(USD)" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartAnalysis"
@@ -38,6 +58,18 @@
             android:text="분석 시작"
             app:layout_constraintTop_toBottomOf="@id/tvExchangeInfo" />
 
+        <!-- 현재가 위치 정보 (카드가 아닌 독립 뷰로) -->
+        <TextView
+            android:id="@+id/tvPricePosition"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="#1A000000"
+            android:padding="8dp"
+            android:textSize="14sp"
+            app:layout_constraintTop_toBottomOf="@id/btnStartAnalysis"
+            tools:text="현재가 위치: 지지선 가까움 (저항 5.2% ↑, 지지 2.3% ↓)" />
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardSummary"
             android:layout_width="match_parent"
@@ -45,7 +77,7 @@
             android:layout_marginTop="16dp"
             app:cardCornerRadius="8dp"
             app:cardElevation="2dp"
-            app:layout_constraintTop_toBottomOf="@id/btnStartAnalysis">
+            app:layout_constraintTop_toBottomOf="@id/tvPricePosition">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -115,23 +147,39 @@
                     android:gravity="center"
                     android:textSize="14sp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="신뢰도"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                <RatingBar
-                    android:id="@+id/ratingBar"
-                    style="@style/Widget.AppCompat.RatingBar.Indicator"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:isIndicator="true"
-                    android:numStars="10"
-                    android:stepSize="0.1" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="신뢰도"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <RatingBar
+                        android:id="@+id/ratingBar"
+                        style="@style/Widget.AppCompat.RatingBar.Indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:isIndicator="true"
+                        android:numStars="5"
+                        android:stepSize="0.1" />
+
+                    <TextView
+                        android:id="@+id/tvConfidenceValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        tools:text="7.0/10" />
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -151,6 +199,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- 나머지 내용은 동일 -->
         <!-- 전략 탭 레이아웃 추가 -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabsStrategy"
@@ -238,6 +287,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- 나머지 카드들도 동일하게 유지 -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardTechnical"
             android:layout_width="match_parent"
