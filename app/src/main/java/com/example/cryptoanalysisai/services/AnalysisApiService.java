@@ -50,7 +50,7 @@ public class AnalysisApiService {
         }
 
         // 쿼리 파라미터를 URL에 직접 추가
-        apiService.getLatestAnalysis(coinSymbol,"binance")
+        apiService.getLatestAnalysis(coinSymbol, "binance")
                 .enqueue(new Callback<AnalysisResult>() {
                     @Override
                     public void onResponse(Call<AnalysisResult> call, Response<AnalysisResult> response) {

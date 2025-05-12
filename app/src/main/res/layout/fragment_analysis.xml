@@ -151,90 +151,23 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardStrategy"
+        <!-- 전략 탭 레이아웃 추가 -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabsStrategy"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp"
-            app:layout_constraintTop_toBottomOf="@id/cardRecommendation">
+            app:layout_constraintTop_toBottomOf="@id/cardRecommendation"
+            app:tabGravity="fill"
+            app:tabMode="fixed" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="매매 전략"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="수익실현 목표가"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvTargetPrice"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="손절매 라인"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvStopLoss"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="리스크 대비 보상 비율"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvRiskReward"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="전략 설명"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvStrategyDetail"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        <!-- 전략 뷰페이저 추가 -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/viewPagerStrategy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/tabsStrategy" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardOutlook"
@@ -243,7 +176,7 @@
             android:layout_marginTop="16dp"
             app:cardCornerRadius="8dp"
             app:cardElevation="2dp"
-            app:layout_constraintTop_toBottomOf="@id/cardStrategy">
+            app:layout_constraintTop_toBottomOf="@id/viewPagerStrategy">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -302,7 +235,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:textSize="14sp" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -387,11 +319,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:textSize="14sp" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- LineChart 제거 -->
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardRisk"
@@ -401,7 +330,6 @@
             app:cardCornerRadius="8dp"
             app:cardElevation="2dp"
             app:layout_constraintTop_toBottomOf="@id/cardTechnical">
-            <!-- 제약 조건 변경: lineChart -> cardTechnical -->
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -422,7 +350,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:textSize="14sp" />
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -435,6 +362,5 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

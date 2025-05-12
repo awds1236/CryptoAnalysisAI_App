@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class CandleData extends com.github.mikephil.charting.data.CandleData {
 
@@ -155,18 +156,22 @@ public class CandleData extends com.github.mikephil.charting.data.CandleData {
         try {
             String dateTime = candleDateTimeKst != null ? candleDateTimeKst : candleDateTimeUtc;
             if (dateTime == null && openTime != null) {
-                Date date = new Date(openTime);
-                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-                dateTime = format.format(date);
+                // UTC 타임스탬프를 UTC 날짜로 변환
+                Date utcDate = new Date(openTime);
+                SimpleDateFormat utcFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+                utcFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+                dateTime = utcFormat.format(utcDate);
             }
 
             if (dateTime != null) {
-                // 날짜 파싱
+                // UTC 문자열을 파싱
                 SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+                inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
                 Date date = inputFormat.parse(dateTime);
 
-                // 포맷팅
+                // KST로 포맷팅 (UTC+9)
                 SimpleDateFormat outputFormat = new SimpleDateFormat("MM-dd HH:mm", Locale.US);
+                outputFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul"));
                 return outputFormat.format(date);
             }
         } catch (Exception e) {
