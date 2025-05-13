@@ -39,6 +39,8 @@ public class AnalysisResult {
     @SerializedName("coin_symbol")
     private String coinSymbol;
 
+
+
     public String getCoinSymbol() {
         return coinSymbol;
     }
@@ -58,6 +60,7 @@ public class AnalysisResult {
         this.timestamp = timestamp;
     }
 
+
     // 내부 클래스 정의
     public static class Recommendation {
         @SerializedName("매수_확률")
@@ -74,6 +77,8 @@ public class AnalysisResult {
 
         @SerializedName("근거")
         private String reason;
+
+
 
         // Getters and Setters
         public double getBuyProbability() {
@@ -272,6 +277,12 @@ public class AnalysisResult {
         @SerializedName("주요_패턴")
         private String pattern;
 
+        @SerializedName("이동평균선_신호")
+        private String crossSignal;
+
+        @SerializedName("매수매도_세력_비율")
+        private double buySellRatio;
+
         // Getters and Setters
         public List<Double> getSupportLevels() {
             return supportLevels;
@@ -303,6 +314,22 @@ public class AnalysisResult {
 
         public void setPattern(String pattern) {
             this.pattern = pattern;
+        }
+
+        public String getCrossSignal() {
+            return crossSignal;
+        }
+
+        public void setCrossSignal(String crossSignal) {
+            this.crossSignal = crossSignal;
+        }
+
+        public double getBuySellRatio() {
+            return buySellRatio;
+        }
+
+        public void setBuySellRatio(double buySellRatio) {
+            this.buySellRatio = buySellRatio;
         }
     }
 
@@ -386,4 +413,5 @@ public class AnalysisResult {
     public void setRiskFactors(List<String> riskFactors) {
         this.riskFactors = riskFactors;
     }
+
 }

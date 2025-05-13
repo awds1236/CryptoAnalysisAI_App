@@ -1,5 +1,6 @@
 package com.example.cryptoanalysisai.ui.fragments;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Html;
@@ -9,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -25,6 +27,8 @@ import com.example.cryptoanalysisai.models.BinanceTicker;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.services.AnalysisApiService;
+import com.example.cryptoanalysisai.services.ExchangeRateManager;
+import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.utils.Constants;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -56,6 +60,11 @@ public class AnalysisFragment extends Fragment {
     private StrategyFragment midTermFragment;
     private StrategyFragment longTermFragment;
     private StrategiesAdapter strategiesAdapter;
+    private SubscriptionManager subscriptionManager;
+
+    // 새로 추가한 UI 요소 참조
+    private TextView tvCrossSignal;
+    private TextView tvBuySellRatio;
 
     // 최근 가격 변동 추적을 위한 변수
     private double lastPrice = 0;
@@ -98,6 +107,7 @@ public class AnalysisFragment extends Fragment {
         }
 
         analysisApiService = AnalysisApiService.getInstance();
+        subscriptionManager = SubscriptionManager.getInstance(requireContext()); // 이 줄 추가
 
         // 전략 프래그먼트 초기화
         shortTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_SHORT_TERM, "$");
@@ -135,6 +145,10 @@ public class AnalysisFragment extends Fragment {
             binding.tvCoinTitle.setText("코인을 선택해주세요");
             binding.progressAnalysis.setVisibility(View.GONE);
         }
+
+        // 새로 추가한 TextView 초기화
+        tvCrossSignal = view.findViewById(R.id.tvCrossSignal);
+        tvBuySellRatio = view.findViewById(R.id.tvBuySellRatio);
     }
 
     @Override
@@ -428,6 +442,9 @@ public class AnalysisFragment extends Fragment {
     private void updateAnalysisUI() {
         if (binding == null || analysisResult == null) return;
 
+        // 구독 상태 확인
+        boolean isSubscribed = subscriptionManager.isSubscribed();
+
         // 분석 시간 표시
         if (analysisResult.getTimestamp() > 0) {
             Date analysisDate = new Date(analysisResult.getTimestamp());
@@ -545,109 +562,201 @@ public class AnalysisFragment extends Fragment {
 
         // 기술적 분석
         AnalysisResult.TechnicalAnalysis technicalAnalysis = analysisResult.getTechnicalAnalysis();
-        if (technicalAnalysis != null) {
-            // 지지선 - 현재가와 비교
-            if (technicalAnalysis.getSupportLevels() != null && !technicalAnalysis.getSupportLevels().isEmpty()) {
-                StringBuilder supportLevels = new StringBuilder();
-                String currencySymbol = analysisResult.getCurrencySymbol();
-                double currentPrice = coinInfo.getCurrentPrice();
 
-                for (int i = 0; i < technicalAnalysis.getSupportLevels().size(); i++) {
-                    double supportLevel = technicalAnalysis.getSupportLevels().get(i);
-                    if (i > 0) supportLevels.append(", ");
+        // 구독자만 기술적 분석 내용을 볼 수 있도록 처리
+        if (!isSubscribed) {
+            // 기술적 분석 블러 처리
+            binding.technicalBlurOverlay.setVisibility(View.VISIBLE);
+            binding.technicalPixelatedOverlay.setVisibility(View.VISIBLE);
+            binding.technicalAdditionalBlurLayer.setVisibility(View.VISIBLE);
 
-                    // 현재가와의 차이를 백분율로 계산
-                    double percentDiff = ((currentPrice - supportLevel) / currentPrice) * 100;
+            // 구독 안내 메시지 표시
+            binding.tvTechnicalSubscribeHint.setVisibility(View.VISIBLE);
 
-                    // 현재가 대비 지지선 거리에 따라 색상 표시
-                    String colorCode;
-                    if (percentDiff < 3) {
-                        colorCode = "#FFC107"; // 노란색 - 근접
-                    } else if (percentDiff < 8) {
-                        colorCode = "#4CAF50"; // 녹색 - 적당
-                    } else {
-                        colorCode = "#9E9E9E"; // 회색 - 먼 거리
+            // 기술적 분석 카드뷰 내용 흐리게 설정
+            binding.cardTechnical.setAlpha(0.5f);
+
+            // 콘텐츠 마스킹 처리
+            binding.tvSupport.setText("**********");
+            binding.tvResistance.setText("**********");
+            binding.tvTrendStrength.setText("*****");
+            binding.tvPattern.setText("**********");
+
+            // 이동평균선 신호 및 롱숏 비율 정보 마스킹 (있는 경우)
+            if (binding.tvCrossSignal != null) {
+                binding.tvCrossSignal.setText("*****");
+            }
+            if (binding.tvBuySellRatio != null) {
+                binding.tvBuySellRatio.setText("*****");
+            }
+        } else {
+            // 구독자인 경우 블러 처리 제거
+            binding.technicalBlurOverlay.setVisibility(View.GONE);
+            binding.technicalPixelatedOverlay.setVisibility(View.GONE);
+            binding.technicalAdditionalBlurLayer.setVisibility(View.GONE);
+            binding.tvTechnicalSubscribeHint.setVisibility(View.GONE);
+            binding.cardTechnical.setAlpha(1.0f);
+
+            // 실제 기술적 분석 내용 표시
+            if (technicalAnalysis != null) {
+                // 지지선 - 현재가와 비교
+                if (technicalAnalysis.getSupportLevels() != null && !technicalAnalysis.getSupportLevels().isEmpty()) {
+                    StringBuilder supportLevels = new StringBuilder();
+                    String currencySymbol = analysisResult.getCurrencySymbol();
+                    double currentPrice = coinInfo.getCurrentPrice();
+
+                    for (int i = 0; i < technicalAnalysis.getSupportLevels().size(); i++) {
+                        double supportLevel = technicalAnalysis.getSupportLevels().get(i);
+                        if (i > 0) supportLevels.append(", ");
+
+                        // 현재가와의 차이를 백분율로 계산
+                        double percentDiff = ((currentPrice - supportLevel) / currentPrice) * 100;
+
+                        // 현재가 대비 지지선 거리에 따라 색상 표시
+                        String colorCode;
+                        if (percentDiff < 3) {
+                            colorCode = "#FFC107"; // 노란색 - 근접
+                        } else if (percentDiff < 8) {
+                            colorCode = "#4CAF50"; // 녹색 - 적당
+                        } else {
+                            colorCode = "#9E9E9E"; // 회색 - 먼 거리
+                        }
+
+                        supportLevels.append("<font color='")
+                                .append(colorCode)
+                                .append("'>")
+                                .append(currencySymbol)
+                                .append(String.format("%,.2f", supportLevel))
+                                .append(" (↓")
+                                .append(String.format("%.1f%%", percentDiff))
+                                .append(")</font>");
                     }
 
-                    supportLevels.append("<font color='")
-                            .append(colorCode)
-                            .append("'>")
-                            .append(currencySymbol)
-                            .append(String.format("%,.2f", supportLevel))
-                            .append(" (↓")
-                            .append(String.format("%.1f%%", percentDiff))
-                            .append(")</font>");
+                    binding.tvSupport.setText(Html.fromHtml(supportLevels.toString(), Html.FROM_HTML_MODE_LEGACY));
                 }
 
-                binding.tvSupport.setText(Html.fromHtml(supportLevels.toString(), Html.FROM_HTML_MODE_LEGACY));
-            }
+                // 저항선 - 현재가와 비교
+                if (technicalAnalysis.getResistanceLevels() != null && !technicalAnalysis.getResistanceLevels().isEmpty()) {
+                    StringBuilder resistanceLevels = new StringBuilder();
+                    String currencySymbol = analysisResult.getCurrencySymbol();
+                    double currentPrice = coinInfo.getCurrentPrice();
 
-            // 저항선 - 현재가와 비교
-            if (technicalAnalysis.getResistanceLevels() != null && !technicalAnalysis.getResistanceLevels().isEmpty()) {
-                StringBuilder resistanceLevels = new StringBuilder();
-                String currencySymbol = analysisResult.getCurrencySymbol();
-                double currentPrice = coinInfo.getCurrentPrice();
+                    for (int i = 0; i < technicalAnalysis.getResistanceLevels().size(); i++) {
+                        double resistanceLevel = technicalAnalysis.getResistanceLevels().get(i);
+                        if (i > 0) resistanceLevels.append(", ");
 
-                for (int i = 0; i < technicalAnalysis.getResistanceLevels().size(); i++) {
-                    double resistanceLevel = technicalAnalysis.getResistanceLevels().get(i);
-                    if (i > 0) resistanceLevels.append(", ");
+                        // 현재가와의 차이를 백분율로 계산
+                        double percentDiff = ((resistanceLevel - currentPrice) / currentPrice) * 100;
 
-                    // 현재가와의 차이를 백분율로 계산
-                    double percentDiff = ((resistanceLevel - currentPrice) / currentPrice) * 100;
+                        // 현재가 대비 저항선 거리에 따라 색상 표시
+                        String colorCode;
+                        if (percentDiff < 3) {
+                            colorCode = "#FFC107"; // 노란색 - 근접
+                        } else if (percentDiff < 8) {
+                            colorCode = "#F44336"; // 빨간색 - 적당
+                        } else {
+                            colorCode = "#9E9E9E"; // 회색 - 먼 거리
+                        }
 
-                    // 현재가 대비 저항선 거리에 따라 색상 표시
-                    String colorCode;
-                    if (percentDiff < 3) {
-                        colorCode = "#FFC107"; // 노란색 - 근접
-                    } else if (percentDiff < 8) {
-                        colorCode = "#F44336"; // 빨간색 - 적당
-                    } else {
-                        colorCode = "#9E9E9E"; // 회색 - 먼 거리
+                        resistanceLevels.append("<font color='")
+                                .append(colorCode)
+                                .append("'>")
+                                .append(currencySymbol)
+                                .append(String.format("%,.2f", resistanceLevel))
+                                .append(" (↑")
+                                .append(String.format("%.1f%%", percentDiff))
+                                .append(")</font>");
                     }
 
-                    resistanceLevels.append("<font color='")
-                            .append(colorCode)
-                            .append("'>")
-                            .append(currencySymbol)
-                            .append(String.format("%,.2f", resistanceLevel))
-                            .append(" (↑")
-                            .append(String.format("%.1f%%", percentDiff))
-                            .append(")</font>");
+                    binding.tvResistance.setText(Html.fromHtml(resistanceLevels.toString(), Html.FROM_HTML_MODE_LEGACY));
                 }
 
-                binding.tvResistance.setText(Html.fromHtml(resistanceLevels.toString(), Html.FROM_HTML_MODE_LEGACY));
-            }
+                // 추세 강도 - 시각적 표시 강화
+                String trendStrength = technicalAnalysis.getTrendStrength();
+                if (trendStrength != null && !trendStrength.isEmpty()) {
+                    String colorCode;
+                    String strengthText;
 
-            // 추세 강도 - 시각적 표시 강화
-            String trendStrength = technicalAnalysis.getTrendStrength();
-            if (trendStrength != null && !trendStrength.isEmpty()) {
-                String colorCode;
-                String strengthText;
+                    if ("강".equals(trendStrength)) {
+                        colorCode = "#4CAF50"; // 녹색
+                        strengthText = "강함 (🔥)";
+                    } else if ("중".equals(trendStrength)) {
+                        colorCode = "#FFC107"; // 노란색
+                        strengthText = "중간 (➡️)";
+                    } else {
+                        colorCode = "#F44336"; // 빨간색
+                        strengthText = "약함 (💧)";
+                    }
 
-                if ("강".equals(trendStrength)) {
-                    colorCode = "#4CAF50"; // 녹색
-                    strengthText = "강함 (🔥)";
-                } else if ("중".equals(trendStrength)) {
-                    colorCode = "#FFC107"; // 노란색
-                    strengthText = "중간 (➡️)";
+                    binding.tvTrendStrength.setText(Html.fromHtml("<font color='" +
+                            colorCode + "'><b>" + strengthText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
                 } else {
-                    colorCode = "#F44336"; // 빨간색
-                    strengthText = "약함 (💧)";
+                    binding.tvTrendStrength.setText("정보 없음");
                 }
 
-                binding.tvTrendStrength.setText(Html.fromHtml("<font color='" +
-                        colorCode + "'>" + strengthText + "</font>", Html.FROM_HTML_MODE_LEGACY));
-            } else {
-                binding.tvTrendStrength.setText("정보 없음");
-            }
+                // 주요 패턴 - 키워드 강조
+                String pattern = technicalAnalysis.getPattern();
+                if (pattern != null && !pattern.isEmpty()) {
+                    pattern = highlightKeywords(pattern);
+                    binding.tvPattern.setText(Html.fromHtml(pattern, Html.FROM_HTML_MODE_LEGACY));
+                } else {
+                    binding.tvPattern.setText("정보 없음");
+                }
 
-            // 주요 패턴 - 키워드 강조
-            String pattern = technicalAnalysis.getPattern();
-            if (pattern != null && !pattern.isEmpty()) {
-                pattern = highlightKeywords(pattern);
-                binding.tvPattern.setText(Html.fromHtml(pattern, Html.FROM_HTML_MODE_LEGACY));
-            } else {
-                binding.tvPattern.setText("정보 없음");
+                // 이동평균선 신호 표시 - 새로 추가 (있는 경우에만)
+                if (binding.tvCrossSignal != null) {
+                    String crossSignal = technicalAnalysis.getCrossSignal();
+                    if (crossSignal != null && !crossSignal.isEmpty()) {
+                        String displayText;
+                        String colorCode;
+
+                        switch (crossSignal) {
+                            case "GOLDEN_CROSS":
+                                displayText = "골든 크로스 (매수 신호) ⬆️";
+                                colorCode = "#4CAF50"; // 녹색
+                                break;
+                            case "DEATH_CROSS":
+                                displayText = "데드 크로스 (매도 신호) ⬇️";
+                                colorCode = "#F44336"; // 빨간색
+                                break;
+                            default:
+                                displayText = "없음 (중립) ↔️";
+                                colorCode = "#FFC107"; // 노란색
+                                break;
+                        }
+
+                        binding.tvCrossSignal.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" +
+                                displayText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
+                    } else {
+                        binding.tvCrossSignal.setText("데이터 없음");
+                    }
+                }
+
+                // 롱:숏 비율 표시 - 새로 추가 (있는 경우에만)
+                if (binding.tvBuySellRatio != null) {
+                    double buySellRatio = technicalAnalysis.getBuySellRatio();
+                    if (buySellRatio > 0) {
+                        String displayText;
+                        String colorCode;
+
+                        // 비율에 따른 텍스트 및 색상 결정
+                        if (buySellRatio > 0.65) {
+                            displayText = "매수세 강함 (" + String.format("%.2f", buySellRatio * 100) + "%)";
+                            colorCode = "#4CAF50"; // 녹색
+                        } else if (buySellRatio < 0.35) {
+                            displayText = "매도세 강함 (" + String.format("%.2f", (1 - buySellRatio) * 100) + "%)";
+                            colorCode = "#F44336"; // 빨간색
+                        } else {
+                            displayText = "중립 (" + String.format("%.2f", buySellRatio * 100) + "%)";
+                            colorCode = "#FFC107"; // 노란색
+                        }
+
+                        binding.tvBuySellRatio.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" +
+                                displayText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
+                    } else {
+                        binding.tvBuySellRatio.setText("데이터 없음");
+                    }
+                }
             }
         }
 
@@ -687,7 +796,6 @@ public class AnalysisFragment extends Fragment {
         // 현재가와 지지선/저항선 비교 업데이트
         updatePriceComparisonWithLevels();
     }
-
     /**
      * 텍스트에서 주요 키워드 강조 처리
      */

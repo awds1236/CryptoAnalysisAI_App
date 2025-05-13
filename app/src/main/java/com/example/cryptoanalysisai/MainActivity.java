@@ -239,15 +239,6 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
-        // 구독 메뉴 아이템 추가
-        menu.add(Menu.NONE, R.id.action_subscription, Menu.NONE, "구독 관리")
-                .setIcon(android.R.drawable.ic_menu_more)
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-
-        // 로그아웃 메뉴 아이템 추가
-        menu.add(Menu.NONE, R.id.action_logout, Menu.NONE, "로그아웃")
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-
         return true;
     }
 
