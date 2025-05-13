@@ -2,8 +2,6 @@ package com.example.cryptoanalysisai.ui.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -60,9 +58,7 @@ public class CoinListFragment extends Fragment {
     // 분석 결과 캐시
     private Map<String, AnalysisResult> analysisCache = new HashMap<>();
 
-    // 가격 업데이트 태스크
-    private final Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
-    private boolean isAutoRefreshEnabled = true;
+    // 자동 새로고침 관련 변수와 메서드 제거됨
 
     public CoinListFragment() {
         // 기본 생성자
@@ -121,19 +117,7 @@ public class CoinListFragment extends Fragment {
         binding.swipeRefreshLayout.setOnRefreshListener(this::refreshData);
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        isAutoRefreshEnabled = true;
-        startAutoRefresh();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        isAutoRefreshEnabled = false;
-        stopAutoRefresh();
-    }
+    // onResume, onPause에서의 타이머 시작/중지 호출 제거됨
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -149,41 +133,17 @@ public class CoinListFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         listener = null;
+        // stopAutoRefresh() 호출 제거됨
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-        stopAutoRefresh();
+        // stopAutoRefresh() 호출 제거됨
     }
 
-    /**
-     * 자동 새로고침 시작
-     */
-    private void startAutoRefresh() {
-        priceUpdateHandler.postDelayed(priceUpdateRunnable, Constants.PRICE_REFRESH_INTERVAL);
-    }
-
-    /**
-     * 자동 새로고침 중지
-     */
-    private void stopAutoRefresh() {
-        priceUpdateHandler.removeCallbacks(priceUpdateRunnable);
-    }
-
-    /**
-     * 가격 자동 갱신 Runnable
-     */
-    private final Runnable priceUpdateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (isAutoRefreshEnabled && isAdded() && !isDetached()) {
-                refreshPrices();
-                priceUpdateHandler.postDelayed(this, Constants.PRICE_REFRESH_INTERVAL);
-            }
-        }
-    };
+    // startAutoRefresh(), stopAutoRefresh(), priceUpdateRunnable 메서드 제거됨
 
     /**
      * 검색 기능 초기화
@@ -376,7 +336,7 @@ public class CoinListFragment extends Fragment {
     }
 
     /**
-     * 가격 정보만 새로고침 (3초마다 호출)
+     * 가격 정보만 새로고침 (MainActivity에서 호출됨)
      */
     public void refreshPrices() {
         if (!isAdded() || adapter == null) return;
