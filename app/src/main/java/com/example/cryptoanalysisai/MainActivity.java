@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+
         // 툴바 설정 - 타이틀 없이
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {

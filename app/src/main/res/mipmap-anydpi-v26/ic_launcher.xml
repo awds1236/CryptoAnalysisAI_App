@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_background" />
-    <foreground android:drawable="@drawable/ic_launcher_foreground" />
-    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+    <!-- 배경을 검은색으로 설정 -->
+    <background android:drawable="@color/black"/>
+
+    <!-- 로고 크기를 키운 foreground -->
+    <foreground>
+        <inset
+            android:drawable="@drawable/ic_coinsense_logo"
+            android:inset="15%" /> <!-- inset 값을 줄이면 로고 크기가 커집니다 (15% → 10% 또는 더 줄이면 더 커짐) -->
+    </foreground>
 </adaptive-icon>

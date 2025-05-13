@@ -14,8 +14,7 @@
         android:roundIcon="@drawable/ic_coinsense_logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.CryptoAnalysisAI"
-        tools:targetApi="31"
-        android:name=".CryptoAnalysisApp"
+        android:name=".CryptoAnalysisApp">
         >
 
         <!-- LoginActivity를 LAUNCHER로 설정 -->
