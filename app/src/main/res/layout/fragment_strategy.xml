@@ -150,11 +150,13 @@
         android:layout_gravity="center"
         android:layout_marginHorizontal="32dp"
         android:layout_marginTop="20dp"
-        android:background="@drawable/rounded_button"
+        android:background="@drawable/subscription_button_background"
+        android:drawableStart="@drawable/ic_lock"
+        android:drawablePadding="8dp"
         android:padding="12dp"
-        android:text="프리미엄 구독으로 전략 보기"
+        android:text="프리미엄으로 전략 보기"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
-        android:elevation="10dp"
+        android:elevation="4dp"
         android:visibility="gone" />
 </FrameLayout>
