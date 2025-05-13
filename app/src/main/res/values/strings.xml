@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">cryptoanalysisai</string>
+    <string name="app_name">CoinSense</string>
     <string name="action_refresh">새로고침</string>
     <string name="action_settings">설정</string>
     <string name="search_hint">코인 검색</string>
