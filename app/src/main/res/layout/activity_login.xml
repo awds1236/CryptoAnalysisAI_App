@@ -12,23 +12,38 @@
         android:layout_width="120dp"
         android:layout_height="120dp"
         android:layout_marginTop="64dp"
-        android:src="@mipmap/ic_launcher"
+        android:src="@drawable/ic_coinsense_logo"
         android:contentDescription="앱 로고"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
+    <LinearLayout
         android:id="@+id/tvAppName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="암호화폐 분석 AI"
-        android:textSize="24sp"
-        android:textStyle="bold"
+        android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ivLogo" />
+        app:layout_constraintTop_toBottomOf="@id/ivLogo">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Coin"
+            android:textColor="#F5B133"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sense"
+            android:textColor="#06D6A0"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvDescription"
@@ -38,6 +53,7 @@
         android:gravity="center"
         android:text="AI가 분석한 암호화폐 시장 분석 및 투자 전략"
         android:textSize="16sp"
+        android:textColor="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvAppName" />

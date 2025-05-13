@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         // 툴바 설정 - 타이틀 없이
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayShowTitleEnabled(false); // 타이틀 표시 안함
+            getSupportActionBar().setDisplayShowTitleEnabled(false); // 기본 타이틀 비활성화
         }
 
         // 로그인 상태 확인
