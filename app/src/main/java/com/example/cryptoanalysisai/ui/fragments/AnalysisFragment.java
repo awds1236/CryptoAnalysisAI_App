@@ -33,6 +33,7 @@ import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.example.cryptoanalysisai.utils.Constants;
 import com.google.android.material.tabs.TabLayoutMediator;
+import androidx.activity.OnBackPressedCallback;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -152,13 +153,27 @@ public class AnalysisFragment extends Fragment {
         tvCrossSignal = view.findViewById(R.id.tvCrossSignal);
         tvBuySellRatio = view.findViewById(R.id.tvBuySellRatio);
 
-        // 뒤로가기 버튼 설정
+        // onViewCreated 메서드에서 다음 코드를 찾아서
         binding.btnBack.setOnClickListener(v -> {
             if (getActivity() != null) {
                 // 코인 목록 탭으로 이동
                 ((MainActivity)getActivity()).navigateToCoinsTab();
             }
         });
+
+        // 위 코드를 다음으로 바꾸세요
+        // 화면에서 뒤로가기 버튼 숨기기
+                binding.btnBack.setVisibility(View.GONE);
+
+        // 시스템 뒤로가기 버튼 처리를 위한 콜백 등록
+                requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
+                        new OnBackPressedCallback(true) {
+                            @Override
+                            public void handleOnBackPressed() {
+                                // 코인 목록 탭으로 이동
+                                ((MainActivity)requireActivity()).navigateToCoinsTab();
+                            }
+                        });
 
         // 기술적 분석 구독 버튼 설정
         binding.btnTechnicalSubscribe.setOnClickListener(v -> {
