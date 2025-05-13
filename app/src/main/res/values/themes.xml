@@ -49,4 +49,19 @@
         <item name="strokeColor">@color/accent</item>
         <item name="strokeWidth">1dp</item>
     </style>
+
+    <!-- Android 12+ 스플래시 화면 테마 추가 -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- 스플래시 화면 배경색 -->
+        <item name="windowSplashScreenBackground">@color/primary_variant</item>
+
+        <!-- 스플래시 로고 이미지 -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_coinsense_logo</item>
+
+        <!-- 애니메이션 지속 시간 (기본값: 1000ms) -->
+        <item name="windowSplashScreenAnimationDuration">300</item>
+
+        <!-- 스플래시 이후에 전환할 테마 -->
+        <item name="postSplashScreenTheme">@style/Theme.CryptoAnalysisAI</item>
+    </style>
 </resources>
