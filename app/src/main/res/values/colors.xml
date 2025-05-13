@@ -1,16 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <!-- 기본 테마 색상 -->
+    <color name="primary">#1E2A3B</color>        <!-- 어두운 네이비 -->
+    <color name="primary_variant">#0A121F</color> <!-- 거의 검은색 네이비 -->
+    <color name="primary_light">#2C3E50</color>   <!-- 약간 밝은 네이비 -->
+
+    <!-- 강조 색상 -->
+    <color name="accent">#00C087</color>          <!-- 민트 그린 (상승) -->
+    <color name="accent_secondary">#FF4B6C</color> <!-- 로즈 레드 (하락) -->
+
+    <!-- 차트 색상 -->
+    <color name="chart_green">#00C087</color>      <!-- 차트 상승 -->
+    <color name="chart_red">#FF4B6C</color>        <!-- 차트 하락 -->
+    <color name="chart_orange">#FFA26B</color>     <!-- 차트 보조 -->
+    <color name="chart_blue">#00B0FF</color>       <!-- 차트 보조 2 -->
+
+    <!-- 배경 및 카드 색상 -->
+    <color name="background">#121212</color>       <!-- 어두운 배경 -->
+    <color name="card_background">#1E1E1E</color>  <!-- 카드 배경 -->
+    <color name="card_highlight">#2A2A2A</color>   <!-- 카드 강조 -->
+
+    <!-- 텍스트 색상 -->
+    <color name="text_primary">#FFFFFF</color>     <!-- 흰색 주요 텍스트 -->
+    <color name="text_secondary">#B0B0B0</color>   <!-- 회색 보조 텍스트 -->
+    <color name="text_hint">#757575</color>        <!-- 힌트 텍스트 -->
+
+    <!-- 기존 색상 유지 (참조용) -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="green">#FF4CAF50</color>
-    <color name="red">#FFF44336</color>
-    <color name="orange">#FFFF9800</color>
-    <color name="blue">#FF2196F3</color>
-    <color name="gray">#FFCCCCCC</color>
-    <color name="lightGray">#FFEEEEEE</color>
+    <color name="green">#FF00C087</color>          <!-- 변경됨 -->
+    <color name="red">#FFFF4B6C</color>            <!-- 변경됨 -->
+    <color name="orange">#FFFFA26B</color>         <!-- 변경됨 -->
+    <color name="blue">#FF00B0FF</color>           <!-- 변경됨 -->
+    <color name="gray">#FF2A2A2A</color>           <!-- 변경됨 -->
+    <color name="lightGray">#FF3A3A3A</color>      <!-- 변경됨 -->
 </resources>
