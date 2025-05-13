@@ -7,6 +7,6 @@
     <foreground>
         <inset
             android:drawable="@drawable/ic_coinsense_logo"
-            android:inset="15%" /> <!-- inset 값을 줄이면 로고 크기가 커집니다 (15% → 10% 또는 더 줄이면 더 커짐) -->
+            android:inset="5%" /> <!-- inset 값을 줄이면 로고 크기가 커집니다 (15% → 10% 또는 더 줄이면 더 커짐) -->
     </foreground>
 </adaptive-icon>
