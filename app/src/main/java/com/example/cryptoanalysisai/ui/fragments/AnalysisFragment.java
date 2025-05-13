@@ -18,6 +18,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
+import com.example.cryptoanalysisai.MainActivity;
 import com.example.cryptoanalysisai.R;
 import com.example.cryptoanalysisai.api.BinanceApiService;
 import com.example.cryptoanalysisai.api.RetrofitClient;
@@ -29,6 +30,7 @@ import com.example.cryptoanalysisai.models.ExchangeType;
 import com.example.cryptoanalysisai.services.AnalysisApiService;
 import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
+import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.example.cryptoanalysisai.utils.Constants;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -149,6 +151,21 @@ public class AnalysisFragment extends Fragment {
         // 새로 추가한 TextView 초기화
         tvCrossSignal = view.findViewById(R.id.tvCrossSignal);
         tvBuySellRatio = view.findViewById(R.id.tvBuySellRatio);
+
+        // 뒤로가기 버튼 설정
+        binding.btnBack.setOnClickListener(v -> {
+            if (getActivity() != null) {
+                // 코인 목록 탭으로 이동
+                ((MainActivity)getActivity()).navigateToCoinsTab();
+            }
+        });
+
+        // 기술적 분석 구독 버튼 설정
+        binding.btnTechnicalSubscribe.setOnClickListener(v -> {
+            // 구독 화면으로 이동
+            Intent intent = new Intent(getActivity(), SubscriptionActivity.class);
+            startActivity(intent);
+        });
     }
 
     @Override
@@ -568,12 +585,9 @@ public class AnalysisFragment extends Fragment {
             // 기술적 분석 블러 처리
             binding.technicalBlurOverlay.setVisibility(View.VISIBLE);
             binding.technicalPixelatedOverlay.setVisibility(View.VISIBLE);
-            binding.technicalAdditionalBlurLayer.setVisibility(View.VISIBLE);
+            binding.btnTechnicalSubscribe.setVisibility(View.VISIBLE); // 구독 버튼 표시
 
-            // 구독 안내 메시지 표시
-            binding.tvTechnicalSubscribeHint.setVisibility(View.VISIBLE);
-
-            // 기술적 분석 카드뷰 내용 흐리게 설정
+            // 콘텐츠 알파값 낮추기
             binding.cardTechnical.setAlpha(0.5f);
 
             // 콘텐츠 마스킹 처리
@@ -581,6 +595,8 @@ public class AnalysisFragment extends Fragment {
             binding.tvResistance.setText("**********");
             binding.tvTrendStrength.setText("*****");
             binding.tvPattern.setText("**********");
+            binding.tvCrossSignal.setText("*****");
+            binding.tvBuySellRatio.setText("*****");
 
             // 이동평균선 신호 및 롱숏 비율 정보 마스킹 (있는 경우)
             if (binding.tvCrossSignal != null) {
@@ -593,8 +609,7 @@ public class AnalysisFragment extends Fragment {
             // 구독자인 경우 블러 처리 제거
             binding.technicalBlurOverlay.setVisibility(View.GONE);
             binding.technicalPixelatedOverlay.setVisibility(View.GONE);
-            binding.technicalAdditionalBlurLayer.setVisibility(View.GONE);
-            binding.tvTechnicalSubscribeHint.setVisibility(View.GONE);
+            binding.btnTechnicalSubscribe.setVisibility(View.GONE);
             binding.cardTechnical.setAlpha(1.0f);
 
             // 실제 기술적 분석 내용 표시
