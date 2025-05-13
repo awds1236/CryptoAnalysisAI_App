@@ -52,17 +52,25 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     protected void onCreate(Bundle savedInstanceState) {
 
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-
         super.onCreate(savedInstanceState);
 
+        // 로그인 상태 확인 (바인딩 전에)
+        if (!isUserSignedIn()) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        // 한 번만 바인딩 초기화
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-
-        // 툴바 설정 - 타이틀 없이
+        // 툴바 설정 (한 번만)
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayShowTitleEnabled(false); // 기본 타이틀 비활성화
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false); // 내비게이션 아이콘 비활성화
         }
 
         // 로그인 상태 확인
@@ -73,12 +81,6 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             finish();
             return;
         }
-
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        // 툴바 설정
-        setSupportActionBar(binding.toolbar);
 
         // ViewPager 설정
         setupViewPager();

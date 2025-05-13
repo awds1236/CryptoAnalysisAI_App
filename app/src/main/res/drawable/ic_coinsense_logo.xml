@@ -1,68 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
+    android:width="500dp"
+    android:height="500dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
 
-    <!-- 중앙 원형 배경 -->
+    <!-- 배경 사각형 -->
+    <path
+
+        android:pathData="M0,15 L0,185 Q0,200 15,200 L185,200 Q200,200 200,185 L200,15 Q200,0 185,0 L15,0 Q0,0 0,15 Z" />
+
+    <!-- 중앙 원형 - 더 크게 확장 -->
     <path
         android:fillColor="#161B33"
-        android:pathData="M54,9 a45,45 0 1,0 0,90 a45,45 0 1,0 0,-90" />
+        android:pathData="M100,25 a75,75 0 1,0 0,150 a75,75 0 1,0 0,-150" />
 
-    <!-- 코인 모티프 - C 형태 -->
+    <!-- 코인 모티프 - C 형태 확장 -->
     <path
         android:strokeColor="#F5B133"
-        android:strokeWidth="4.5"
+        android:strokeWidth="8"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M54,24 A30,30 0 0,1 84,54 A30,30 0 0,1 54,84" />
+        android:pathData="M100,45 A55,55 0 0,1 155,100 A55,55 0 0,1 100,155" />
 
-    <!-- 뇌/렌즈 모티프 -->
+    <!-- 뇌/렌즈 모티프 - 확장 -->
     <path
         android:strokeColor="#2579F0"
-        android:strokeWidth="1.5"
+        android:strokeWidth="2.5"
         android:fillColor="#00000000"
-        android:pathData="M78,30 a17,24 45 1,0 -48,48 a17,24 45 1,0 48,-48" />
+        android:pathData="M144.5,55.5 a30,42 45 1,0 -89.0,89.0 a30,42 45 1,0 89.0,-89.0" />
 
     <path
         android:strokeColor="#2579F0"
-        android:strokeWidth="1.5"
+        android:strokeWidth="2.5"
         android:fillColor="#00000000"
-        android:pathData="M30,30 a17,24 -45 1,0 48,48 a17,24 -45 1,0 -48,-48" />
+        android:pathData="M55.5,55.5 a30,42 -45 1,0 89.0,89.0 a30,42 -45 1,0 -89.0,-89.0" />
 
-    <!-- 차트 라인 -->
+    <!-- 차트 라인 - 더 넓게 -->
     <path
         android:strokeColor="#06D6A0"
-        android:strokeWidth="1.8"
+        android:strokeWidth="3"
         android:fillColor="#00000000"
-        android:pathData="M30,68 L38,52 L46,62 L54,40 L62,52 L70,32 L78,40" />
+        android:pathData="M55,125 L70,95 L85,115 L100,75 L115,95 L130,60 L145,75" />
 
-    <!-- 데이터 포인트 -->
-    <path android:fillColor="#06D6A0" android:pathData="M30,68 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
-    <path android:fillColor="#06D6A0" android:pathData="M38,52 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
-    <path android:fillColor="#06D6A0" android:pathData="M46,62 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
-    <path android:fillColor="#06D6A0" android:pathData="M54,40 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
-    <path android:fillColor="#06D6A0" android:pathData="M62,52 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
-    <path android:fillColor="#06D6A0" android:pathData="M70,32 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
-    <path android:fillColor="#06D6A0" android:pathData="M78,40 m-1.7,0 a1.7,1.7 0 1,0 3.4,0 a1.7,1.7 0 1,0 -3.4,0" />
+    <!-- 데이터 포인트 - 확장된 차트 라인에 맞춤 -->
+    <path android:fillColor="#06D6A0" android:pathData="M55,125 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path android:fillColor="#06D6A0" android:pathData="M70,95 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path android:fillColor="#06D6A0" android:pathData="M85,115 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path android:fillColor="#06D6A0" android:pathData="M100,75 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path android:fillColor="#06D6A0" android:pathData="M115,95 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path android:fillColor="#06D6A0" android:pathData="M130,60 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
+    <path android:fillColor="#06D6A0" android:pathData="M145,75 m-3,0 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0" />
 
-    <!-- 회로 패턴 -->
+    <!-- 회로 패턴 - 더 넓게 -->
     <path
         android:strokeColor="#2579F0"
-        android:strokeWidth="0.8"
+        android:strokeWidth="1"
         android:fillColor="#00000000"
-        android:pathData="M30,30 h48 v48 h-48 z" />
-
-    <path
-        android:strokeColor="#2579F0"
-        android:strokeWidth="0.8"
-        android:fillColor="#00000000"
-        android:pathData="M30,30 L78,78" />
+        android:pathData="M55,55 h90 v90 h-90 z" />
 
     <path
         android:strokeColor="#2579F0"
-        android:strokeWidth="0.8"
+        android:strokeWidth="1"
         android:fillColor="#00000000"
-        android:pathData="M30,78 L78,30" />
+        android:pathData="M55,55 L145,145" />
+
+    <path
+        android:strokeColor="#2579F0"
+        android:strokeWidth="1"
+        android:fillColor="#00000000"
+        android:pathData="M55,145 L145,55" />
+
 </vector>
