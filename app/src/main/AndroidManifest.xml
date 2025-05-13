@@ -15,30 +15,31 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CryptoAnalysisAI"
         android:name=".CryptoAnalysisApp">
-        >
 
-        <!-- LoginActivity를 LAUNCHER로 설정 -->
+        <!-- SplashActivity를 LAUNCHER로 설정하고 스플래시 테마 적용 -->
         <activity
-            android:name=".ui.activities.LoginActivity"
-            android:exported="true">
+            android:name=".ui.activities.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- MainActivity는 더 이상 LAUNCHER가 아님 -->
+        <activity
+            android:name=".ui.activities.LoginActivity"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="false"
             android:label="@string/app_name"
-            android:theme="@style/Theme.CryptoAnalysisAI"/>
+            android:theme="@style/Theme.CryptoAnalysisAI" />
 
-        <!-- 구독 액티비티 추가 -->
         <activity
             android:name=".ui.activities.SubscriptionActivity"
             android:exported="false" />
 
     </application>
-
 </manifest>
