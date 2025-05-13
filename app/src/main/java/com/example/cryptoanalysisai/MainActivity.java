@@ -329,4 +329,8 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             }
         });
     }
+
+    public void navigateToCoinsTab() {
+        binding.viewPager.setCurrentItem(0);
+    }
 }
