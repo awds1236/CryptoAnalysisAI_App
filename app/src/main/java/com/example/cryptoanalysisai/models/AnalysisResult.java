@@ -1,7 +1,10 @@
 package com.example.cryptoanalysisai.models;
 
 import com.google.gson.annotations.SerializedName;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AnalysisResult {
 
@@ -59,6 +62,7 @@ public class AnalysisResult {
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
+
 
 
     // 내부 클래스 정의
@@ -282,6 +286,33 @@ public class AnalysisResult {
 
         @SerializedName("매수매도_세력_비율")
         private double buySellRatio;
+
+        @SerializedName("롱_비율")
+        private double longPercent = 50.0;
+
+        @SerializedName("숏_비율")
+        private double shortPercent = 50.0;
+
+        // Getter와 Setter 추가
+        public double getLongPercent() {
+            return longPercent;
+        }
+
+        public double getShortPercent() {
+            return shortPercent;
+        }
+
+        // 맵 스타일로 데이터에 접근하기 위한 메서드
+        private Map<String, Object> additionalData = new HashMap<>();
+
+        public Object get(String key) {
+            return additionalData.get(key);
+        }
+
+        public void put(String key, Object value) {
+            additionalData.put(key, value);
+        }
+
 
         // Getters and Setters
         public List<Double> getSupportLevels() {
