@@ -113,7 +113,22 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
         loadExchangeRate();
 
+        restoreSelectedCoin();
+
         AdManager.getInstance(this);
+
+        // 테마가 변경되었는지 확인 (Bundle이 null이 아니면 재생성된 것)
+        if (savedInstanceState != null) {
+            // 테마 변경 후 재생성된 경우, 선택된 코인이 있으면 분석 데이터 새로고침
+            if (selectedCoin != null) {
+                // 지연시켜 UI가 완전히 생성된 후 새로고침 수행
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    refreshAnalysisData();
+                }, 500);
+            }
+        }
+
+
 
 
 
@@ -192,6 +207,19 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             }
         }
     };
+
+    // 분석 데이터 새로고침 메서드 추가
+    private void refreshAnalysisData() {
+        if (selectedCoin != null) {
+            // 현재 보이는 분석 프래그먼트 찾기
+            Fragment fragment = getSupportFragmentManager().findFragmentByTag("f1");
+            if (fragment instanceof AnalysisFragment) {
+                AnalysisFragment analysisFragment = (AnalysisFragment) fragment;
+                // 분석 데이터 새로고침
+                analysisFragment.loadAnalysisFromApi();
+            }
+        }
+    }
 
     /**
      * 코인 가격 업데이트
@@ -414,13 +442,19 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     }
 
     /**
-     * 다크 모드 상태를 설정합니다.
+     * 테마 상태를 설정합니다.
      */
     private void setDarkMode(boolean enabled) {
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(PREF_DARK_MODE, enabled);
         editor.apply();
+
+        // 테마 변경 시작 전에 로딩 표시
+        View rootView = findViewById(android.R.id.content);
+        if (rootView != null) {
+            Snackbar.make(rootView, "테마 변경 중...", Snackbar.LENGTH_SHORT).show();
+        }
 
         // 테마 모드 설정
         if (enabled) {
@@ -429,8 +463,41 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         }
 
+        // 변경사항 적용을 위해 액티비티 재생성하기 전에 현재 선택된 코인 정보 저장
+        saveCurrentCoinInfo();
+
         // 변경사항 적용을 위해 액티비티 재생성
         recreate();
+    }
+
+    // 이 메서드 추가
+    private void saveCurrentCoinInfo() {
+        // 현재 선택된 코인 정보를 SharedPreferences에 저장
+        if (selectedCoin != null) {
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString("SELECTED_COIN_MARKET", selectedCoin.getMarket());
+            editor.putString("SELECTED_COIN_SYMBOL", selectedCoin.getSymbol());
+            editor.putString("SELECTED_COIN_NAME", selectedCoin.getDisplayName());
+            editor.apply();
+        }
+    }
+
+    // onCreate() 메서드에서 복원 로직 추가 (기존 onCreate 내부)
+    private void restoreSelectedCoin() {
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        String market = prefs.getString("SELECTED_COIN_MARKET", null);
+        String symbol = prefs.getString("SELECTED_COIN_SYMBOL", null);
+        String name = prefs.getString("SELECTED_COIN_NAME", null);
+
+        if (market != null && symbol != null) {
+            selectedCoin = new CoinInfo();
+            selectedCoin.setMarket(market);
+            selectedCoin.setSymbol(symbol);
+            if (name != null) {
+                selectedCoin.setKoreanName(name);
+            }
+        }
     }
 
     /**
