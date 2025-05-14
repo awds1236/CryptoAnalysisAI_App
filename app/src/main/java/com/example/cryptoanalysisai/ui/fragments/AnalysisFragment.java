@@ -134,6 +134,8 @@ public class AnalysisFragment extends Fragment {
         shortTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_SHORT_TERM, "$");
         midTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_MID_TERM, "$");
         longTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_LONG_TERM, "$");
+
+        subscriptionManager = SubscriptionManager.getInstance(requireContext());
     }
 
     @Nullable
@@ -501,8 +503,8 @@ public class AnalysisFragment extends Fragment {
     private void updateAnalysisUI() {
         if (binding == null || analysisResult == null) return;
 
-        // 구독 상태 확인
-        boolean isSubscribed = subscriptionManager.isSubscribed();
+        boolean isSubscribed = subscriptionManager != null && subscriptionManager.isSubscribed();
+
 
         // 분석 시간 표시
         if (analysisResult.getTimestamp() > 0) {
@@ -817,8 +819,6 @@ public class AnalysisFragment extends Fragment {
 
                         binding.tvCrossSignal.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" +
                                 displayText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
-                    } else {
-                        binding.tvCrossSignal.setText("데이터 없음");
                     }
                 }
 

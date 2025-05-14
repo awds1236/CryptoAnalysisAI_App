@@ -60,7 +60,7 @@ public class AdViewDialog extends DialogFragment {
         adManager = AdManager.getInstance(requireContext());
 
         // 전체화면 대화상자 스타일 사용
-        setStyle(DialogFragment.STYLE_NORMAL, R.style.ThemeOverlay_MaterialComponents_Dialog_Alert);
+        setStyle(DialogFragment.STYLE_NORMAL, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_Dialog_Alert);
     }
 
     @NonNull

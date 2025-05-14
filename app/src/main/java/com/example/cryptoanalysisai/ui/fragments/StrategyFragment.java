@@ -22,11 +22,12 @@ import androidx.fragment.app.Fragment;
 
 import com.example.cryptoanalysisai.R;
 import com.example.cryptoanalysisai.models.AnalysisResult;
+import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.example.cryptoanalysisai.ui.dialogs.AdViewDialog;
-import com.google.android.ads.mediationtestsuite.utils.AdManager;
+import com.example.cryptoanalysisai.services.AdManager;
 
 import java.util.List;
 import java.util.Locale;
@@ -63,7 +64,13 @@ public class StrategyFragment extends Fragment {
     private Button btnWatchAd;
     private Handler adTimerHandler = new Handler(Looper.getMainLooper());
     private Runnable adTimerRunnable;
+    private CoinInfo coinInfo;
 
+    private View additionalBlurLayer;
+
+    public void setCoinInfo(CoinInfo coinInfo) {
+        this.coinInfo = coinInfo;
+    }
 
     private ExchangeRateManager exchangeRateManager;
 
@@ -324,6 +331,7 @@ public class StrategyFragment extends Fragment {
                 }
             });
         }
+
 
         // 광고 상태 및 버튼 뷰 찾기
         tvAdStatus = view.findViewById(R.id.tvAdStatus);
