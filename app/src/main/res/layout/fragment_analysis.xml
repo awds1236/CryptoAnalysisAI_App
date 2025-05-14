@@ -462,34 +462,33 @@
             <Button
                 android:id="@+id/btnTechnicalSubscribe"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="45dp"
                 android:layout_gravity="center"
                 android:layout_marginHorizontal="32dp"
+                android:layout_marginTop="-10dp"
                 android:background="@drawable/rounded_button"
-                android:padding="12dp"
                 android:text="프리미엄 구독으로 기술적 분석 보기"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:elevation="10dp"
-                android:visibility="gone" />
+                android:visibility="visible" />
 
-            <!-- 광고 보기 버튼 추가 -->
+            <!-- For btnTechnicalWatchAd, adjust positioning -->
             <Button
                 android:id="@+id/btnTechnicalWatchAd"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="45dp"
                 android:layout_gravity="center"
                 android:layout_marginHorizontal="32dp"
-                android:layout_marginTop="60dp"
-                android:background="@drawable/ad_button_background"
+                android:layout_marginTop="50dp"
+                android:background="@drawable/rounded_button"
                 android:drawableStart="@android:drawable/ic_menu_view"
                 android:drawablePadding="8dp"
-                android:padding="12dp"
                 android:text="광고 보고 10분 동안 보기"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:elevation="10dp"
-                android:visibility="gone" />
+                android:visibility="visible" />
         </FrameLayout>
 
         <com.google.android.material.card.MaterialCardView

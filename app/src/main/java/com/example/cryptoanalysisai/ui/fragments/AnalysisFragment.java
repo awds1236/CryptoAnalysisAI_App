@@ -824,10 +824,12 @@ public class AnalysisFragment extends Fragment {
 
                 // 롱:숏 비율 표시 - 새로 추가
                 // 롱:숏 비율 시각화
-                double longPercent = 50.0;
-                double shortPercent = 50.0;
+                // Use the actual longPercent and shortPercent from the analysis result
+                double longPercent = technicalAnalysis.getLongPercent();
+                double shortPercent = technicalAnalysis.getShortPercent();
 
-                if (technicalAnalysis.getBuySellRatio() > 0) {
+                // Fallback to buySellRatio for backward compatibility
+                if (longPercent == 0 && shortPercent == 0 && technicalAnalysis.getBuySellRatio() > 0) {
                     longPercent = technicalAnalysis.getBuySellRatio() * 100;
                     shortPercent = 100 - longPercent;
                 }
@@ -893,8 +895,6 @@ public class AnalysisFragment extends Fragment {
 
                         binding.tvBuySellRatio.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" +
                                 displayText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
-                    } else {
-                        binding.tvBuySellRatio.setText("데이터 없음");
                     }
                 }
             }

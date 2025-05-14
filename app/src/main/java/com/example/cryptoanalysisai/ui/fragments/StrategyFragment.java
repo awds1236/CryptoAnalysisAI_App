@@ -119,6 +119,11 @@ public class StrategyFragment extends Fragment {
         pixelatedOverlay = view.findViewById(R.id.pixelatedOverlay);
         btnSubscribe = view.findViewById(R.id.btnSubscribe);
         contentArea = view.findViewById(R.id.contentArea);
+        btnWatchAd = view.findViewById(R.id.btnWatchAd);
+        if (btnWatchAd == null) {
+            Log.e("StrategyFragment", "btnWatchAd를 찾을 수 없습니다");
+        }
+        additionalBlurLayer = view.findViewById(R.id.additionalBlurLayer);
 
         // 타이틀 설정
         String title;
@@ -337,10 +342,11 @@ public class StrategyFragment extends Fragment {
         tvAdStatus = view.findViewById(R.id.tvAdStatus);
         btnWatchAd = view.findViewById(R.id.btnWatchAd);
 
-        // 광고 버튼 클릭 이벤트
-        btnWatchAd.setOnClickListener(v -> {
-            showAdDialog();
-        });
+        if (btnWatchAd != null) {
+            btnWatchAd.setOnClickListener(v -> {
+                showAdDialog();
+            });
+        }
 
         // 콘텐츠 접근 권한 확인 및 UI 업데이트
         updateContentAccessUI();
@@ -423,6 +429,13 @@ public class StrategyFragment extends Fragment {
             // 구독 버튼 및 광고 버튼 표시
             btnSubscribe.setVisibility(View.VISIBLE);
             btnWatchAd.setVisibility(View.VISIBLE);
+
+            // 버튼 위치 조정 - btnWatchAd의 margin을 설정
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) btnWatchAd.getLayoutParams();
+            if (params != null) {
+                params.topMargin = (int) (80 * getResources().getDisplayMetrics().density); // 80dp
+                btnWatchAd.setLayoutParams(params);
+            }
 
             // 광고 상태 숨김
             tvAdStatus.setVisibility(View.GONE);
