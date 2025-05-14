@@ -774,23 +774,20 @@ public class AnalysisFragment extends Fragment {
                 double longPercent = 50.0;
                 double shortPercent = 50.0;
 
-                if (technicalAnalysis.get("롱_비율") != null) {
+                if (technicalAnalysis != null) {
                     try {
-                        longPercent = technicalAnalysis.get("롱_비율") instanceof Double ?
-                                (Double)technicalAnalysis.get("롱_비율") :
-                                Double.parseDouble(technicalAnalysis.get("롱_비율").toString());
-                    } catch (Exception e) {
-                        Log.e(TAG, "롱 비율 파싱 오류", e);
-                    }
-                }
+                        // 직접 getter 메서드 사용
+                        if (technicalAnalysis.getLongPercent() > 0) {
+                            longPercent = technicalAnalysis.getLongPercent();
+                        }
+                        if (technicalAnalysis.getShortPercent() > 0) {
+                            shortPercent = technicalAnalysis.getShortPercent();
+                        }
 
-                if (technicalAnalysis.get("숏_비율") != null) {
-                    try {
-                        shortPercent = technicalAnalysis.get("숏_비율") instanceof Double ?
-                                (Double)technicalAnalysis.get("숏_비율") :
-                                Double.parseDouble(technicalAnalysis.get("숏_비율").toString());
+                        // 디버깅용 로그 추가
+                        Log.d(TAG, "롱/숏 비율 데이터: " + longPercent + " / " + shortPercent);
                     } catch (Exception e) {
-                        Log.e(TAG, "숏 비율 파싱 오류", e);
+                        Log.e(TAG, "롱/숏 비율 파싱 오류", e);
                     }
                 }
 
@@ -855,8 +852,7 @@ public class AnalysisFragment extends Fragment {
 
                         binding.tvBuySellRatio.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" +
                                 displayText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
-                    } else {
-                        binding.tvBuySellRatio.setText("데이터 없음");
+
                     }
                 }
             }

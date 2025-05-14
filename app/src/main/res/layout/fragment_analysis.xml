@@ -408,7 +408,6 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-
                     <ProgressBar
                         android:id="@+id/progressLongShortRatio"
                         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
