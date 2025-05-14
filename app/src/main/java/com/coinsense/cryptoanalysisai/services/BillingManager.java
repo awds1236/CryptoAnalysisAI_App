@@ -30,8 +30,8 @@ public class BillingManager implements PurchasesUpdatedListener {
     private static final String TAG = "BillingManager";
 
     // 구독 상품 ID
-    public static final String MONTHLY_SUBSCRIPTION_ID = "com.example.cryptoanalysisai.monthly";
-    public static final String YEARLY_SUBSCRIPTION_ID = "com.example.cryptoanalysisai.yearly";
+    public static final String MONTHLY_SUBSCRIPTION_ID = "com.coinsense.cryptoanalysisai.monthly";
+    public static final String YEARLY_SUBSCRIPTION_ID = "com.coinsense.cryptoanalysisai.yearly";
 
     private static BillingManager instance;
     private final Context context;
