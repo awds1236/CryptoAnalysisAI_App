@@ -4,11 +4,14 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -22,6 +25,8 @@ import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
+import com.example.cryptoanalysisai.ui.dialogs.AdViewDialog;
+import com.google.android.ads.mediationtestsuite.utils.AdManager;
 
 import java.util.List;
 import java.util.Locale;
@@ -52,6 +57,14 @@ public class StrategyFragment extends Fragment {
     private View btnSubscribe;
     private View contentArea;
 
+
+    private AdManager adManager;
+    private TextView tvAdStatus;
+    private Button btnWatchAd;
+    private Handler adTimerHandler = new Handler(Looper.getMainLooper());
+    private Runnable adTimerRunnable;
+
+
     private ExchangeRateManager exchangeRateManager;
 
     public static StrategyFragment newInstance(int strategyType, String currencySymbol) {
@@ -73,6 +86,9 @@ public class StrategyFragment extends Fragment {
 
         subscriptionManager = SubscriptionManager.getInstance(requireContext());
         exchangeRateManager = ExchangeRateManager.getInstance(); // 추가
+
+        adManager = AdManager.getInstance(requireContext());
+        subscriptionManager = SubscriptionManager.getInstance(requireContext());
     }
 
     @Nullable
@@ -308,6 +324,21 @@ public class StrategyFragment extends Fragment {
                 }
             });
         }
+
+        // 광고 상태 및 버튼 뷰 찾기
+        tvAdStatus = view.findViewById(R.id.tvAdStatus);
+        btnWatchAd = view.findViewById(R.id.btnWatchAd);
+
+        // 광고 버튼 클릭 이벤트
+        btnWatchAd.setOnClickListener(v -> {
+            showAdDialog();
+        });
+
+        // 콘텐츠 접근 권한 확인 및 UI 업데이트
+        updateContentAccessUI();
+
+        // 매 분마다 타이머 업데이트
+        startAdTimer();
     }
 
     // UI 업데이트를 위한 헬퍼 메서드
@@ -317,6 +348,101 @@ public class StrategyFragment extends Fragment {
             // 기타 UI 업데이트 로직...
         }
     }
+
+    @Override
+    public void onDestroyView() {
+        stopAdTimer();
+        super.onDestroyView();
+    }
+
+
+    // 광고 대화상자 표시
+    private void showAdDialog() {
+        if (getActivity() == null || coinInfo == null) return;
+
+        AdViewDialog dialog = AdViewDialog.newInstance(
+                coinInfo.getSymbol(),
+                coinInfo.getDisplayName()
+        );
+
+        dialog.setCompletionListener(coinSymbol -> {
+            // 광고 시청 완료 - UI 업데이트
+            updateContentAccessUI();
+        });
+
+        dialog.show(getParentFragmentManager(), "ad_dialog");
+    }
+
+    // 콘텐츠 접근 권한 UI 업데이트
+    private void updateContentAccessUI() {
+        if (coinInfo == null || coinInfo.getSymbol() == null) return;
+
+        boolean isSubscribed = subscriptionManager.isSubscribed();
+        boolean hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+
+        if (isSubscribed || hasAdPermission) {
+            // 구독자이거나 광고 시청한 경우 콘텐츠 표시
+            blurOverlay.setVisibility(View.GONE);
+            pixelatedOverlay.setVisibility(View.GONE);
+            additionalBlurLayer.setVisibility(View.GONE);
+            contentArea.setAlpha(1.0f);
+            btnSubscribe.setVisibility(View.GONE);
+
+            // 광고 보기 버튼 숨김
+            btnWatchAd.setVisibility(View.GONE);
+
+            // 구독자가 아니고 광고 시청한 경우 남은 시간 표시
+            if (!isSubscribed && hasAdPermission) {
+                int remainingMinutes = adManager.getRemainingMinutes(coinInfo.getSymbol());
+                tvAdStatus.setVisibility(View.VISIBLE);
+                tvAdStatus.setText("광고 시청 후 " + remainingMinutes + "분 남음");
+            } else {
+                tvAdStatus.setVisibility(View.GONE);
+            }
+
+            // 전략 데이터가 있으면 실제 내용 표시
+            if (strategy != null) {
+                displayBuySteps(layoutBuySteps, strategy.getBuySteps());
+                // 나머지 데이터 표시 코드...
+            }
+        } else {
+            // 구독자도 아니고 광고도 안 본 경우 콘텐츠 가림
+            blurOverlay.setVisibility(View.VISIBLE);
+            pixelatedOverlay.setVisibility(View.VISIBLE);
+            additionalBlurLayer.setVisibility(View.VISIBLE);
+            contentArea.setAlpha(0.5f);
+
+            // 구독 버튼 및 광고 버튼 표시
+            btnSubscribe.setVisibility(View.VISIBLE);
+            btnWatchAd.setVisibility(View.VISIBLE);
+
+            // 광고 상태 숨김
+            tvAdStatus.setVisibility(View.GONE);
+
+            // 콘텐츠 마스킹 코드...
+        }
+    }
+
+    // 광고 타이머 시작
+    private void startAdTimer() {
+        adTimerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                updateContentAccessUI();
+                adTimerHandler.postDelayed(this, 60000); // 1분마다 업데이트
+            }
+        };
+
+        adTimerHandler.post(adTimerRunnable);
+    }
+
+    // 광고 타이머 중지
+    private void stopAdTimer() {
+        if (adTimerHandler != null && adTimerRunnable != null) {
+            adTimerHandler.removeCallbacks(adTimerRunnable);
+        }
+    }
+
 
     /**
      * 첫 번째 매수 단계만 블러 처리된 상태로 표시 (미끼용)

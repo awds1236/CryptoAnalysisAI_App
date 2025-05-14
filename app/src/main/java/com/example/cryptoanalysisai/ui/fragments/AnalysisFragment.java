@@ -3,6 +3,8 @@ package com.example.cryptoanalysisai.ui.fragments;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.format.DateUtils;
@@ -10,6 +12,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,10 +31,12 @@ import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.BinanceTicker;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
+import com.example.cryptoanalysisai.services.AdManager;
 import com.example.cryptoanalysisai.services.AnalysisApiService;
 import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
+import com.example.cryptoanalysisai.ui.dialogs.AdViewDialog;
 import com.example.cryptoanalysisai.ui.views.LongShortRatioView;
 import com.example.cryptoanalysisai.utils.Constants;
 import com.google.android.material.tabs.TabLayoutMediator;
@@ -77,6 +82,13 @@ public class AnalysisFragment extends Fragment {
     // 최근 가격 변동 추적을 위한 변수
     private double lastPrice = 0;
 
+    // 광고 관련 변수 추가
+    private AdManager adManager;
+    private Button btnTechnicalWatchAd;
+    private TextView tvTechnicalAdStatus;
+    private Handler adTimerHandler = new Handler(Looper.getMainLooper());
+    private Runnable adTimerRunnable;
+
     public AnalysisFragment() {
         // 기본 생성자
     }
@@ -115,13 +127,13 @@ public class AnalysisFragment extends Fragment {
         }
 
         analysisApiService = AnalysisApiService.getInstance();
-        subscriptionManager = SubscriptionManager.getInstance(requireContext()); // 이 줄 추가
+        subscriptionManager = SubscriptionManager.getInstance(requireContext());
+        adManager = AdManager.getInstance(requireContext());
 
         // 전략 프래그먼트 초기화
         shortTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_SHORT_TERM, "$");
         midTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_MID_TERM, "$");
         longTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_LONG_TERM, "$");
-
     }
 
     @Nullable
@@ -169,8 +181,7 @@ public class AnalysisFragment extends Fragment {
 
         // 위 코드를 다음으로 바꾸세요
         // 화면에서 뒤로가기 버튼 숨기기
-                binding.btnBack.setVisibility(View.GONE);
-
+        binding.btnBack.setVisibility(View.GONE);
 
         // 기술적 분석 구독 버튼 설정
         binding.btnTechnicalSubscribe.setOnClickListener(v -> {
@@ -178,12 +189,29 @@ public class AnalysisFragment extends Fragment {
             Intent intent = new Intent(getActivity(), SubscriptionActivity.class);
             startActivity(intent);
         });
+
         progressLongShortRatio = view.findViewById(R.id.progressLongShortRatio);
         tvLongShortRatioText = view.findViewById(R.id.tvLongShortRatioText);
+
+        // 광고 관련 뷰 찾기
+        btnTechnicalWatchAd = view.findViewById(R.id.btnTechnicalWatchAd);
+        tvTechnicalAdStatus = view.findViewById(R.id.tvTechnicalAdStatus);
+
+        // 광고 버튼 클릭 이벤트
+        btnTechnicalWatchAd.setOnClickListener(v -> {
+            showAdDialog();
+        });
+
+        // 초기 UI 업데이트
+        updateTechnicalAccessUI();
+
+        // 타이머 시작
+        startAdTimer();
     }
 
     @Override
     public void onDestroyView() {
+        stopAdTimer();
         super.onDestroyView();
         binding = null;
     }
@@ -591,48 +619,73 @@ public class AnalysisFragment extends Fragment {
             }
         }
 
-        // 기술적 분석
+        // 기술적 분석 접근 권한 UI 업데이트
+        updateTechnicalAccessUI();
+
+        // 위험 요소 - 시각적 강조
+        if (analysisResult.getRiskFactors() != null && !analysisResult.getRiskFactors().isEmpty()) {
+            StringBuilder riskFactors = new StringBuilder();
+
+            for (int i = 0; i < analysisResult.getRiskFactors().size(); i++) {
+                String risk = analysisResult.getRiskFactors().get(i);
+
+                // 위험 요소 심각도에 따른 색상 코드 (예시)
+                String colorCode = "#F44336"; // 기본 빨간색
+
+                // 키워드 기반 중요도 판단 (예시)
+                if (risk.toLowerCase().contains("급격한") ||
+                        risk.toLowerCase().contains("심각한") ||
+                        risk.toLowerCase().contains("충격")) {
+                    colorCode = "#D32F2F"; // 더 진한 빨간색
+                } else if (risk.toLowerCase().contains("가능성")) {
+                    colorCode = "#FF9800"; // 주황색
+                }
+
+                riskFactors.append("<font color='")
+                        .append(colorCode)
+                        .append("'>⚠️ ")
+                        .append(risk)
+                        .append("</font>");
+
+                if (i < analysisResult.getRiskFactors().size() - 1) {
+                    riskFactors.append("<br><br>");
+                }
+            }
+
+            binding.tvRiskFactors.setText(Html.fromHtml(riskFactors.toString(), Html.FROM_HTML_MODE_LEGACY));
+        }
+
+        // 현재가와 지지선/저항선 비교 업데이트
+        updatePriceComparisonWithLevels();
+    }
+
+    /**
+     * 기술적 분석 접근 UI 업데이트
+     */
+    private void updateTechnicalAccessUI() {
+        if (coinInfo == null || coinInfo.getSymbol() == null || analysisResult == null) return;
+
+        boolean isSubscribed = subscriptionManager.isSubscribed();
+        boolean hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+
         AnalysisResult.TechnicalAnalysis technicalAnalysis = analysisResult.getTechnicalAnalysis();
 
-        // 구독자만 기술적 분석 내용을 볼 수 있도록 처리
-        if (!isSubscribed) {
-            // 기술적 분석 블러 처리
-            binding.technicalBlurOverlay.setVisibility(View.VISIBLE);
-            binding.technicalPixelatedOverlay.setVisibility(View.VISIBLE);
-            binding.btnTechnicalSubscribe.setVisibility(View.VISIBLE); // 구독 버튼 표시
-
-            // 콘텐츠 알파값 낮추기
-            binding.cardTechnical.setAlpha(0.5f);
-
-            // 콘텐츠 마스킹 처리
-            binding.tvSupport.setText("**********");
-            binding.tvResistance.setText("**********");
-            binding.tvTrendStrength.setText("*****");
-            binding.tvPattern.setText("**********");
-            binding.tvCrossSignal.setText("*****");
-            binding.tvBuySellRatio.setText("*****");
-
-            // 이동평균선 신호 및 롱숏 비율 정보 마스킹 (있는 경우)
-            if (binding.tvCrossSignal != null) {
-                binding.tvCrossSignal.setText("*****");
-            }
-            if (binding.tvBuySellRatio != null) {
-                binding.tvBuySellRatio.setText("*****");
-            }
-
-            // 롱:숏 비율 마스킹
-            if (binding.progressLongShortRatio != null) {
-                binding.progressLongShortRatio.setProgress(50); // 중립 상태로 표시
-            }
-            if (binding.tvLongShortRatioText != null) {
-                binding.tvLongShortRatioText.setText("***** vs *****");
-            }
-        } else {
-            // 구독자인 경우 블러 처리 제거
+        if (isSubscribed || hasAdPermission) {
+            // 구독자이거나 광고 시청한 경우 콘텐츠 표시
             binding.technicalBlurOverlay.setVisibility(View.GONE);
             binding.technicalPixelatedOverlay.setVisibility(View.GONE);
             binding.btnTechnicalSubscribe.setVisibility(View.GONE);
+            btnTechnicalWatchAd.setVisibility(View.GONE);
             binding.cardTechnical.setAlpha(1.0f);
+
+            // 구독자가 아니고 광고 시청한 경우 남은 시간 표시
+            if (!isSubscribed && hasAdPermission) {
+                int remainingMinutes = adManager.getRemainingMinutes(coinInfo.getSymbol());
+                tvTechnicalAdStatus.setVisibility(View.VISIBLE);
+                tvTechnicalAdStatus.setText("광고 시청 후 " + remainingMinutes + "분 남음");
+            } else {
+                tvTechnicalAdStatus.setVisibility(View.GONE);
+            }
 
             // 실제 기술적 분석 내용 표시
             if (technicalAnalysis != null) {
@@ -774,21 +827,9 @@ public class AnalysisFragment extends Fragment {
                 double longPercent = 50.0;
                 double shortPercent = 50.0;
 
-                if (technicalAnalysis != null) {
-                    try {
-                        // 직접 getter 메서드 사용
-                        if (technicalAnalysis.getLongPercent() > 0) {
-                            longPercent = technicalAnalysis.getLongPercent();
-                        }
-                        if (technicalAnalysis.getShortPercent() > 0) {
-                            shortPercent = technicalAnalysis.getShortPercent();
-                        }
-
-                        // 디버깅용 로그 추가
-                        Log.d(TAG, "롱/숏 비율 데이터: " + longPercent + " / " + shortPercent);
-                    } catch (Exception e) {
-                        Log.e(TAG, "롱/숏 비율 파싱 오류", e);
-                    }
+                if (technicalAnalysis.getBuySellRatio() > 0) {
+                    longPercent = technicalAnalysis.getBuySellRatio() * 100;
+                    shortPercent = 100 - longPercent;
                 }
 
                 // 프로그레스바 설정 (롱 포지션 비율을 표시)
@@ -852,48 +893,38 @@ public class AnalysisFragment extends Fragment {
 
                         binding.tvBuySellRatio.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" +
                                 displayText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
-
+                    } else {
+                        binding.tvBuySellRatio.setText("데이터 없음");
                     }
                 }
             }
-        }
+        } else {
+            // 구독자도 아니고 광고도 안 본 경우 콘텐츠 가림
+            binding.technicalBlurOverlay.setVisibility(View.VISIBLE);
+            binding.technicalPixelatedOverlay.setVisibility(View.VISIBLE);
+            binding.btnTechnicalSubscribe.setVisibility(View.VISIBLE);
+            btnTechnicalWatchAd.setVisibility(View.VISIBLE);
+            binding.cardTechnical.setAlpha(0.5f);
+            tvTechnicalAdStatus.setVisibility(View.GONE);
 
-        // 위험 요소 - 시각적 강조
-        if (analysisResult.getRiskFactors() != null && !analysisResult.getRiskFactors().isEmpty()) {
-            StringBuilder riskFactors = new StringBuilder();
+            // 콘텐츠 마스킹 처리
+            binding.tvSupport.setText("**********");
+            binding.tvResistance.setText("**********");
+            binding.tvTrendStrength.setText("*****");
+            binding.tvPattern.setText("**********");
+            binding.tvCrossSignal.setText("*****");
+            binding.tvBuySellRatio.setText("*****");
 
-            for (int i = 0; i < analysisResult.getRiskFactors().size(); i++) {
-                String risk = analysisResult.getRiskFactors().get(i);
-
-                // 위험 요소 심각도에 따른 색상 코드 (예시)
-                String colorCode = "#F44336"; // 기본 빨간색
-
-                // 키워드 기반 중요도 판단 (예시)
-                if (risk.toLowerCase().contains("급격한") ||
-                        risk.toLowerCase().contains("심각한") ||
-                        risk.toLowerCase().contains("충격")) {
-                    colorCode = "#D32F2F"; // 더 진한 빨간색
-                } else if (risk.toLowerCase().contains("가능성")) {
-                    colorCode = "#FF9800"; // 주황색
-                }
-
-                riskFactors.append("<font color='")
-                        .append(colorCode)
-                        .append("'>⚠️ ")
-                        .append(risk)
-                        .append("</font>");
-
-                if (i < analysisResult.getRiskFactors().size() - 1) {
-                    riskFactors.append("<br><br>");
-                }
+            // 롱:숏 비율 마스킹
+            if (binding.progressLongShortRatio != null) {
+                binding.progressLongShortRatio.setProgress(50); // 중립 상태로 표시
             }
-
-            binding.tvRiskFactors.setText(Html.fromHtml(riskFactors.toString(), Html.FROM_HTML_MODE_LEGACY));
+            if (binding.tvLongShortRatioText != null) {
+                binding.tvLongShortRatioText.setText("***** vs *****");
+            }
         }
-
-        // 현재가와 지지선/저항선 비교 업데이트
-        updatePriceComparisonWithLevels();
     }
+
     /**
      * 텍스트에서 주요 키워드 강조 처리
      */
@@ -944,6 +975,51 @@ public class AnalysisFragment extends Fragment {
         // 장기 전략 업데이트
         if (longTermFragment != null && analysisResult.getLongTermStrategy() != null) {
             longTermFragment.setStrategy(analysisResult.getLongTermStrategy());
+        }
+    }
+
+    /**
+     * 광고 대화상자 표시
+     */
+    private void showAdDialog() {
+        if (getActivity() == null || coinInfo == null) return;
+
+        AdViewDialog dialog = AdViewDialog.newInstance(
+                coinInfo.getSymbol(),
+                coinInfo.getDisplayName()
+        );
+
+        dialog.setCompletionListener(coinSymbol -> {
+            // 광고 시청 완료 - UI 업데이트
+            updateTechnicalAccessUI();
+        });
+
+        dialog.show(getParentFragmentManager(), "ad_dialog");
+    }
+
+    /**
+     * 광고 타이머 시작
+     */
+    private void startAdTimer() {
+        adTimerRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isAdded() && coinInfo != null) {
+                    updateTechnicalAccessUI();
+                }
+                adTimerHandler.postDelayed(this, 60000); // 1분마다 업데이트
+            }
+        };
+
+        adTimerHandler.post(adTimerRunnable);
+    }
+
+    /**
+     * 광고 타이머 중지
+     */
+    private void stopAdTimer() {
+        if (adTimerHandler != null && adTimerRunnable != null) {
+            adTimerHandler.removeCallbacks(adTimerRunnable);
         }
     }
 

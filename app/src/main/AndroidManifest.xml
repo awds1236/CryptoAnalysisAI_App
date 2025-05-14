@@ -16,6 +16,11 @@
         android:theme="@style/Theme.CryptoAnalysisAI"
         android:name=".CryptoAnalysisApp">
 
+        <!-- AdMob 앱 ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713"/>
+
         <!-- SplashActivity를 LAUNCHER로 설정하고 스플래시 테마 적용 -->
         <activity
             android:name=".ui.activities.SplashActivity"

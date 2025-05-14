@@ -81,6 +81,7 @@ dependencies {
     implementation libs.androidx.credentials.play.services.auth
     implementation libs.googleid
     implementation libs.play.services.auth
+    implementation libs.mediation.test.suite
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
@@ -118,9 +119,6 @@ dependencies {
     // Coroutines 지원
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
 
-    // MariaDB JDBC 드라이버 제거 (API로 대체)
-    // implementation 'org.mariadb.jdbc:mariadb-java-client:3.1.4'
-
     // 테스트 라이브러리
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -137,6 +135,9 @@ dependencies {
     implementation 'androidx.credentials:credentials-play-services-auth:1.2.0'
 
     implementation 'com.google.android.gms:play-services-identity:18.0.1'
+
+    // AdMob 광고 SDK 추가
+    implementation 'com.google.android.gms:play-services-ads:22.6.0'
 
     // 기존 의존성 유지
     implementation 'androidx.core:core-ktx:1.10.1'

@@ -28,6 +28,7 @@ import com.example.cryptoanalysisai.databinding.ActivityMainBinding;
 import com.example.cryptoanalysisai.models.AnalysisResult;
 import com.example.cryptoanalysisai.models.CoinInfo;
 import com.example.cryptoanalysisai.models.ExchangeType;
+import com.example.cryptoanalysisai.services.AdManager;
 import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.LoginActivity;
@@ -111,6 +112,8 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         startPriceUpdates();
 
         loadExchangeRate();
+
+        AdManager.getInstance(this);
 
 
 
