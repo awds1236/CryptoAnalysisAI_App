@@ -121,10 +121,16 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         if (savedInstanceState != null) {
             // 테마 변경 후 재생성된 경우, 선택된 코인이 있으면 분석 데이터 새로고침
             if (selectedCoin != null) {
-                // 지연시켜 UI가 완전히 생성된 후 새로고침 수행
+                // 딜레이 증가: 1초 후에 새로고침 수행
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    refreshAnalysisData();
-                }, 500);
+                    // 모든 프래그먼트를 찾아서 UI 상태 갱신
+                    AnalysisFragment analysisFragment = (AnalysisFragment) getSupportFragmentManager()
+                            .findFragmentByTag("f1");
+                    if (analysisFragment != null) {
+                        analysisFragment.refreshAllUIs();
+                        analysisFragment.loadAnalysisFromApi();
+                    }
+                }, 1000); // 1초로 증가
             }
         }
 
@@ -388,6 +394,7 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     /**
      * 현재 보이는 프래그먼트 새로고침
      */
+    // MainActivity.java의 refreshCurrentFragment 메서드 수정
     private void refreshCurrentFragment() {
         int currentPage = binding.viewPager.getCurrentItem();
 
@@ -403,7 +410,12 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
                 AnalysisFragment analysisFragment = (AnalysisFragment) getSupportFragmentManager()
                         .findFragmentByTag("f" + currentPage);
                 if (analysisFragment != null && selectedCoin != null) {
+                    // 분석 결과 새로고침
                     analysisFragment.updateCoin(selectedCoin, selectedExchange);
+                    // 추가: 모든 UI 상태도 새로고침
+                    analysisFragment.refreshAllUIs();
+                    // 추가: 분석 데이터 다시 로드
+                    analysisFragment.loadAnalysisFromApi();
                 }
                 break;
         }
@@ -450,11 +462,8 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         editor.putBoolean(PREF_DARK_MODE, enabled);
         editor.apply();
 
-        // 테마 변경 시작 전에 로딩 표시
-        View rootView = findViewById(android.R.id.content);
-        if (rootView != null) {
-            Snackbar.make(rootView, "테마 변경 중...", Snackbar.LENGTH_SHORT).show();
-        }
+        // 현재 선택된 코인 정보 저장
+        saveCurrentCoinInfo();
 
         // 테마 모드 설정
         if (enabled) {
@@ -463,11 +472,17 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         }
 
-        // 변경사항 적용을 위해 액티비티 재생성하기 전에 현재 선택된 코인 정보 저장
-        saveCurrentCoinInfo();
-
-        // 변경사항 적용을 위해 액티비티 재생성
-        recreate();
+        // 대신 앱을 완전히 재시작하는 코드
+        Intent intent = getBaseContext().getPackageManager()
+                .getLaunchIntentForPackage(getBaseContext().getPackageName());
+        if (intent != null) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+            // 전환 애니메이션 제거 (선택사항)
+            overridePendingTransition(0, 0);
+        }
     }
 
     // 이 메서드 추가
