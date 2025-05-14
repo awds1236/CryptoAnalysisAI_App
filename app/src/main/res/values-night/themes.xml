@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CryptoAnalysisAI" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- 기본 브랜드 색상 -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_variant</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- 보조 브랜드 색상 -->
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryVariant">@color/accent_secondary</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- 상태바 색상 -->
+        <item name="android:statusBarColor">@color/primary_variant</item>
+
+        <!-- 배경 색상 (다크 모드) -->
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="android:colorBackground">@color/background_dark</item>
+
+        <!-- 카드 스타일 -->
+        <item name="cardBackgroundColor">@color/card_background_dark</item>
+
+        <!-- 텍스트 색상 -->
+        <item name="android:textColorPrimary">@color/text_primary_dark</item>
+        <item name="android:textColorSecondary">@color/text_secondary_dark</item>
+        <item name="android:textColorHint">@color/text_hint_dark</item>
+
+        <!-- 버튼 스타일 -->
+        <item name="materialButtonStyle">@style/Widget.CryptoAnalysis.Button</item>
+    </style>
+</resources>

@@ -14,7 +14,7 @@
         <!-- 상태바 색상 -->
         <item name="android:statusBarColor">@color/primary_variant</item>
 
-        <!-- 배경 색상 -->
+        <!-- 배경 색상 (라이트 모드) -->
         <item name="android:windowBackground">@color/background</item>
         <item name="android:colorBackground">@color/background</item>
 

@@ -39,6 +39,10 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 
+import androidx.appcompat.app.AlertDialog;
+import android.content.SharedPreferences;
+import androidx.appcompat.app.AppCompatDelegate;
+
 public class MainActivity extends AppCompatActivity implements CoinListFragment.OnCoinSelectedListener {
 
     private ActivityMainBinding binding;
@@ -58,11 +62,18 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
     private long backPressedTime;
 
+    private static final String PREF_DARK_MODE = "pref_dark_mode";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        // 저장된 다크 모드 설정 적용
+        if (isDarkModeEnabled()) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
         super.onCreate(savedInstanceState);
 
         // 로그인 상태 확인 (바인딩 전에)
@@ -307,8 +318,8 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             refreshCurrentFragment();
             return true;
         } else if (id == R.id.action_settings) {
-            // 설정 화면 구현 없음
-            Toast.makeText(this, "바이낸스 거래소의 4개 코인에 대한 데이터만 표시합니다.", Toast.LENGTH_SHORT).show();
+            // 다크 모드 설정 다이얼로그 표시
+            showThemeSettingsDialog();
             return true;
         } else if (id == R.id.action_subscription) {
             // 구독 관리 화면으로 이동
@@ -389,5 +400,61 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
     public void navigateToCoinsTab() {
         binding.viewPager.setCurrentItem(0);
+    }
+
+    /**
+     * 현재 다크 모드 상태를 확인합니다.
+     */
+    private boolean isDarkModeEnabled() {
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        return prefs.getBoolean(PREF_DARK_MODE, true); // 기본값은 true (다크 모드)
+    }
+
+    /**
+     * 다크 모드 상태를 설정합니다.
+     */
+    private void setDarkMode(boolean enabled) {
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(PREF_DARK_MODE, enabled);
+        editor.apply();
+
+        // 테마 모드 설정
+        if (enabled) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        }
+
+        // 변경사항 적용을 위해 액티비티 재생성
+        recreate();
+    }
+
+    /**
+     * 테마 설정 다이얼로그를 표시합니다.
+     */
+    private void showThemeSettingsDialog() {
+        boolean isDarkMode = isDarkModeEnabled();
+
+        // 다이얼로그 생성
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("앱 테마 설정");
+
+        // 라디오 버튼 항목 생성
+        String[] themes = {"라이트 모드", "다크 모드"};
+        int checkedItem = isDarkMode ? 1 : 0;
+
+        builder.setSingleChoiceItems(themes, checkedItem, (dialog, which) -> {
+            // 선택한 항목에 따라 다크 모드 설정
+            setDarkMode(which == 1);
+            dialog.dismiss();
+        });
+
+        // 취소 버튼
+        builder.setNegativeButton("취소", (dialog, which) -> dialog.dismiss());
+
+        // 다이얼로그 표시
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }
