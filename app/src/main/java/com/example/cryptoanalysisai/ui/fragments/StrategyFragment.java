@@ -100,6 +100,7 @@ public class StrategyFragment extends Fragment {
     }
 
     // 추가 메서드
+    // 현재 코인 정보 저장
     private void saveCurrentCoinInfo() {
         if (coinInfo != null && coinInfo.getSymbol() != null && getContext() != null) {
             SharedPreferences prefs = getContext().getSharedPreferences(
@@ -112,7 +113,7 @@ public class StrategyFragment extends Fragment {
         }
     }
 
-    // StrategyFragment의 onCreate에 추가
+    // 저장된 코인 정보 복원
     private void restoreCurrentCoinInfo() {
         if (getContext() != null) {
             SharedPreferences prefs = getContext().getSharedPreferences(
@@ -153,11 +154,12 @@ public class StrategyFragment extends Fragment {
         }
 
         subscriptionManager = SubscriptionManager.getInstance(requireContext());
-        exchangeRateManager = ExchangeRateManager.getInstance(); // 추가
+        exchangeRateManager = ExchangeRateManager.getInstance();
 
         adManager = AdManager.getInstance(requireContext());
         subscriptionManager = SubscriptionManager.getInstance(requireContext());
 
+        // 저장된 코인 정보 복원
         restoreCurrentCoinInfo();
     }
 
@@ -484,8 +486,9 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
-        // null 체크를 강화합니다
+        // coinInfo 확인 추가
         if (coinInfo == null) {
+            Log.w("StrategyFragment", "updateContentAccessUI: coinInfo is null");
             // coinInfo가 null인 경우 기본 UI 상태 설정 (구독자가 아닌 상태로 간주)
             blurOverlay.setVisibility(View.VISIBLE);
             pixelatedOverlay.setVisibility(View.VISIBLE);
@@ -494,9 +497,6 @@ public class StrategyFragment extends Fragment {
             btnSubscribe.setVisibility(View.VISIBLE);
             btnWatchAd.setVisibility(View.VISIBLE);
             tvAdStatus.setVisibility(View.GONE);
-
-            // 로그에 정보 남기기
-            Log.w("StrategyFragment", "updateContentAccessUI: coinInfo is null");
             return;
         }
 
