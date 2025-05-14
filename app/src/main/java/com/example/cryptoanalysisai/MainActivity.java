@@ -3,6 +3,7 @@ package com.example.cryptoanalysisai;
 import static android.content.ContentValues.TAG;
 import static androidx.core.content.ContextCompat.startActivity;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -19,6 +20,8 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.cryptoanalysisai.databinding.ActivityMainBinding;
@@ -32,6 +35,7 @@ import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.example.cryptoanalysisai.ui.fragments.AnalysisFragment;
 import com.example.cryptoanalysisai.ui.fragments.CoinListFragment;
 import com.example.cryptoanalysisai.utils.Constants;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -47,6 +51,13 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     // 가격 업데이트 핸들러
     private final Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
     private boolean isAutoRefreshEnabled = true;
+
+    private boolean doubleBackToExitPressedOnce = false;
+    private final Handler backPressHandler = new Handler(Looper.getMainLooper());
+    private final int BACK_PRESS_INTERVAL = 2000; // 2초
+
+    private long backPressedTime;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +100,36 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         startPriceUpdates();
 
         loadExchangeRate();
+
+
+
+        // 뒤로가기 처리를 위한 콜백 등록
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            private boolean doubleBackToExitPressedOnce = false;
+            private final Handler handler = new Handler(Looper.getMainLooper());
+
+            @Override
+            public void handleOnBackPressed() {
+                int currentItem = binding.viewPager.getCurrentItem();
+
+                if (currentItem == 1) {
+                    // 분석 화면에서는 코인 목록으로 이동
+                    binding.viewPager.setCurrentItem(0);
+                } else {
+                    // 코인 목록에서는 두 번 눌러 종료
+                    if (doubleBackToExitPressedOnce) {
+                        // 앱 종료
+                        finishAffinity();
+                        return;
+                    }
+
+                    doubleBackToExitPressedOnce = true;
+                    //Toast.makeText(MainActivity.this, "뒤로가기를 한번 더 누르면 종료됩니다", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "뒤로가기를 한번 더 누르면 종료됩니다", 1000).show();
+                    handler.postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
+                }
+            }
+        });
     }
 
     @Override
