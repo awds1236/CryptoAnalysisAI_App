@@ -256,14 +256,14 @@ public class AnalysisFragment extends Fragment {
             binding.tvExchangeInfo.setText("거래소: " + exchangeType.getDisplayName() +
                     " / 통화단위: " + (exchangeType == ExchangeType.UPBIT ? "원" : "달러(USD)"));
 
-            // AWS Lambda API에서 분석 결과 로드
+            // AWS Lambda API에서 분석 결과 로드 - 항상 새로고침
             loadAnalysisFromApi();
 
             // 현재 가격 정보 업데이트
             updatePrice();
 
             // 모든 UI를 새로고침하여 권한이 올바르게 적용되도록 함
-            // refreshAllUIs();
+            refreshAllUIs();
         }
     }
 
@@ -972,12 +972,16 @@ public class AnalysisFragment extends Fragment {
 
         // 전략 프래그먼트들의 UI 업데이트 - 각 프래그먼트가 준비되었는지 확인
         if (shortTermFragment != null && shortTermFragment.getView() != null) {
+            // coinInfo 정보 전달 및 UI 업데이트
+            shortTermFragment.setCoinInfo(coinInfo);
             shortTermFragment.updateContentAccessUI();
         }
         if (midTermFragment != null && midTermFragment.getView() != null) {
+            midTermFragment.setCoinInfo(coinInfo);
             midTermFragment.updateContentAccessUI();
         }
         if (longTermFragment != null && longTermFragment.getView() != null) {
+            longTermFragment.setCoinInfo(coinInfo);
             longTermFragment.updateContentAccessUI();
         }
     }

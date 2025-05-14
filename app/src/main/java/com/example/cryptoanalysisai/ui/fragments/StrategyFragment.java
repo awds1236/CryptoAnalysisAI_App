@@ -1,6 +1,8 @@
 package com.example.cryptoanalysisai.ui.fragments;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -70,15 +72,64 @@ public class StrategyFragment extends Fragment {
     private View additionalBlurLayer;
 
     public void setCoinInfo(CoinInfo coinInfo) {
-        this.coinInfo = coinInfo;
+        if (coinInfo == null) {
+            Log.e("StrategyFragment", "setCoinInfo: coinInfo is null");
+            return;
+        }
 
-        // 로그 추가
-        Log.d("StrategyFragment", "setCoinInfo: " +
-                (coinInfo != null ? "coinInfo set, symbol: " + coinInfo.getSymbol() : "coinInfo is null"));
+        // 현재 coinInfo와 새 coinInfo의 심볼이 같은지 확인
+        boolean isSameCoin = this.coinInfo != null &&
+                this.coinInfo.getSymbol() != null &&
+                coinInfo.getSymbol() != null &&
+                this.coinInfo.getSymbol().equals(coinInfo.getSymbol());
 
-        // 코인 정보가 변경되면 UI 업데이트
-        if (getView() != null) {
-            updateContentAccessUI();
+        // 같은 코인이 아닌 경우에만 설정 (중복 업데이트 방지)
+        if (!isSameCoin) {
+            this.coinInfo = coinInfo;
+            Log.d("StrategyFragment", "setCoinInfo: " +
+                    (coinInfo != null ? "coinInfo set, symbol: " + coinInfo.getSymbol() : "coinInfo is null"));
+
+            // coinInfo 정보 저장 (테마 변경 시 복원을 위해)
+            saveCurrentCoinInfo();
+
+            // 코인 정보가 변경되면 UI 업데이트
+            if (getView() != null) {
+                updateContentAccessUI();
+            }
+        }
+    }
+
+    // 추가 메서드
+    private void saveCurrentCoinInfo() {
+        if (coinInfo != null && coinInfo.getSymbol() != null && getContext() != null) {
+            SharedPreferences prefs = getContext().getSharedPreferences(
+                    "StrategyFragment_" + strategyType, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString("COIN_SYMBOL", coinInfo.getSymbol());
+            editor.putString("COIN_MARKET", coinInfo.getMarket());
+            editor.putString("COIN_NAME", coinInfo.getDisplayName());
+            editor.apply();
+        }
+    }
+
+    // StrategyFragment의 onCreate에 추가
+    private void restoreCurrentCoinInfo() {
+        if (getContext() != null) {
+            SharedPreferences prefs = getContext().getSharedPreferences(
+                    "StrategyFragment_" + strategyType, Context.MODE_PRIVATE);
+            String symbol = prefs.getString("COIN_SYMBOL", null);
+            String market = prefs.getString("COIN_MARKET", null);
+            String name = prefs.getString("COIN_NAME", null);
+
+            if (symbol != null && market != null) {
+                CoinInfo restoredCoin = new CoinInfo();
+                restoredCoin.setSymbol(symbol);
+                restoredCoin.setMarket(market);
+                if (name != null) {
+                    restoredCoin.setKoreanName(name);
+                }
+                this.coinInfo = restoredCoin;
+            }
         }
     }
 
@@ -106,6 +157,8 @@ public class StrategyFragment extends Fragment {
 
         adManager = AdManager.getInstance(requireContext());
         subscriptionManager = SubscriptionManager.getInstance(requireContext());
+
+        restoreCurrentCoinInfo();
     }
 
     @Nullable
@@ -416,8 +469,8 @@ public class StrategyFragment extends Fragment {
     }
 
     // 콘텐츠 접근 권한 UI 업데이트
+    // 콘텐츠 접근 권한 UI 업데이트
     public void updateContentAccessUI() {
-
         // View가 아직 생성되지 않았으면 아무것도 하지 않고 리턴
         if (getView() == null) {
             Log.d("StrategyFragment", "updateContentAccessUI: View is not created yet");
@@ -447,9 +500,8 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
-
         boolean isSubscribed = subscriptionManager.isSubscribed();
-        boolean hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+        boolean hasAdPermission = false;
 
         // symbol이 null이 아닌 경우에만 권한 확인
         if (coinInfo.getSymbol() != null) {
@@ -459,7 +511,6 @@ public class StrategyFragment extends Fragment {
         }
 
         if (isSubscribed || hasAdPermission) {
-            // 구독자이거나 광고 시청한 경우 콘텐츠 표시
             // 구독자이거나 광고 시청한 경우 콘텐츠 표시
             blurOverlay.setVisibility(View.GONE);
             pixelatedOverlay.setVisibility(View.GONE);
