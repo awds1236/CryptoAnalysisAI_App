@@ -34,7 +34,7 @@ public class Constants {
     // public static final String DB_USER = BuildConfig.DB_USER;
     // public static final String DB_PASS = BuildConfig.DB_PASS;
 
-    public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL"};
+    public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL","DOGE", "ADA", "TRX", "SUI", "LINK", "AVAX", "XLM", "HBAR"};
 
     // 기본 설정
     public static final int DEFAULT_CANDLE_COUNT = 30;

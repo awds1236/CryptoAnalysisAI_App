@@ -583,14 +583,7 @@ public class AnalysisFragment extends Fragment {
                 binding.tvConfidenceValue.setTextColor(Color.parseColor("#F44336")); // 낮음 - 빨간색
             }
 
-            // 근거 업데이트 - 키워드 강조
-            String reason = recommendation.getReason();
-            if (reason != null && !reason.isEmpty()) {
-                reason = highlightKeywords(reason);
-                binding.tvReason.setText(Html.fromHtml(reason, Html.FROM_HTML_MODE_LEGACY));
-            } else {
-                binding.tvReason.setText("");
-            }
+
         }
 
         Log.d("AnalysisFragment", "Calling updateStrategyFragments()");

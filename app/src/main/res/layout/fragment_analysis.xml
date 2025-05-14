@@ -191,20 +191,7 @@
                         tools:text="7.0/10" />
                 </LinearLayout>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="근거"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvReason"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
