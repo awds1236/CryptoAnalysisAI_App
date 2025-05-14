@@ -924,7 +924,6 @@ public class AnalysisFragment extends Fragment {
             binding.tvTrendStrength.setText("*****");
             binding.tvPattern.setText("**********");
             binding.tvCrossSignal.setText("*****");
-            binding.tvBuySellRatio.setText("*****");
 
             // 롱:숏 비율 마스킹
             if (binding.progressLongShortRatio != null) {
