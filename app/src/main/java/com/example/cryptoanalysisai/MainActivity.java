@@ -19,6 +19,8 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.cryptoanalysisai.databinding.ActivityMainBinding;
@@ -47,6 +49,9 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     // 가격 업데이트 핸들러
     private final Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
     private boolean isAutoRefreshEnabled = true;
+
+    private boolean doubleBackToExitPressedOnce = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -348,5 +353,37 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
     public void navigateToCoinsTab() {
         binding.viewPager.setCurrentItem(0);
+    }
+
+    @Override
+    public void onBackPressed() {
+        // 현재 코인 목록 탭이 표시 중인지 확인
+        if (binding.viewPager.getCurrentItem() != 0) {
+            // 코인 목록 탭이 아니면 코인 목록 탭으로 이동
+            binding.viewPager.setCurrentItem(0);
+            return;
+        }
+
+        // 이미 한 번 뒤로가기를 눌렀는지 확인
+        if (doubleBackToExitPressedOnce) {
+            super.onBackPressed(); // 앱 종료
+            return;
+        }
+
+        // 처음 뒤로가기 버튼을 누른 경우
+        this.doubleBackToExitPressedOnce = true;
+
+        // 커스텀 스타일의 토스트 메시지 표시
+        View toastView = getLayoutInflater().inflate(R.layout.custom_toast, null);
+        TextView toastText = toastView.findViewById(R.id.toast_text);
+        toastText.setText("한번 더 누르면 종료됩니다");
+
+        Toast toast = new Toast(getApplicationContext());
+        toast.setDuration(Toast.LENGTH_SHORT);
+        toast.setView(toastView);
+        toast.show();
+
+        // 1초 후에 doubleBackToExitPressedOnce 변수 초기화
+        new Handler().postDelayed(() -> doubleBackToExitPressedOnce = false, 1000);
     }
 }
