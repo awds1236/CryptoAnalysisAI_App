@@ -3,6 +3,7 @@ package com.example.cryptoanalysisai;
 import static android.content.ContentValues.TAG;
 import static androidx.core.content.ContextCompat.startActivity;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -34,6 +35,7 @@ import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.example.cryptoanalysisai.ui.fragments.AnalysisFragment;
 import com.example.cryptoanalysisai.ui.fragments.CoinListFragment;
 import com.example.cryptoanalysisai.utils.Constants;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -51,6 +53,10 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     private boolean isAutoRefreshEnabled = true;
 
     private boolean doubleBackToExitPressedOnce = false;
+    private final Handler backPressHandler = new Handler(Looper.getMainLooper());
+    private final int BACK_PRESS_INTERVAL = 2000; // 2초
+
+    private long backPressedTime;
 
 
     @Override
@@ -94,6 +100,36 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         startPriceUpdates();
 
         loadExchangeRate();
+
+
+
+        // 뒤로가기 처리를 위한 콜백 등록
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            private boolean doubleBackToExitPressedOnce = false;
+            private final Handler handler = new Handler(Looper.getMainLooper());
+
+            @Override
+            public void handleOnBackPressed() {
+                int currentItem = binding.viewPager.getCurrentItem();
+
+                if (currentItem == 1) {
+                    // 분석 화면에서는 코인 목록으로 이동
+                    binding.viewPager.setCurrentItem(0);
+                } else {
+                    // 코인 목록에서는 두 번 눌러 종료
+                    if (doubleBackToExitPressedOnce) {
+                        // 앱 종료
+                        finishAffinity();
+                        return;
+                    }
+
+                    doubleBackToExitPressedOnce = true;
+                    //Toast.makeText(MainActivity.this, "뒤로가기를 한번 더 누르면 종료됩니다", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(binding.getRoot(), "뒤로가기를 한번 더 누르면 종료됩니다", 1000).show();
+                    handler.postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
+                }
+            }
+        });
     }
 
     @Override
@@ -353,37 +389,5 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
 
     public void navigateToCoinsTab() {
         binding.viewPager.setCurrentItem(0);
-    }
-
-    @Override
-    public void onBackPressed() {
-        // 현재 코인 목록 탭이 표시 중인지 확인
-        if (binding.viewPager.getCurrentItem() != 0) {
-            // 코인 목록 탭이 아니면 코인 목록 탭으로 이동
-            binding.viewPager.setCurrentItem(0);
-            return;
-        }
-
-        // 이미 한 번 뒤로가기를 눌렀는지 확인
-        if (doubleBackToExitPressedOnce) {
-            super.onBackPressed(); // 앱 종료
-            return;
-        }
-
-        // 처음 뒤로가기 버튼을 누른 경우
-        this.doubleBackToExitPressedOnce = true;
-
-        // 커스텀 스타일의 토스트 메시지 표시
-        View toastView = getLayoutInflater().inflate(R.layout.custom_toast, null);
-        TextView toastText = toastView.findViewById(R.id.toast_text);
-        toastText.setText("한번 더 누르면 종료됩니다");
-
-        Toast toast = new Toast(getApplicationContext());
-        toast.setDuration(Toast.LENGTH_SHORT);
-        toast.setView(toastView);
-        toast.show();
-
-        // 1초 후에 doubleBackToExitPressedOnce 변수 초기화
-        new Handler().postDelayed(() -> doubleBackToExitPressedOnce = false, 1000);
     }
 }

@@ -165,15 +165,6 @@ public class AnalysisFragment extends Fragment {
         // 화면에서 뒤로가기 버튼 숨기기
                 binding.btnBack.setVisibility(View.GONE);
 
-        // 시스템 뒤로가기 버튼 처리를 위한 콜백 등록
-                requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
-                        new OnBackPressedCallback(true) {
-                            @Override
-                            public void handleOnBackPressed() {
-                                // 코인 목록 탭으로 이동
-                                ((MainActivity)requireActivity()).navigateToCoinsTab();
-                            }
-                        });
 
         // 기술적 분석 구독 버튼 설정
         binding.btnTechnicalSubscribe.setOnClickListener(v -> {
