@@ -400,19 +400,31 @@
                         android:textSize="14sp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="롱:숏 비율"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
                         android:id="@+id/tvBuySellRatio"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="롱:숏 포지션 비율"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+
+                    <ProgressBar
+                        android:id="@+id/progressLongShortRatio"
+                        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                        android:layout_width="match_parent"
+                        android:layout_height="20dp"
                         android:layout_marginTop="4dp"
+                        android:progressDrawable="@drawable/progress_long_short_ratio" />
+
+                    <TextView
+                        android:id="@+id/tvLongShortRatioText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center"
                         android:textSize="14sp" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

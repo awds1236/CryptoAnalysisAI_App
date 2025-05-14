@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,6 +32,7 @@ import com.example.cryptoanalysisai.services.AnalysisApiService;
 import com.example.cryptoanalysisai.services.ExchangeRateManager;
 import com.example.cryptoanalysisai.services.SubscriptionManager;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
+import com.example.cryptoanalysisai.ui.views.LongShortRatioView;
 import com.example.cryptoanalysisai.utils.Constants;
 import com.google.android.material.tabs.TabLayoutMediator;
 import androidx.activity.OnBackPressedCallback;
@@ -64,6 +66,9 @@ public class AnalysisFragment extends Fragment {
     private StrategyFragment longTermFragment;
     private StrategiesAdapter strategiesAdapter;
     private SubscriptionManager subscriptionManager;
+
+    private ProgressBar progressLongShortRatio;
+    private TextView tvLongShortRatioText;
 
     // 새로 추가한 UI 요소 참조
     private TextView tvCrossSignal;
@@ -116,6 +121,7 @@ public class AnalysisFragment extends Fragment {
         shortTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_SHORT_TERM, "$");
         midTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_MID_TERM, "$");
         longTermFragment = StrategyFragment.newInstance(StrategyFragment.STRATEGY_LONG_TERM, "$");
+
     }
 
     @Nullable
@@ -172,6 +178,8 @@ public class AnalysisFragment extends Fragment {
             Intent intent = new Intent(getActivity(), SubscriptionActivity.class);
             startActivity(intent);
         });
+        progressLongShortRatio = view.findViewById(R.id.progressLongShortRatio);
+        tvLongShortRatioText = view.findViewById(R.id.tvLongShortRatioText);
     }
 
     @Override
@@ -611,6 +619,14 @@ public class AnalysisFragment extends Fragment {
             if (binding.tvBuySellRatio != null) {
                 binding.tvBuySellRatio.setText("*****");
             }
+
+            // 롱:숏 비율 마스킹
+            if (binding.progressLongShortRatio != null) {
+                binding.progressLongShortRatio.setProgress(50); // 중립 상태로 표시
+            }
+            if (binding.tvLongShortRatioText != null) {
+                binding.tvLongShortRatioText.setText("***** vs *****");
+            }
         } else {
             // 구독자인 경우 블러 처리 제거
             binding.technicalBlurOverlay.setVisibility(View.GONE);
@@ -753,7 +769,72 @@ public class AnalysisFragment extends Fragment {
                     }
                 }
 
-                // 롱:숏 비율 표시 - 새로 추가 (있는 경우에만)
+                // 롱:숏 비율 표시 - 새로 추가
+                // 롱:숏 비율 시각화
+                double longPercent = 50.0;
+                double shortPercent = 50.0;
+
+                if (technicalAnalysis.get("롱_비율") != null) {
+                    try {
+                        longPercent = technicalAnalysis.get("롱_비율") instanceof Double ?
+                                (Double)technicalAnalysis.get("롱_비율") :
+                                Double.parseDouble(technicalAnalysis.get("롱_비율").toString());
+                    } catch (Exception e) {
+                        Log.e(TAG, "롱 비율 파싱 오류", e);
+                    }
+                }
+
+                if (technicalAnalysis.get("숏_비율") != null) {
+                    try {
+                        shortPercent = technicalAnalysis.get("숏_비율") instanceof Double ?
+                                (Double)technicalAnalysis.get("숏_비율") :
+                                Double.parseDouble(technicalAnalysis.get("숏_비율").toString());
+                    } catch (Exception e) {
+                        Log.e(TAG, "숏 비율 파싱 오류", e);
+                    }
+                }
+
+                // 프로그레스바 설정 (롱 포지션 비율을 표시)
+                if (binding.progressLongShortRatio != null) {
+                    binding.progressLongShortRatio.setMax(100);
+                    binding.progressLongShortRatio.setProgress((int)Math.round(longPercent));
+                }
+
+                // 텍스트로 비율 표시
+                if (binding.tvLongShortRatioText != null) {
+                    String ratioText = String.format("<font color='#4CAF50'><b>롱: %.1f%%</b></font> vs " +
+                                    "<font color='#F44336'><b>숏: %.1f%%</b></font>",
+                            longPercent, shortPercent);
+                    binding.tvLongShortRatioText.setText(Html.fromHtml(ratioText, Html.FROM_HTML_MODE_LEGACY));
+
+                    // 추가 정보 - 현재 시장 편향
+                    String marketBias;
+                    String biasColor;
+                    if (longPercent > shortPercent + 10) {
+                        marketBias = "강한 롱 우세";
+                        biasColor = "#4CAF50"; // 진한 녹색
+                    } else if (longPercent > shortPercent) {
+                        marketBias = "약한 롱 우세";
+                        biasColor = "#8BC34A"; // 연한 녹색
+                    } else if (shortPercent > longPercent + 10) {
+                        marketBias = "강한 숏 우세";
+                        biasColor = "#F44336"; // 진한 빨강
+                    } else if (shortPercent > longPercent) {
+                        marketBias = "약한 숏 우세";
+                        biasColor = "#FF9800"; // 주황색
+                    } else {
+                        marketBias = "중립";
+                        biasColor = "#9E9E9E"; // 회색
+                    }
+
+                    binding.tvLongShortRatioText.append("\n");
+                    binding.tvLongShortRatioText.append(Html.fromHtml(
+                            String.format("<br><font color='%s'>현재 시장: <b>%s</b></font>", biasColor, marketBias),
+                            Html.FROM_HTML_MODE_LEGACY
+                    ));
+                }
+
+                // 매수/매도 세력 비율 원래 코드 유지 (이미 존재하는 경우)
                 if (binding.tvBuySellRatio != null) {
                     double buySellRatio = technicalAnalysis.getBuySellRatio();
                     if (buySellRatio > 0) {
