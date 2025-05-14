@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -70,6 +71,15 @@ public class StrategyFragment extends Fragment {
 
     public void setCoinInfo(CoinInfo coinInfo) {
         this.coinInfo = coinInfo;
+
+        // 로그 추가
+        Log.d("StrategyFragment", "setCoinInfo: " +
+                (coinInfo != null ? "coinInfo set, symbol: " + coinInfo.getSymbol() : "coinInfo is null"));
+
+        // 코인 정보가 변경되면 UI 업데이트
+        if (getView() != null) {
+            updateContentAccessUI();
+        }
     }
 
     private ExchangeRateManager exchangeRateManager;
@@ -372,52 +382,119 @@ public class StrategyFragment extends Fragment {
 
     // 광고 대화상자 표시
     private void showAdDialog() {
-        if (getActivity() == null || coinInfo == null) return;
+        if (getActivity() == null) return;
 
-        AdViewDialog dialog = AdViewDialog.newInstance(
-                coinInfo.getSymbol(),
-                coinInfo.getDisplayName()
-        );
+        if (coinInfo == null) {
+            Log.e("StrategyFragment", "coinInfo가 null입니다");
+            Toast.makeText(getContext(), "코인 정보를 가져올 수 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String symbol = coinInfo.getSymbol();
+        String displayName = coinInfo.getDisplayName();
+
+        if (symbol == null) {
+            Log.e("StrategyFragment", "coinInfo.symbol이 null입니다");
+            Toast.makeText(getContext(), "코인 심볼 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        AdViewDialog dialog = AdViewDialog.newInstance(symbol, displayName != null ? displayName : symbol);
 
         dialog.setCompletionListener(coinSymbol -> {
             // 광고 시청 완료 - UI 업데이트
             updateContentAccessUI();
+
+            // AnalysisFragment에도 UI 업데이트 알림
+            Fragment parentFragment = getParentFragment();
+            if (parentFragment instanceof AnalysisFragment) {
+                ((AnalysisFragment) parentFragment).refreshAllUIs();
+            }
         });
 
         dialog.show(getParentFragmentManager(), "ad_dialog");
     }
 
     // 콘텐츠 접근 권한 UI 업데이트
-    private void updateContentAccessUI() {
-        if (coinInfo == null || coinInfo.getSymbol() == null) return;
+    public void updateContentAccessUI() {
+
+        // View가 아직 생성되지 않았으면 아무것도 하지 않고 리턴
+        if (getView() == null) {
+            Log.d("StrategyFragment", "updateContentAccessUI: View is not created yet");
+            return;
+        }
+
+        // UI 요소들이 null인지 확인
+        if (blurOverlay == null || pixelatedOverlay == null || additionalBlurLayer == null ||
+                contentArea == null || btnSubscribe == null || btnWatchAd == null || tvAdStatus == null) {
+            Log.d("StrategyFragment", "updateContentAccessUI: Some UI elements are null");
+            return;
+        }
+
+        // null 체크를 강화합니다
+        if (coinInfo == null) {
+            // coinInfo가 null인 경우 기본 UI 상태 설정 (구독자가 아닌 상태로 간주)
+            blurOverlay.setVisibility(View.VISIBLE);
+            pixelatedOverlay.setVisibility(View.VISIBLE);
+            additionalBlurLayer.setVisibility(View.VISIBLE);
+            contentArea.setAlpha(0.5f);
+            btnSubscribe.setVisibility(View.VISIBLE);
+            btnWatchAd.setVisibility(View.VISIBLE);
+            tvAdStatus.setVisibility(View.GONE);
+
+            // 로그에 정보 남기기
+            Log.w("StrategyFragment", "updateContentAccessUI: coinInfo is null");
+            return;
+        }
+
 
         boolean isSubscribed = subscriptionManager.isSubscribed();
         boolean hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
 
+        // symbol이 null이 아닌 경우에만 권한 확인
+        if (coinInfo.getSymbol() != null) {
+            hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+        } else {
+            Log.w("StrategyFragment", "updateContentAccessUI: coinInfo.symbol is null");
+        }
+
         if (isSubscribed || hasAdPermission) {
+            // 구독자이거나 광고 시청한 경우 콘텐츠 표시
             // 구독자이거나 광고 시청한 경우 콘텐츠 표시
             blurOverlay.setVisibility(View.GONE);
             pixelatedOverlay.setVisibility(View.GONE);
             additionalBlurLayer.setVisibility(View.GONE);
             contentArea.setAlpha(1.0f);
             btnSubscribe.setVisibility(View.GONE);
-
-            // 광고 보기 버튼 숨김
             btnWatchAd.setVisibility(View.GONE);
 
-            // 구독자가 아니고 광고 시청한 경우 남은 시간 표시
-            if (!isSubscribed && hasAdPermission) {
+            // 중요: 구독자가 아니고 광고 시청한 경우 남은 시간 표시
+            if (!isSubscribed && hasAdPermission && tvAdStatus != null) {
                 int remainingMinutes = adManager.getRemainingMinutes(coinInfo.getSymbol());
                 tvAdStatus.setVisibility(View.VISIBLE);
                 tvAdStatus.setText("광고 시청 후 " + remainingMinutes + "분 남음");
-            } else {
+            } else if (tvAdStatus != null) {
                 tvAdStatus.setVisibility(View.GONE);
             }
 
-            // 전략 데이터가 있으면 실제 내용 표시
+            // 중요: 전략 데이터가 있으면 실제 내용 표시
             if (strategy != null) {
-                displayBuySteps(layoutBuySteps, strategy.getBuySteps());
-                // 나머지 데이터 표시 코드...
+                // 매수 단계 등 실제 데이터 표시
+                if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty() && layoutBuySteps != null) {
+                    displayBuySteps(layoutBuySteps, strategy.getBuySteps());
+                }
+
+                // 목표가 표시
+                updateTargetPrices();
+
+                // 손절매 라인 표시
+                updateStopLoss();
+
+                // 리스크 보상 비율 표시
+                updateRiskReward();
+
+                // 전략 설명 표시
+                updateStrategyDetail();
             }
         } else {
             // 구독자도 아니고 광고도 안 본 경우 콘텐츠 가림
@@ -441,6 +518,59 @@ public class StrategyFragment extends Fragment {
             tvAdStatus.setVisibility(View.GONE);
 
             // 콘텐츠 마스킹 코드...
+        }
+    }
+
+    // 추가 메서드: 데이터 업데이트를 위한 개별 함수들
+    private void updateTargetPrices() {
+        if (tvTargetPrice == null || strategy == null) return;
+
+        if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
+            StringBuilder targetPrices = new StringBuilder();
+            for (int i = 0; i < strategy.getTargetPrices().size(); i++) {
+                // 기존 목표가 업데이트 코드...
+                double targetPrice = strategy.getTargetPrices().get(i);
+                // 포맷팅 코드...
+                String targetLabel = String.format("목표 %d: %s%.2f", i + 1, currencySymbol, targetPrice);
+                targetPrices.append(targetLabel);
+                if (i < strategy.getTargetPrices().size() - 1) {
+                    targetPrices.append("\n");
+                }
+            }
+            tvTargetPrice.setText(targetPrices.toString());
+        } else {
+            tvTargetPrice.setText("설정된 목표가 없음");
+        }
+    }
+
+    private void updateStopLoss() {
+        if (tvStopLoss == null || strategy == null) return;
+
+        if (strategy.getStopLoss() > 0) {
+            tvStopLoss.setText(String.format("%s%.2f", currencySymbol, strategy.getStopLoss()));
+        } else {
+            tvStopLoss.setText("설정된 손절매 라인 없음");
+        }
+    }
+
+    private void updateRiskReward() {
+        if (tvRiskReward == null || strategy == null) return;
+
+        if (strategy.getRiskRewardRatio() > 0) {
+            tvRiskReward.setText(String.format("%.1f:1", strategy.getRiskRewardRatio()));
+        } else {
+            tvRiskReward.setText("정보 없음");
+        }
+    }
+
+    private void updateStrategyDetail() {
+        if (tvStrategyDetail == null || strategy == null) return;
+
+        if (strategy.getExplanation() != null && !strategy.getExplanation().isEmpty()) {
+            String explanation = highlightStrategyText(strategy.getExplanation());
+            tvStrategyDetail.setText(Html.fromHtml(explanation, Html.FROM_HTML_MODE_LEGACY));
+        } else {
+            tvStrategyDetail.setText("전략 설명 없음");
         }
     }
 

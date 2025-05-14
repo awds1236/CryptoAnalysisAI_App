@@ -261,6 +261,9 @@ public class AnalysisFragment extends Fragment {
 
             // 현재 가격 정보 업데이트
             updatePrice();
+
+            // 모든 UI를 새로고침하여 권한이 올바르게 적용되도록 함
+            // refreshAllUIs();
         }
     }
 
@@ -437,7 +440,7 @@ public class AnalysisFragment extends Fragment {
     /**
      * AWS Lambda API에서 분석 결과 로드
      */
-    private void loadAnalysisFromApi() {
+    public void loadAnalysisFromApi() {
         if (binding == null || coinInfo == null) return;
 
         binding.progressAnalysis.setVisibility(View.VISIBLE);
@@ -502,6 +505,13 @@ public class AnalysisFragment extends Fragment {
      */
     private void updateAnalysisUI() {
         if (binding == null || analysisResult == null) return;
+
+        // coinInfo 확인
+        if (coinInfo == null) {
+            Log.e("AnalysisFragment", "updateAnalysisUI: coinInfo is null");
+        } else {
+            Log.d("AnalysisFragment", "updateAnalysisUI: coinInfo symbol = " + coinInfo.getSymbol());
+        }
 
         boolean isSubscribed = subscriptionManager != null && subscriptionManager.isSubscribed();
 
@@ -587,6 +597,7 @@ public class AnalysisFragment extends Fragment {
             }
         }
 
+        Log.d("AnalysisFragment", "Calling updateStrategyFragments()");
         // 각 전략 프래그먼트 데이터 설정
         updateStrategyFragments();
 
@@ -954,27 +965,57 @@ public class AnalysisFragment extends Fragment {
         return text;
     }
 
+
+    // 모든 UI를 새로 고치는 새 메서드 추가
+    public void refreshAllUIs() {
+        // 자신의 UI 업데이트
+        updateTechnicalAccessUI();
+
+        // 전략 프래그먼트들의 UI 업데이트 - 각 프래그먼트가 준비되었는지 확인
+        if (shortTermFragment != null && shortTermFragment.getView() != null) {
+            shortTermFragment.updateContentAccessUI();
+        }
+        if (midTermFragment != null && midTermFragment.getView() != null) {
+            midTermFragment.updateContentAccessUI();
+        }
+        if (longTermFragment != null && longTermFragment.getView() != null) {
+            longTermFragment.updateContentAccessUI();
+        }
+    }
+
     /**
      * 전략 프래그먼트 업데이트
      */
     private void updateStrategyFragments() {
         if (analysisResult == null) return;
 
+        // coinInfo가 null인지 확인
+        if (coinInfo == null) {
+            Log.e("AnalysisFragment", "updateStrategyFragments: coinInfo is null");
+            return;
+        }
+
         String currencySymbol = analysisResult.getCurrencySymbol();
 
         // 단기 전략 업데이트
         if (shortTermFragment != null && analysisResult.getShortTermStrategy() != null) {
             shortTermFragment.setStrategy(analysisResult.getShortTermStrategy());
+            shortTermFragment.setCoinInfo(coinInfo); // coinInfo를 프래그먼트에 전달
+            Log.d("AnalysisFragment", "shortTermFragment updated with coinInfo");
         }
 
         // 중기 전략 업데이트
         if (midTermFragment != null && analysisResult.getMidTermStrategy() != null) {
             midTermFragment.setStrategy(analysisResult.getMidTermStrategy());
+            midTermFragment.setCoinInfo(coinInfo); // coinInfo를 프래그먼트에 전달
+            Log.d("AnalysisFragment", "midTermFragment updated with coinInfo");
         }
 
         // 장기 전략 업데이트
         if (longTermFragment != null && analysisResult.getLongTermStrategy() != null) {
             longTermFragment.setStrategy(analysisResult.getLongTermStrategy());
+            longTermFragment.setCoinInfo(coinInfo); // coinInfo를 프래그먼트에 전달
+            Log.d("AnalysisFragment", "longTermFragment updated with coinInfo");
         }
     }
 
@@ -1051,5 +1092,7 @@ public class AnalysisFragment extends Fragment {
         public int getItemCount() {
             return 3; // 단기, 중기, 장기
         }
-    }
+
+        // 모든 UI를 새로 고치는 새 메서드 추가
+        }
 }
