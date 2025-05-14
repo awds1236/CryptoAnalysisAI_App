@@ -3,6 +3,7 @@ package com.example.cryptoanalysisai.ui.dialogs;
 import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,10 +15,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 
+import com.example.cryptoanalysisai.MainActivity;
 import com.example.cryptoanalysisai.R;
 import com.example.cryptoanalysisai.services.AdManager;
 import com.example.cryptoanalysisai.ui.activities.SubscriptionActivity;
+import com.example.cryptoanalysisai.ui.fragments.AnalysisFragment;
 
 public class AdViewDialog extends DialogFragment {
 
@@ -115,9 +119,27 @@ public class AdViewDialog extends DialogFragment {
                 // 광고 시청 완료
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
+                        Log.d("AdViewDialog", "광고 시청 완료: " + coinSymbol);
+
                         if (completionListener != null) {
                             completionListener.onAdCompleted(coinSymbol);
                         }
+
+                        // MainActivity를 찾아 모든 프래그먼트 업데이트
+                        if (getActivity() instanceof MainActivity) {
+                            MainActivity mainActivity = (MainActivity) getActivity();
+
+                            // 현재 보이는 AnalysisFragment 찾기
+                            Fragment fragment = mainActivity.getSupportFragmentManager().findFragmentByTag("f1");
+                            if (fragment instanceof AnalysisFragment) {
+                                AnalysisFragment analysisFragment = (AnalysisFragment) fragment;
+                                analysisFragment.refreshAllUIs();
+
+                                // 콘텐츠 새로고침을 위해 분석 결과 재로드
+                                analysisFragment.loadAnalysisFromApi();
+                            }
+                        }
+
                         dismiss();
                     });
                 }
