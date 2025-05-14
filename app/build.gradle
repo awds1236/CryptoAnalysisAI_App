@@ -146,6 +146,9 @@ dependencies {
 
     // 스플래시 화면 API 추가
     implementation 'androidx.core:core-splashscreen:1.0.1'
+
+    // Google Play Billing Library
+    implementation 'com.android.billingclient:billing:6.0.1'
 }
 
 apply plugin: 'com.google.gms.google-services'

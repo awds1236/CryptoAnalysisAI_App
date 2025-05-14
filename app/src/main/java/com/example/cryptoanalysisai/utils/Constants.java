@@ -19,6 +19,10 @@ public class Constants {
     public static final String PREF_IS_SUBSCRIBED = "pref_is_subscribed";
     public static final String PREF_SUBSCRIPTION_EXPIRY = "pref_subscription_expiry";
     public static final String PREF_SUBSCRIPTION_TYPE = "pref_subscription_type";
+    public static final String PREF_SUBSCRIPTION_START_TIME = "pref_subscription_start_time";
+    public static final String PREF_SUBSCRIPTION_AUTO_RENEWING = "pref_subscription_auto_renewing";
+    public static final String PREF_MONTHLY_PRICE = "pref_monthly_price";
+    public static final String PREF_YEARLY_PRICE = "pref_yearly_price";
 
     // 구독 유형
     public static final String SUBSCRIPTION_MONTHLY = "monthly";
