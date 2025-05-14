@@ -19,7 +19,7 @@
         <!-- AdMob 앱 ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-8824775852421724~7686913127"/>
 
         <!-- SplashActivity를 LAUNCHER로 설정하고 스플래시 테마 적용 -->
         <activity

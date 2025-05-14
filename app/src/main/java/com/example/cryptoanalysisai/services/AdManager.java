@@ -67,7 +67,7 @@ public class AdManager {
         isAdLoading = true;
 
         // 테스트 광고 ID (실제 앱에서는 실제 광고 ID로 변경 필요)
-        String adUnitId = "ca-app-pub-3940256099942544/5224354917";
+        String adUnitId = "ca-app-pub-8824775852421724/8928676751";
 
         AdRequest adRequest = new AdRequest.Builder().build();
         RewardedAd.load(context, adUnitId, adRequest, new RewardedAdLoadCallback() {
