@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id 'com.google.gms.google-services'
 }
 
 // local.properties 파일에서 민감한 정보 읽기
@@ -28,8 +29,8 @@ android {
         applicationId "com.coinsense.cryptoanalysisai"
         minSdk 24
         targetSdk 35
-        versionCode 1
-        versionName "1.0"
+        versionCode 6
+        versionName "1.4"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -149,6 +150,10 @@ dependencies {
 
     // Google Play Billing Library
     implementation 'com.android.billingclient:billing:6.0.1'
+
+    implementation platform('com.google.firebase:firebase-bom:33.13.0')
+
+    implementation 'com.google.firebase:firebase-analytics'
 }
 
 apply plugin: 'com.google.gms.google-services'
