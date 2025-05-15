@@ -28,7 +28,7 @@ import java.util.List;
 
 public class BillingManager implements PurchasesUpdatedListener {
     private static final String TAG = "BillingManager";
-
+    private String currentUserId; // 현재 로그인한 사용자 ID
     // 구독 상품 ID
     public static final String MONTHLY_SUBSCRIPTION_ID = "com.coinsense.cryptoanalysisai.monthly";
     public static final String YEARLY_SUBSCRIPTION_ID = "com.coinsense.cryptoanalysisai.yearly";
@@ -44,6 +44,15 @@ public class BillingManager implements PurchasesUpdatedListener {
     private BillingManager(Context context) {
         this.context = context.getApplicationContext();
         setupBillingClient();
+    }
+
+    // 현재 사용자 ID 설정 메소드 추가
+    public void setCurrentUserId(String userId) {
+        this.currentUserId = userId;
+        // 사용자 ID가 변경되면 구독 상태도 다시 확인
+        if (billingClient.isReady()) {
+            queryPurchases();
+        }
     }
 
     public static synchronized BillingManager getInstance(Context context) {
@@ -177,6 +186,7 @@ public class BillingManager implements PurchasesUpdatedListener {
     /**
      * 구매 내역 처리 (구독 상태 업데이트)
      */
+    // processPurchases 메소드 수정
     private void processPurchases(List<Purchase> purchases) {
         SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
         boolean isSubscribed = false;
@@ -196,25 +206,24 @@ public class BillingManager implements PurchasesUpdatedListener {
                 if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
                     isSubscribed = true;
                     subscriptionType = Constants.SUBSCRIPTION_MONTHLY;
-
-                    // 만료 시간 설정 (현재 시간으로부터 30일 후)
                     expiryTimestamp = System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000);
-
                     Log.d(TAG, "월간 구독 확인됨");
                 } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
                     isSubscribed = true;
                     subscriptionType = Constants.SUBSCRIPTION_YEARLY;
-
-                    // 만료 시간 설정 (현재 시간으로부터 365일 후)
                     expiryTimestamp = System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000);
-
                     Log.d(TAG, "연간 구독 확인됨");
                 }
             }
         }
 
-        // 구독 상태 업데이트
-        subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType);
+        // 현재 로그인한 사용자 ID 기반으로 구독 상태 업데이트
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType, currentUserId);
+        } else {
+            // 로그인되지 않은 경우 기존 방식으로 처리
+            subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType);
+        }
 
         // 상태 콜백 호출
         if (billingStatusListener != null) {

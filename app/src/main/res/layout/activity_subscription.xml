@@ -71,13 +71,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="월 9,900원" />
+                    android:text="월 15,000원" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인\n• 프리미엄 코인 " />
+                    android:text="• 프리미엄 코인 전략 분석 독점 이용\n• 광고 시청 없이 모든 분석 이용\n• 지지선/저항선 분석 확인" />
 
                 <Button
                     android:id="@+id/btnMonthlySubscription"
@@ -106,7 +106,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="연간 구독 (20% 할인)"
+                    android:text="연간 구독 (30% 할인)"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -114,13 +114,13 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="연 95,000원 (월 7,920원)" />
+                    android:text="연 126,000원 (월 10,500원)" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인" />
+                    android:text="• 프리미엄 코인 전략 분석 독점 이용\n• 광고 시청 없이 모든 분석 이용\n• 지지선/저항선 분석 확인" />
 
                 <Button
                     android:id="@+id/btnYearlySubscription"
