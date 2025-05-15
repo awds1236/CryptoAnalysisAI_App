@@ -383,4 +383,62 @@ public class BillingManager implements PurchasesUpdatedListener {
         }
         queryPurchases();
     }
+
+    // BillingManager.java에 추가
+    public boolean isReady() {
+        return billingClient != null && billingClient.isReady();
+    }
+
+    // BillingManager.java에 다음 메서드 추가
+    public boolean isSubscriptionAutoRenewing(String subscriptionId) {
+        if (!billingClient.isReady()) {
+            Log.e(TAG, "BillingClient가 준비되지 않았습니다");
+            return false;
+        }
+
+        // 동기식 처리를 위한 변수
+        final boolean[] isAutoRenewing = {false};
+        final boolean[] checkCompleted = {false};
+
+        // 구독 구매 내역 조회
+        billingClient.queryPurchasesAsync(
+                QueryPurchasesParams.newBuilder()
+                        .setProductType(BillingClient.ProductType.SUBS)
+                        .build(),
+                new PurchasesResponseListener() {
+                    @Override
+                    public void onQueryPurchasesResponse(@NonNull BillingResult billingResult,
+                                                         @NonNull List<Purchase> purchases) {
+                        if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                            for (Purchase purchase : purchases) {
+                                // 특정 구독 ID 확인 (생략 가능)
+                                if (purchase.getProducts().contains(subscriptionId)) {
+                                    isAutoRenewing[0] = purchase.isAutoRenewing();
+                                    break;
+                                }
+                            }
+                        }
+                        checkCompleted[0] = true;
+                        synchronized (checkCompleted) {
+                            checkCompleted.notify();
+                        }
+                    }
+                }
+        );
+
+        // 응답을 기다림 (최대 2초)
+        try {
+            synchronized (checkCompleted) {
+                if (!checkCompleted[0]) {
+                    checkCompleted.wait(2000);
+                }
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "자동 갱신 상태 확인 중 인터럽트 발생", e);
+        }
+
+        return isAutoRenewing[0];
+    }
+
+
 }
