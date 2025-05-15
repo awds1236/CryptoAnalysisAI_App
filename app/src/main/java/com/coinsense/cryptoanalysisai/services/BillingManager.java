@@ -23,12 +23,21 @@ import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class BillingManager implements PurchasesUpdatedListener {
     private static final String TAG = "BillingManager";
-
+    private String currentUserId; // 현재 로그인한 사용자 ID
     // 구독 상품 ID
     public static final String MONTHLY_SUBSCRIPTION_ID = "com.coinsense.cryptoanalysisai.monthly";
     public static final String YEARLY_SUBSCRIPTION_ID = "com.coinsense.cryptoanalysisai.yearly";
@@ -44,6 +53,15 @@ public class BillingManager implements PurchasesUpdatedListener {
     private BillingManager(Context context) {
         this.context = context.getApplicationContext();
         setupBillingClient();
+    }
+
+    // 현재 사용자 ID 설정 메소드 추가
+    public void setCurrentUserId(String userId) {
+        this.currentUserId = userId;
+        // 사용자 ID가 변경되면 구독 상태도 다시 확인
+        if (billingClient.isReady()) {
+            queryPurchases();
+        }
     }
 
     public static synchronized BillingManager getInstance(Context context) {
@@ -177,6 +195,7 @@ public class BillingManager implements PurchasesUpdatedListener {
     /**
      * 구매 내역 처리 (구독 상태 업데이트)
      */
+    // processPurchases 메소드 수정
     private void processPurchases(List<Purchase> purchases) {
         SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
         boolean isSubscribed = false;
@@ -196,25 +215,28 @@ public class BillingManager implements PurchasesUpdatedListener {
                 if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
                     isSubscribed = true;
                     subscriptionType = Constants.SUBSCRIPTION_MONTHLY;
-
-                    // 만료 시간 설정 (현재 시간으로부터 30일 후)
                     expiryTimestamp = System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000);
-
                     Log.d(TAG, "월간 구독 확인됨");
                 } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
                     isSubscribed = true;
                     subscriptionType = Constants.SUBSCRIPTION_YEARLY;
-
-                    // 만료 시간 설정 (현재 시간으로부터 365일 후)
                     expiryTimestamp = System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000);
-
                     Log.d(TAG, "연간 구독 확인됨");
                 }
             }
         }
 
-        // 구독 상태 업데이트
-        subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType);
+        // 현재 로그인한 사용자 ID 기반으로 구독 상태 업데이트
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            // Firebase에 구독 정보 저장
+            saveSubscriptionToFirebase(currentUserId, isSubscribed, expiryTimestamp, subscriptionType);
+
+            // 로컬에도 저장 (기존 로직 유지)
+            subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType, currentUserId);
+        } else {
+            // 로그인되지 않은 경우 기존 방식으로 처리
+            subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType);
+        }
 
         // 상태 콜백 호출
         if (billingStatusListener != null) {
@@ -230,6 +252,34 @@ public class BillingManager implements PurchasesUpdatedListener {
                 editor.apply();
             }
         }
+    }
+
+    /**
+     * Firebase에 구독 정보 저장
+     */
+    private void saveSubscriptionToFirebase(String userId, boolean isSubscribed, long expiryTimestamp, String subscriptionType) {
+        if (userId == null || userId.isEmpty()) {
+            Log.e(TAG, "사용자 ID가 없어 Firebase에 저장할 수 없습니다.");
+            return;
+        }
+
+        // Firebase Realtime Database 또는 Firestore 참조 생성
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference userSubscriptionRef = database.getReference("subscriptions").child(userId);
+
+        // 구독 정보 맵 생성
+        Map<String, Object> subscriptionInfo = new HashMap<>();
+        subscriptionInfo.put("isSubscribed", isSubscribed);
+        subscriptionInfo.put("expiryTimestamp", expiryTimestamp);
+        subscriptionInfo.put("subscriptionType", subscriptionType);
+        subscriptionInfo.put("startTimestamp", System.currentTimeMillis());
+        subscriptionInfo.put("autoRenewing", true);
+        subscriptionInfo.put("isCancelled", false); // 취소 상태 추가
+
+        // Firebase에 데이터 저장
+        userSubscriptionRef.setValue(subscriptionInfo)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "구독 정보가 Firebase에 성공적으로 저장되었습니다."))
+                .addOnFailureListener(e -> Log.e(TAG, "구독 정보 Firebase 저장 실패: " + e.getMessage()));
     }
 
     /**
@@ -325,10 +375,17 @@ public class BillingManager implements PurchasesUpdatedListener {
     @Override
     public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<Purchase> purchases) {
         if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
-            // 구매 완료
-            processPurchases(purchases);
-            if (billingStatusListener != null) {
-                billingStatusListener.onPurchaseComplete();
+            // 구매 완료 - 반드시 현재 로그인한 사용자 ID만 사용
+            if (currentUserId != null && !currentUserId.isEmpty()) {
+                processPurchases(purchases);
+                if (billingStatusListener != null) {
+                    billingStatusListener.onPurchaseComplete();
+                }
+            } else {
+                // 로그인하지 않은 상태에서는 구독 불가 메시지
+                if (billingStatusListener != null) {
+                    billingStatusListener.onBillingError("로그인 후 다시 시도해주세요.");
+                }
             }
         } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
             // 사용자가 취소
@@ -374,4 +431,62 @@ public class BillingManager implements PurchasesUpdatedListener {
         }
         queryPurchases();
     }
+
+    // BillingManager.java에 추가
+    public boolean isReady() {
+        return billingClient != null && billingClient.isReady();
+    }
+
+    // BillingManager.java에 다음 메서드 추가
+    public boolean isSubscriptionAutoRenewing(String subscriptionId) {
+        if (!billingClient.isReady()) {
+            Log.e(TAG, "BillingClient가 준비되지 않았습니다");
+            return false;
+        }
+
+        // 동기식 처리를 위한 변수
+        final boolean[] isAutoRenewing = {false};
+        final boolean[] checkCompleted = {false};
+
+        // 구독 구매 내역 조회
+        billingClient.queryPurchasesAsync(
+                QueryPurchasesParams.newBuilder()
+                        .setProductType(BillingClient.ProductType.SUBS)
+                        .build(),
+                new PurchasesResponseListener() {
+                    @Override
+                    public void onQueryPurchasesResponse(@NonNull BillingResult billingResult,
+                                                         @NonNull List<Purchase> purchases) {
+                        if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                            for (Purchase purchase : purchases) {
+                                // 특정 구독 ID 확인 (생략 가능)
+                                if (purchase.getProducts().contains(subscriptionId)) {
+                                    isAutoRenewing[0] = purchase.isAutoRenewing();
+                                    break;
+                                }
+                            }
+                        }
+                        checkCompleted[0] = true;
+                        synchronized (checkCompleted) {
+                            checkCompleted.notify();
+                        }
+                    }
+                }
+        );
+
+        // 응답을 기다림 (최대 2초)
+        try {
+            synchronized (checkCompleted) {
+                if (!checkCompleted[0]) {
+                    checkCompleted.wait(2000);
+                }
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "자동 갱신 상태 확인 중 인터럽트 발생", e);
+        }
+
+        return isAutoRenewing[0];
+    }
+
+
 }

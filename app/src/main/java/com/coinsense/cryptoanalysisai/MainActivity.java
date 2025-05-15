@@ -36,6 +36,14 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import java.util.Date;
+
+
 import androidx.appcompat.app.AlertDialog;
 
 public class MainActivity extends AppCompatActivity implements CoinListFragment.OnCoinSelectedListener {
@@ -99,6 +107,16 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             return;
         }
 
+        // 구독 상태 동기화 (BillingManager에 현재 사용자 ID 설정)
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        String userId = prefs.getString(Constants.PREF_USER_ID, "");
+        if (userId != null && !userId.isEmpty()) {
+            BillingManager.getInstance(this).setCurrentUserId(userId);
+        }
+
+        // 구독 상태 동기화
+        BillingManager.getInstance(this).syncSubscriptions();
+
         // ViewPager 설정
         setupViewPager();
 
@@ -108,6 +126,9 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         loadExchangeRate();
 
         restoreSelectedCoin();
+
+        // Firebase에서 구독 정보 로드 (여기에 추가)
+        loadSubscriptionFromFirebase();
 
         // 구독 상태 동기화
         BillingManager.getInstance(this).syncSubscriptions();
@@ -369,17 +390,19 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * 로그아웃 처리
-     */
+    // MainActivity.java의 logout 메서드 수정
     private void logout() {
         // Firebase 로그아웃
         FirebaseAuth.getInstance().signOut();
+
+        // 사용자 ID 초기화 (중요)
+        BillingManager.getInstance(this).setCurrentUserId("");
 
         // SharedPreferences 로그인 상태 제거
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(Constants.PREF_IS_LOGGED_IN, false);
+        editor.putString(Constants.PREF_USER_ID, "");
         editor.apply();
 
         // 로그인 화면으로 이동
@@ -417,6 +440,8 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
                 break;
         }
     }
+
+
 
     private boolean isUserSignedIn() {
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
@@ -538,5 +563,55 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         // 다이얼로그 표시
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    // 기존 코드에 이 부분 추가
+    private void loadSubscriptionFromFirebase() {
+        String userId = getCurrentUserId();
+        if (userId != null && !userId.isEmpty()) {
+            FirebaseDatabase database = FirebaseDatabase.getInstance();
+            DatabaseReference userSubscriptionRef = database.getReference("subscriptions").child(userId);
+
+            userSubscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.exists()) {
+                        boolean isSubscribed = dataSnapshot.child("isSubscribed").getValue(Boolean.class);
+                        long expiryTimestamp = dataSnapshot.child("expiryTimestamp").getValue(Long.class);
+                        String subscriptionType = dataSnapshot.child("subscriptionType").getValue(String.class);
+                        boolean isCancelled = false;
+
+                        // isCancelled 필드가 있는 경우에만 값 가져오기
+                        if (dataSnapshot.hasChild("isCancelled")) {
+                            isCancelled = dataSnapshot.child("isCancelled").getValue(Boolean.class);
+                        }
+
+                        // 현재 시간과 만료 시간 비교하여 아직 유효한지 확인
+                        if (isSubscribed && System.currentTimeMillis() < expiryTimestamp) {
+                            // 로컬 캐시 업데이트
+                            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+                            SharedPreferences.Editor editor = prefs.edit();
+                            editor.putBoolean(Constants.PREF_IS_SUBSCRIBED, true);
+                            editor.putLong(Constants.PREF_SUBSCRIPTION_EXPIRY, expiryTimestamp);
+                            editor.putString(Constants.PREF_SUBSCRIPTION_TYPE, subscriptionType);
+                            editor.putBoolean("pref_subscription_cancelled", isCancelled);
+                            editor.apply();
+
+                            Log.d(TAG, "Firebase에서 구독 정보 로드 완료: 만료일 " + new Date(expiryTimestamp));
+                        }
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "Firebase 구독 정보 로드 실패: " + databaseError.getMessage());
+                }
+            });
+        }
+    }
+
+    private String getCurrentUserId() {
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        return prefs.getString(Constants.PREF_USER_ID, "");
     }
 }

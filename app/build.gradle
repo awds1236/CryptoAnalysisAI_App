@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id 'com.google.gms.google-services'
 }
 
 // local.properties 파일에서 민감한 정보 읽기
@@ -150,10 +149,6 @@ dependencies {
 
     // Google Play Billing Library
     implementation 'com.android.billingclient:billing:6.0.1'
-
-    implementation platform('com.google.firebase:firebase-bom:33.13.0')
-
-    implementation 'com.google.firebase:firebase-analytics'
 }
 
 apply plugin: 'com.google.gms.google-services'

@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.coinsense.cryptoanalysisai.MainActivity;
 import com.coinsense.cryptoanalysisai.R;
 import com.coinsense.cryptoanalysisai.databinding.ActivityLoginBinding;
+import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 import com.google.android.gms.auth.api.identity.BeginSignInRequest;
 import com.google.android.gms.auth.api.identity.Identity;
@@ -108,6 +109,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
 
+    // LoginActivity.java의 firebaseAuthWithGoogle 메서드 수정
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         firebaseAuth.signInWithCredential(credential)
@@ -117,6 +119,11 @@ public class LoginActivity extends AppCompatActivity {
                         FirebaseUser user = firebaseAuth.getCurrentUser();
                         if (user != null) {
                             saveUserData(user);
+
+                            // 로그인 성공 후 명확하게 사용자 ID 설정 및 구독 상태 동기화
+                            String userId = user.getUid();
+                            BillingManager.getInstance(this).setCurrentUserId(userId);
+                            BillingManager.getInstance(this).syncSubscriptions();
                         }
                         proceedToMainActivity();
                     } else {
@@ -160,5 +167,15 @@ public class LoginActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         binding = null;
+    }
+
+    // 사용자 구독 정보 동기화 메소드 추가
+    private void syncUserSubscription(String userId) {
+        // BillingManager에 현재 사용자 ID 설정
+        BillingManager billingManager = BillingManager.getInstance(this);
+        billingManager.setCurrentUserId(userId);
+
+        // 구독 상태 동기화
+        billingManager.syncSubscriptions();
     }
 }
