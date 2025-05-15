@@ -2,12 +2,23 @@ package com.coinsense.cryptoanalysisai.services;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.coinsense.cryptoanalysisai.utils.Constants;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 구독 상태를 관리하는 클래스
@@ -36,22 +47,129 @@ public class SubscriptionManager {
         return prefs.getString(Constants.PREF_USER_ID, "");
     }
 
-    // 사용자 ID 기반으로 구독 상태 확인
+    /**
+     * 사용자 ID 기반으로 구독 상태 확인
+     */
     public boolean isSubscribed(String userId) {
         if (userId == null || userId.isEmpty()) {
             return false; // 사용자 ID가 없으면 구독 안 된 것으로 처리
         }
 
+        // 1. 먼저 로컬 캐시 확인 (빠른 응답 위해)
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        boolean isSubscribed = prefs.getBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId, false);
+        boolean localSubscribed = prefs.getBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId, false);
+        long localExpiryTimestamp = prefs.getLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_expiry", 0);
 
-        if (isSubscribed) {
-            // 구독 만료일 확인
-            long expiryTimestamp = prefs.getLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_expiry", 0);
-            return System.currentTimeMillis() < expiryTimestamp;
+        // 2. 로컬 캐시에 있고 만료되지 않았으면 바로 반환
+        if (localSubscribed && System.currentTimeMillis() < localExpiryTimestamp) {
+            return true;
         }
 
-        return false;
+        // 3. Firebase에서 최신 구독 정보 확인 (비동기 작업이지만 여기서는 간단하게 처리)
+        final boolean[] firebaseSubscribed = {false};
+        final boolean[] checkCompleted = {false};
+
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference userSubscriptionRef = database.getReference("subscriptions").child(userId);
+
+        userSubscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    boolean isSubscribed = dataSnapshot.child("isSubscribed").getValue(Boolean.class);
+                    long expiryTimestamp = dataSnapshot.child("expiryTimestamp").getValue(Long.class);
+                    boolean isCancelled = dataSnapshot.child("isCancelled").getValue(Boolean.class);
+
+                    // 중요: 여기서 취소된 구독이어도 만료일까지는 서비스를 제공
+                    if (isSubscribed && System.currentTimeMillis() < expiryTimestamp) {
+                        firebaseSubscribed[0] = true;
+
+                        // 로컬 캐시 업데이트
+                        String subscriptionType = dataSnapshot.child("subscriptionType").getValue(String.class);
+                        SharedPreferences.Editor editor = prefs.edit();
+                        editor.putBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId, true);
+                        editor.putLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_expiry", expiryTimestamp);
+                        editor.putString(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_type", subscriptionType);
+                        editor.putBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_cancelled", isCancelled);
+                        editor.apply();
+                    }
+                }
+                checkCompleted[0] = true;
+                synchronized (checkCompleted) {
+                    checkCompleted.notify();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e(TAG, "Firebase 구독 정보 로드 실패: " + databaseError.getMessage());
+                checkCompleted[0] = true;
+                synchronized (checkCompleted) {
+                    checkCompleted.notify();
+                }
+            }
+        });
+
+        // 응답을 기다림 (최대 3초)
+        try {
+            synchronized (checkCompleted) {
+                if (!checkCompleted[0]) {
+                    checkCompleted.wait(3000);
+                }
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "구독 상태 확인 중 인터럽트 발생", e);
+        }
+
+        return firebaseSubscribed[0];
+    }
+
+    /**
+     * 구독 취소 처리 - 만료 기간까지는 서비스 유지
+     */
+    public void cancelSubscription(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return;
+        }
+
+        // Firebase에서 현재 구독 정보 가져오기
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference userSubscriptionRef = database.getReference("subscriptions").child(userId);
+
+        userSubscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    boolean isSubscribed = dataSnapshot.child("isSubscribed").getValue(Boolean.class);
+                    long expiryTimestamp = dataSnapshot.child("expiryTimestamp").getValue(Long.class);
+
+                    if (isSubscribed && System.currentTimeMillis() < expiryTimestamp) {
+                        // 구독은 여전히 유효하지만 취소 상태로 표시
+                        Map<String, Object> updates = new HashMap<>();
+                        updates.put("isCancelled", true);
+                        updates.put("autoRenewing", false);
+
+                        userSubscriptionRef.updateChildren(updates)
+                                .addOnSuccessListener(aVoid -> {
+                                    Log.d(TAG, "구독 취소 처리 완료 (만료일: " + new Date(expiryTimestamp) + ")");
+
+                                    // 로컬 캐시도 업데이트
+                                    SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+                                    SharedPreferences.Editor editor = prefs.edit();
+                                    editor.putBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_cancelled", true);
+                                    editor.putBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_auto_renewing", false);
+                                    editor.apply();
+                                })
+                                .addOnFailureListener(e -> Log.e(TAG, "구독 취소 처리 실패: " + e.getMessage()));
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.e(TAG, "Firebase 구독 정보 로드 실패: " + databaseError.getMessage());
+            }
+        });
     }
 
     /**
