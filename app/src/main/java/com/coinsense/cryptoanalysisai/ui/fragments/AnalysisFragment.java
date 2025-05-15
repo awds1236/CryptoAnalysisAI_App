@@ -1092,5 +1092,5 @@ public class AnalysisFragment extends Fragment {
         }
 
         // 모든 UI를 새로 고치는 새 메서드 추가
-        }
+    }
 }
