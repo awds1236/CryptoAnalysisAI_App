@@ -9,11 +9,13 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.coinsense.cryptoanalysisai.MainActivity;
 import com.coinsense.cryptoanalysisai.R;
 import com.coinsense.cryptoanalysisai.databinding.ActivityLoginBinding;
+import com.coinsense.cryptoanalysisai.services.FirebaseSubscriptionManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 import com.google.android.gms.auth.api.identity.BeginSignInRequest;
 import com.google.android.gms.auth.api.identity.Identity;
@@ -28,6 +30,13 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.coinsense.cryptoanalysisai.services.SubscriptionManager;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -117,6 +126,12 @@ public class LoginActivity extends AppCompatActivity {
                         FirebaseUser user = firebaseAuth.getCurrentUser();
                         if (user != null) {
                             saveUserData(user);
+
+                            // 사용자 로그인 시 구독 관리자에 사용자 설정
+                            SubscriptionManager.getInstance(this).updateUser(user);
+
+                            // 초기 구독 데이터 생성 (없을 경우만)
+                            createInitialSubscriptionData(user);
                         }
                         proceedToMainActivity();
                     } else {
@@ -124,6 +139,43 @@ public class LoginActivity extends AppCompatActivity {
                         handleSignInFailure("인증에 실패했습니다.");
                     }
                 });
+    }
+
+    /**
+     * 신규 사용자의 초기 구독 데이터 생성
+     */
+    private void createInitialSubscriptionData(FirebaseUser user) {
+        // Firebase 구독 데이터베이스 참조
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference subscriptionRef = database.getReference("subscriptions")
+                .child(user.getUid());
+
+        // 이미 데이터가 있는지 확인
+        subscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                // 데이터가 없는 경우만 초기 데이터 생성
+                if (!snapshot.exists()) {
+                    FirebaseSubscriptionManager.SubscriptionData initialData =
+                            new FirebaseSubscriptionManager.SubscriptionData();
+                    initialData.setSubscriptionType(Constants.SUBSCRIPTION_NONE);
+                    initialData.setExpiryTimestamp(0);
+                    initialData.setStartTimestamp(System.currentTimeMillis());
+                    initialData.setAutoRenewing(false);
+                    initialData.setMonthlyPrice("월 ₩9,900");
+                    initialData.setYearlyPrice("연 ₩95,000 (월 ₩7,920)");
+
+                    subscriptionRef.setValue(initialData)
+                            .addOnSuccessListener(aVoid -> Log.d("LoginActivity", "초기 구독 데이터 생성 완료"))
+                            .addOnFailureListener(e -> Log.e("LoginActivity", "초기 구독 데이터 생성 실패: " + e.getMessage()));
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("LoginActivity", "초기 구독 데이터 확인 실패: " + error.getMessage());
+            }
+        });
     }
 
     private void saveUserData(FirebaseUser user) {
