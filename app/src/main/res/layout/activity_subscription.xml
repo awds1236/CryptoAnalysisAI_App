@@ -77,7 +77,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인" />
+                    android:text="• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인\n• 프리미엄 코인 " />
 
                 <Button
                     android:id="@+id/btnMonthlySubscription"

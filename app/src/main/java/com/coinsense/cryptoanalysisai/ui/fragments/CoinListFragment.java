@@ -224,6 +224,7 @@ public class CoinListFragment extends Fragment {
         });
     }
 
+
     /**
      * 바이낸스 마켓 목록 로드
      */
@@ -237,25 +238,40 @@ public class CoinListFragment extends Fragment {
                     BinanceModels.BinanceExchangeInfo exchangeInfo = response.body();
                     List<CoinInfo> usdtMarkets = new ArrayList<>();
 
-                    // USDT 마켓 중 지정된 주요 코인만 필터링 및 변환
+                    // USDT 마켓 중 모든 코인 변환 (필터링 제거)
                     for (BinanceModels.BinanceExchangeInfo.SymbolInfo symbolInfo : exchangeInfo.getSymbols()) {
                         if ("USDT".equals(symbolInfo.getQuoteAsset()) && "TRADING".equals(symbolInfo.getStatus())) {
                             String baseAsset = symbolInfo.getBaseAsset();
 
-                            // 주요 코인만 필터링 (BTC, ETH, XRP, SOL)
-                            boolean isMainCoin = false;
+                            // 우리가 관심있는 모든 코인 처리 (주요 코인 + 프리미엄 코인)
+                            boolean isInterestingCoin = false;
+                            boolean isPremiumCoin = false;
+
+                            // 기본 코인인지 확인
                             for (String mainCoin : Constants.MAIN_COINS) {
                                 if (mainCoin.equalsIgnoreCase(baseAsset)) {
-                                    isMainCoin = true;
+                                    isInterestingCoin = true;
                                     break;
                                 }
                             }
 
-                            if (isMainCoin) {
+                            // 프리미엄 코인인지 확인
+                            if (!isInterestingCoin) {
+                                for (String premiumCoin : Constants.PREMIUM_COINS) {
+                                    if (premiumCoin.equalsIgnoreCase(baseAsset)) {
+                                        isInterestingCoin = true;
+                                        isPremiumCoin = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (isInterestingCoin) {
                                 CoinInfo coinInfo = symbolInfo.toUpbitFormat();
                                 String koreanName = getKoreanName(symbolInfo.getBaseAsset());
                                 coinInfo.setKoreanName(koreanName);
                                 coinInfo.setEnglishName(symbolInfo.getBaseAsset());
+                                coinInfo.setPremium(isPremiumCoin); // 프리미엄 코인 플래그 설정
                                 usdtMarkets.add(coinInfo);
 
                                 // 코인 캐시에 추가
@@ -279,6 +295,7 @@ public class CoinListFragment extends Fragment {
             }
         });
     }
+
 
     /**
      * 바이낸스 가격 정보 로드
@@ -311,11 +328,19 @@ public class CoinListFragment extends Fragment {
                         }
                     }
 
-                    // 코인 목록 정렬 (시가총액 또는 가격 높은 순)
+                    // 코인 목록 정렬 수정: 기본 코인 먼저, 프리미엄 코인 나중에, 같은 카테고리 내에서는 가격 높은 순
                     Collections.sort(markets, new Comparator<CoinInfo>() {
                         @Override
                         public int compare(CoinInfo o1, CoinInfo o2) {
-                            return Double.compare(o2.getCurrentPrice(), o1.getCurrentPrice());
+                            // 기본 코인과 프리미엄 코인 비교
+                            if (!o1.isPremium() && o2.isPremium()) {
+                                return -1; // o1(기본 코인)이 앞으로
+                            } else if (o1.isPremium() && !o2.isPremium()) {
+                                return 1;  // o2(기본 코인)이 앞으로
+                            } else {
+                                // 같은 카테고리 내에서는 가격 높은 순으로 정렬
+                                return Double.compare(o2.getCurrentPrice(), o1.getCurrentPrice());
+                            }
                         }
                     });
 
@@ -470,10 +495,21 @@ public class CoinListFragment extends Fragment {
     private String getKoreanName(String symbol) {
         // 주요 코인에 대한 한글 이름 매핑
         Map<String, String> koreanNames = new HashMap<>();
+        // 기본 코인
         koreanNames.put("BTC", "비트코인");
         koreanNames.put("ETH", "이더리움");
         koreanNames.put("XRP", "리플");
         koreanNames.put("SOL", "솔라나");
+
+        // 프리미엄 코인
+        koreanNames.put("DOGE", "도지코인");
+        koreanNames.put("ADA", "에이다");
+        koreanNames.put("TRX", "트론");
+        koreanNames.put("SUI", "수이");
+        koreanNames.put("LINK", "체인링크");
+        koreanNames.put("AVAX", "아발란체");
+        koreanNames.put("XLM", "스텔라루멘");
+        koreanNames.put("HBAR", "헤데라");
 
         return koreanNames.getOrDefault(symbol, symbol);
     }
@@ -518,8 +554,12 @@ public class CoinListFragment extends Fragment {
             // 코인 심볼 (BTC, ETH, ...)
             holder.tvCoinSymbol.setText(coin.getSymbol());
 
-            // 코인 이름 (비트코인, 이더리움, ...)
-            holder.tvCoinName.setText(coin.getDisplayName());
+            // 코인 이름 (비트코인, 이더리움, ...) - 프리미엄 코인이면 표시
+            String displayName = coin.getDisplayName();
+            if (coin.isPremium()) {
+                displayName += " 💎"; // 프리미엄 코인에 다이아몬드 이모지 추가
+            }
+            holder.tvCoinName.setText(displayName);
 
             // 현재 가격
             holder.tvPrice.setText(coin.getFormattedPrice());

@@ -31,6 +31,7 @@ import com.coinsense.cryptoanalysisai.services.SubscriptionManager;
 import com.coinsense.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.coinsense.cryptoanalysisai.ui.dialogs.AdViewDialog;
 import com.coinsense.cryptoanalysisai.services.AdManager;
+import com.coinsense.cryptoanalysisai.utils.Constants;
 
 import java.util.List;
 import java.util.Locale;
@@ -502,12 +503,12 @@ public class StrategyFragment extends Fragment {
 
         boolean isSubscribed = subscriptionManager.isSubscribed();
         boolean hasAdPermission = false;
+        boolean isPremiumCoin = false;
 
-        // symbol이 null이 아닌 경우에만 권한 확인
-        if (coinInfo.getSymbol() != null) {
+        // coinInfo 확인 추가
+        if (coinInfo != null && coinInfo.getSymbol() != null) {
             hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
-        } else {
-            Log.w("StrategyFragment", "updateContentAccessUI: coinInfo.symbol is null");
+            isPremiumCoin = coinInfo.isPremium(); // 여기서 프리미엄 플래그 사용
         }
 
         if (isSubscribed || hasAdPermission) {
@@ -556,7 +557,7 @@ public class StrategyFragment extends Fragment {
 
             // 구독 버튼 및 광고 버튼 표시
             btnSubscribe.setVisibility(View.VISIBLE);
-            btnWatchAd.setVisibility(View.VISIBLE);
+            btnWatchAd.setVisibility(isPremiumCoin ? View.GONE : View.VISIBLE);
 
             // 버튼 위치 조정 - btnWatchAd의 margin을 설정
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) btnWatchAd.getLayoutParams();
