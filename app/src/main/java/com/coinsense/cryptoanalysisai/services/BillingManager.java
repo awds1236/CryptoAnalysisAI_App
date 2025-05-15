@@ -22,9 +22,19 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 import com.coinsense.cryptoanalysisai.utils.Constants;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BillingManager implements PurchasesUpdatedListener {
     private static final String TAG = "BillingManager";
@@ -176,64 +186,179 @@ public class BillingManager implements PurchasesUpdatedListener {
 
     /**
      * 구매 내역 처리 (구독 상태 업데이트)
+     * Google Play의 실제 구독 정보를 확인하고 Firebase에 저장
      */
     private void processPurchases(List<Purchase> purchases) {
+        // 현재 로그인한 Firebase 사용자 확인
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Log.e(TAG, "Firebase 사용자가 로그인되어 있지 않습니다");
+            return;
+        }
+
+        Log.d(TAG, "현재 Firebase 사용자 ID: " + user.getUid());
+        Log.d(TAG, "Google Play에서 확인된 구매 내역 수: " + (purchases != null ? purchases.size() : 0));
+
         SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
         boolean isSubscribed = false;
         long expiryTimestamp = 0;
         String subscriptionType = Constants.SUBSCRIPTION_NONE;
+        boolean isAutoRenewing = false;
 
-        for (Purchase purchase : purchases) {
-            // 구매 상태 확인
-            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                // 구매 인정(Acknowledge) 상태 확인
-                if (!purchase.isAcknowledged()) {
-                    acknowledgePurchase(purchase);
-                }
+        // Google Play에서 받은 구매 정보 처리
+        if (purchases != null && !purchases.isEmpty()) {
+            for (Purchase purchase : purchases) {
+                Log.d(TAG, "구매 상태 검토: " + purchase.getProducts() + ", 상태: " + purchase.getPurchaseState());
 
-                // 구독 상품 확인
-                List<String> skus = purchase.getProducts();
-                if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
-                    isSubscribed = true;
-                    subscriptionType = Constants.SUBSCRIPTION_MONTHLY;
+                // 구매 상태 확인 (PURCHASED = 완료된 구매)
+                if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                    // 구매 확인(Acknowledge) 상태 확인 - 미확인 시 확인 처리
+                    if (!purchase.isAcknowledged()) {
+                        acknowledgePurchase(purchase);
+                    }
 
-                    // 만료 시간 설정 (현재 시간으로부터 30일 후)
-                    expiryTimestamp = System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000);
+                    // 구독 상품 ID 확인
+                    List<String> skus = purchase.getProducts();
+                    if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
+                        isSubscribed = true;
+                        subscriptionType = Constants.SUBSCRIPTION_MONTHLY;
+                        isAutoRenewing = purchase.isAutoRenewing();
 
-                    Log.d(TAG, "월간 구독 확인됨");
-                } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
-                    isSubscribed = true;
-                    subscriptionType = Constants.SUBSCRIPTION_YEARLY;
+                        // 만료 시간 설정 (현재 시간으로부터 30일 후)
+                        expiryTimestamp = System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000);
+                        Log.d(TAG, "월간 구독 확인됨: 만료일 " + new Date(expiryTimestamp));
 
-                    // 만료 시간 설정 (현재 시간으로부터 365일 후)
-                    expiryTimestamp = System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000);
+                    } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
+                        isSubscribed = true;
+                        subscriptionType = Constants.SUBSCRIPTION_YEARLY;
+                        isAutoRenewing = purchase.isAutoRenewing();
 
-                    Log.d(TAG, "연간 구독 확인됨");
+                        // 만료 시간 설정 (현재 시간으로부터 365일 후)
+                        expiryTimestamp = System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000);
+                        Log.d(TAG, "연간 구독 확인됨: 만료일 " + new Date(expiryTimestamp));
+                    }
                 }
             }
+        } else {
+            Log.d(TAG, "활성 구독이 확인되지 않았습니다");
         }
 
-        // 구독 상태 업데이트
-        subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType);
+        // Firebase 구독 데이터베이스 참조
+        DatabaseReference subscriptionRef = FirebaseDatabase.getInstance()
+                .getReference("subscriptions")
+                .child(user.getUid());
 
-        // 상태 콜백 호출
-        if (billingStatusListener != null) {
-            billingStatusListener.onSubscriptionStatusUpdated(isSubscribed, subscriptionType);
-        }
+        // 구독 데이터 객체 생성
+        FirebaseSubscriptionManager.SubscriptionData subscriptionData = new FirebaseSubscriptionManager.SubscriptionData();
+        subscriptionData.setSubscriptionType(subscriptionType);
+        subscriptionData.setExpiryTimestamp(expiryTimestamp);
+        subscriptionData.setAutoRenewing(isAutoRenewing);
 
-        // 자동 갱신 상태 저장
-        for (Purchase purchase : purchases) {
-            if (purchase.isAutoRenewing()) {
-                SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putBoolean(Constants.PREF_SUBSCRIPTION_AUTO_RENEWING, true);
-                editor.apply();
+        // 기존 데이터를 유지하기 위해 먼저 조회 후 업데이트
+        boolean finalIsSubscribed = isSubscribed;
+        String finalSubscriptionType = subscriptionType;
+        subscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                FirebaseSubscriptionManager.SubscriptionData existingData = null;
+
+                if (snapshot.exists()) {
+                    existingData = snapshot.getValue(FirebaseSubscriptionManager.SubscriptionData.class);
+                }
+
+                // 기존 데이터가 있으면 일부 필드 유지 (시작 시간, 가격 정보 등)
+                if (existingData != null) {
+                    // 신규 구독인 경우만 시작 시간 업데이트
+                    if (!finalIsSubscribed && existingData.isSubscribed()) {
+                        // 기존 구독 → 구독 아님: 취소된 경우
+                        subscriptionData.setStartTimestamp(existingData.getStartTimestamp());
+                    } else if (finalIsSubscribed && !existingData.isSubscribed()) {
+                        // 구독 아님 → 새 구독: 신규 구독 시작
+                        subscriptionData.setStartTimestamp(System.currentTimeMillis());
+                    } else {
+                        // 상태 변화 없음: 기존 시작 시간 유지
+                        subscriptionData.setStartTimestamp(existingData.getStartTimestamp());
+                    }
+
+                    // 가격 정보 유지
+                    subscriptionData.setMonthlyPrice(existingData.getMonthlyPrice());
+                    subscriptionData.setYearlyPrice(existingData.getYearlyPrice());
+                } else {
+                    // 새 데이터면 현재 시간을 시작 시간으로 설정
+                    subscriptionData.setStartTimestamp(System.currentTimeMillis());
+                    subscriptionData.setMonthlyPrice("월 ₩9,900");
+                    subscriptionData.setYearlyPrice("연 ₩95,000");
+                }
+
+                // subscribed 필드 추가 (boolean 값으로 구독 상태 저장)
+                Map<String, Object> updateData = new HashMap<>();
+                updateData.put("subscriptionType", subscriptionData.getSubscriptionType());
+                updateData.put("expiryTimestamp", subscriptionData.getExpiryTimestamp());
+                updateData.put("startTimestamp", subscriptionData.getStartTimestamp());
+                updateData.put("autoRenewing", subscriptionData.isAutoRenewing());
+                updateData.put("monthlyPrice", subscriptionData.getMonthlyPrice());
+                updateData.put("yearlyPrice", subscriptionData.getYearlyPrice());
+                updateData.put("subscribed", finalIsSubscribed);
+
+                // Firebase에 구독 정보 업데이트
+                subscriptionRef.updateChildren(updateData)
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "Firebase 구독 정보 업데이트 성공: " + user.getUid());
+                            // 구독 정보 변경 알림
+                            if (billingStatusListener != null) {
+                                billingStatusListener.onSubscriptionStatusUpdated(finalIsSubscribed, finalSubscriptionType);
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Firebase 구독 정보 업데이트 실패: " + e.getMessage());
+                        });
             }
-        }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "Firebase 구독 정보 조회 실패: " + error.getMessage());
+            }
+        });
+
+        // 구매 기록에도 저장 (이력 추적용)
+        saveFirebasePurchaseRecord(purchases);
     }
 
     /**
-     * 구매 인정 (Acknowledge)
+     * Firebase에 구매 기록 저장 (추적용)
+     */
+    private void saveFirebasePurchaseRecord(List<Purchase> purchases) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null || purchases == null || purchases.isEmpty()) {
+            return;
+        }
+
+        // Firebase 데이터베이스 참조
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference purchaseRef = database.getReference("purchase_history")
+                .child(user.getUid());
+
+        for (Purchase purchase : purchases) {
+            // 구매 정보를 맵으로 변환
+            Map<String, Object> purchaseData = new HashMap<>();
+            purchaseData.put("orderId", purchase.getOrderId());
+            purchaseData.put("products", purchase.getProducts());
+            purchaseData.put("purchaseTime", purchase.getPurchaseTime());
+            purchaseData.put("purchaseState", purchase.getPurchaseState());
+            purchaseData.put("autoRenewing", purchase.isAutoRenewing());
+            purchaseData.put("purchaseToken", purchase.getPurchaseToken());
+            purchaseData.put("recordTime", System.currentTimeMillis());
+
+            // 구매 ID로 저장 (중복 방지)
+            purchaseRef.child(purchase.getOrderId()).setValue(purchaseData)
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "구매 기록 저장 성공"))
+                    .addOnFailureListener(e -> Log.e(TAG, "구매 기록 저장 실패: " + e.getMessage()));
+        }
+    }
+
+
+    /**
+     * 구매 인정 (Acknowledge) - Google Play 요구사항
      */
     private void acknowledgePurchase(Purchase purchase) {
         AcknowledgePurchaseParams acknowledgePurchaseParams =
@@ -243,14 +368,12 @@ public class BillingManager implements PurchasesUpdatedListener {
 
         billingClient.acknowledgePurchase(
                 acknowledgePurchaseParams,
-                new AcknowledgePurchaseResponseListener() {
-                    @Override
-                    public void onAcknowledgePurchaseResponse(@NonNull BillingResult billingResult) {
-                        if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                            Log.d(TAG, "구매 인정 성공");
-                        } else {
-                            Log.e(TAG, "구매 인정 실패: " + billingResult.getResponseCode());
-                        }
+                billingResult -> {
+                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                        Log.d(TAG, "구매 인정 완료: " + purchase.getOrderId());
+                    } else {
+                        Log.e(TAG, "구매 인정 실패: " + billingResult.getResponseCode() +
+                                " - " + billingResult.getDebugMessage());
                     }
                 });
     }

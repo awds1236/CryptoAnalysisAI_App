@@ -27,6 +27,7 @@ import com.coinsense.cryptoanalysisai.models.ExchangeType;
 import com.coinsense.cryptoanalysisai.services.AdManager;
 import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.services.ExchangeRateManager;
+import com.coinsense.cryptoanalysisai.services.SubscriptionManager;
 import com.coinsense.cryptoanalysisai.ui.activities.LoginActivity;
 import com.coinsense.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.coinsense.cryptoanalysisai.ui.fragments.AnalysisFragment;
@@ -375,6 +376,9 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
     private void logout() {
         // Firebase 로그아웃
         FirebaseAuth.getInstance().signOut();
+
+        // 구독 관리자에 사용자 변경 알림
+        SubscriptionManager.getInstance(this).updateUser(null);
 
         // SharedPreferences 로그인 상태 제거
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
