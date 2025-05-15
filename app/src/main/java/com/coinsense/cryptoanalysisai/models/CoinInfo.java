@@ -24,6 +24,17 @@ public class CoinInfo {
     private double currentPrice;
     private double priceChange;
 
+    // CoinInfo 클래스에 추가
+    private boolean isPremium = false;
+
+    public boolean isPremium() {
+        return isPremium;
+    }
+
+    public void setPremium(boolean premium) {
+        isPremium = premium;
+    }
+
     public CoinInfo() {
         // 기본 생성자
     }

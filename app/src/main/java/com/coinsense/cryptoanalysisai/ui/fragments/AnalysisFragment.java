@@ -669,6 +669,12 @@ public class AnalysisFragment extends Fragment {
 
         boolean isSubscribed = subscriptionManager.isSubscribed();
         boolean hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+        boolean isPremiumCoin = false;
+
+        if (coinInfo != null && coinInfo.getSymbol() != null) {
+            hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+            isPremiumCoin = coinInfo.isPremium(); // 프리미엄 플래그 확인
+        }
 
         AnalysisResult.TechnicalAnalysis technicalAnalysis = analysisResult.getTechnicalAnalysis();
 
@@ -903,7 +909,7 @@ public class AnalysisFragment extends Fragment {
             binding.technicalBlurOverlay.setVisibility(View.VISIBLE);
             binding.technicalPixelatedOverlay.setVisibility(View.VISIBLE);
             binding.btnTechnicalSubscribe.setVisibility(View.VISIBLE);
-            btnTechnicalWatchAd.setVisibility(View.VISIBLE);
+            btnTechnicalWatchAd.setVisibility(isPremiumCoin ? View.GONE : View.VISIBLE);
             binding.cardTechnical.setAlpha(0.5f);
             tvTechnicalAdStatus.setVisibility(View.GONE);
 

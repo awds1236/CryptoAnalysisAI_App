@@ -34,7 +34,11 @@ public class Constants {
     // public static final String DB_USER = BuildConfig.DB_USER;
     // public static final String DB_PASS = BuildConfig.DB_PASS;
 
-    public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL","DOGE", "ADA", "TRX", "SUI", "LINK", "AVAX", "XLM", "HBAR"};
+    // To this
+    public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL"};
+
+    // Add a new array for premium coins
+    public static final String[] PREMIUM_COINS = {"DOGE", "ADA", "TRX", "SUI", "LINK", "AVAX", "XLM", "HBAR"};
 
     // 기본 설정
     public static final int DEFAULT_CANDLE_COUNT = 30;
@@ -87,6 +91,17 @@ public class Constants {
                 default: return "";
             }
         }
+    }
+
+    public static boolean isBasicCoin(String symbol) {
+        if (symbol == null) return false;
+
+        for (String coin : MAIN_COINS) {
+            if (coin.equalsIgnoreCase(symbol)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // 기술적 지표

@@ -99,6 +99,16 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             return;
         }
 
+        // 구독 상태 동기화 (BillingManager에 현재 사용자 ID 설정)
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        String userId = prefs.getString(Constants.PREF_USER_ID, "");
+        if (userId != null && !userId.isEmpty()) {
+            BillingManager.getInstance(this).setCurrentUserId(userId);
+        }
+
+        // 구독 상태 동기화
+        BillingManager.getInstance(this).syncSubscriptions();
+
         // ViewPager 설정
         setupViewPager();
 

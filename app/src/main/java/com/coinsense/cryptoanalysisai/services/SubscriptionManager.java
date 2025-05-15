@@ -15,6 +15,7 @@ import java.util.Locale;
 public class SubscriptionManager {
 
     private static final String TAG = "SubscriptionManager";
+    private static final String PREF_USER_SUBSCRIPTION_PREFIX = "subscription_";
     private static SubscriptionManager instance;
     private final Context context;
 
@@ -29,16 +30,18 @@ public class SubscriptionManager {
         return instance;
     }
 
-    /**
-     * 사용자가 구독 중인지 확인
-     */
-    public boolean isSubscribed() {
+    // 사용자 ID 기반으로 구독 상태 확인
+    public boolean isSubscribed(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return isSubscribed(); // 기존 방식으로 폴백
+        }
+
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        boolean isSubscribed = prefs.getBoolean(Constants.PREF_IS_SUBSCRIBED, false);
+        boolean isSubscribed = prefs.getBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId, false);
 
         if (isSubscribed) {
             // 구독 만료일 확인
-            long expiryTimestamp = prefs.getLong(Constants.PREF_SUBSCRIPTION_EXPIRY, 0);
+            long expiryTimestamp = prefs.getLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_expiry", 0);
             return System.currentTimeMillis() < expiryTimestamp;
         }
 
@@ -46,25 +49,79 @@ public class SubscriptionManager {
     }
 
     /**
-     * 구독 상태 설정
-     *
-     * @param subscribed 구독 상태
-     * @param expiryTimestamp 만료일 타임스탬프
-     * @param subscriptionType 구독 유형 (월간, 연간)
+     * 사용자가 구독 중인지 확인
      */
-    public void setSubscribed(boolean subscribed, long expiryTimestamp, String subscriptionType) {
+    // 기존 isSubscribed() 메소드는 유지하되 현재 로그인한 사용자 ID 확인
+    public boolean isSubscribed() {
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        String currentUserId = prefs.getString(Constants.PREF_USER_ID, "");
+
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            return isSubscribed(currentUserId);
+        }
+
+        // 기존 코드 (사용자 ID 없는 경우 기기 단위 구독 확인)
+        boolean isSubscribed = prefs.getBoolean(Constants.PREF_IS_SUBSCRIBED, false);
+        if (isSubscribed) {
+            long expiryTimestamp = prefs.getLong(Constants.PREF_SUBSCRIPTION_EXPIRY, 0);
+            return System.currentTimeMillis() < expiryTimestamp;
+        }
+        return false;
+    }
+
+    // 사용자 ID 기반 구독 상태 설정
+    public void setSubscribed(boolean subscribed, long expiryTimestamp, String subscriptionType, String userId) {
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
+
+        // 사용자 ID 기반 구독 정보 저장
+        editor.putBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId, subscribed);
+        editor.putLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_expiry", expiryTimestamp);
+        editor.putString(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_type", subscriptionType);
+
+        // 구독 시작 시간 저장 (새로 구독하는 경우)
+        if (subscribed && !prefs.getBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId, false)) {
+            editor.putLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_start", System.currentTimeMillis());
+        }
+
+        // 기존 방식과의 호환성 유지
         editor.putBoolean(Constants.PREF_IS_SUBSCRIBED, subscribed);
         editor.putLong(Constants.PREF_SUBSCRIPTION_EXPIRY, expiryTimestamp);
         editor.putString(Constants.PREF_SUBSCRIPTION_TYPE, subscriptionType);
 
-        // 구독 시작 시간 저장 (새로 구독하는 경우)
-        if (subscribed && !prefs.getBoolean(Constants.PREF_IS_SUBSCRIBED, false)) {
-            editor.putLong(Constants.PREF_SUBSCRIPTION_START_TIME, System.currentTimeMillis());
+        editor.apply();
+    }
+
+    // 기존 setSubscribed 메소드 오버로드 (하위 호환성 유지)
+    public void setSubscribed(boolean subscribed, long expiryTimestamp, String subscriptionType) {
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        String currentUserId = prefs.getString(Constants.PREF_USER_ID, "");
+
+        if (currentUserId != null && !currentUserId.isEmpty()) {
+            setSubscribed(subscribed, expiryTimestamp, subscriptionType, currentUserId);
+        } else {
+            // 기존 코드 (사용자 ID 없는 경우)
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean(Constants.PREF_IS_SUBSCRIBED, subscribed);
+            editor.putLong(Constants.PREF_SUBSCRIPTION_EXPIRY, expiryTimestamp);
+            editor.putString(Constants.PREF_SUBSCRIPTION_TYPE, subscriptionType);
+
+            if (subscribed && !prefs.getBoolean(Constants.PREF_IS_SUBSCRIBED, false)) {
+                editor.putLong(Constants.PREF_SUBSCRIPTION_START_TIME, System.currentTimeMillis());
+            }
+
+            editor.apply();
+        }
+    }
+
+    // 구독 유형 반환 (사용자 ID 기반)
+    public String getSubscriptionType(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return getSubscriptionType(); // 기존 방식으로 폴백
         }
 
-        editor.apply();
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getString(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_type", Constants.SUBSCRIPTION_NONE);
     }
 
     /**
