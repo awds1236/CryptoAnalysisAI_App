@@ -334,10 +334,17 @@ public class BillingManager implements PurchasesUpdatedListener {
     @Override
     public void onPurchasesUpdated(@NonNull BillingResult billingResult, @Nullable List<Purchase> purchases) {
         if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
-            // 구매 완료
-            processPurchases(purchases);
-            if (billingStatusListener != null) {
-                billingStatusListener.onPurchaseComplete();
+            // 구매 완료 - 반드시 현재 로그인한 사용자 ID만 사용
+            if (currentUserId != null && !currentUserId.isEmpty()) {
+                processPurchases(purchases);
+                if (billingStatusListener != null) {
+                    billingStatusListener.onPurchaseComplete();
+                }
+            } else {
+                // 로그인하지 않은 상태에서는 구독 불가 메시지
+                if (billingStatusListener != null) {
+                    billingStatusListener.onBillingError("로그인 후 다시 시도해주세요.");
+                }
             }
         } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
             // 사용자가 취소

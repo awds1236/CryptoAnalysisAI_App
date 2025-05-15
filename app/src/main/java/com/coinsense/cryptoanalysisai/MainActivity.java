@@ -379,17 +379,19 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * 로그아웃 처리
-     */
+    // MainActivity.java의 logout 메서드 수정
     private void logout() {
         // Firebase 로그아웃
         FirebaseAuth.getInstance().signOut();
+
+        // 사용자 ID 초기화 (중요)
+        BillingManager.getInstance(this).setCurrentUserId("");
 
         // SharedPreferences 로그인 상태 제거
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(Constants.PREF_IS_LOGGED_IN, false);
+        editor.putString(Constants.PREF_USER_ID, "");
         editor.apply();
 
         // 로그인 화면으로 이동
