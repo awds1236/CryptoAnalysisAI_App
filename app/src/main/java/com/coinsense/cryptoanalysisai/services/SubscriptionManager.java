@@ -125,16 +125,6 @@ public class SubscriptionManager {
     }
 
     /**
-     * 구독 취소 - 실제로는 BillingClient로 구글 플레이 구독 취소로 이동
-     * 여기서는 테스트용으로 바로 구독 해제
-     */
-    public void cancelSubscription() {
-        // 실제 구현에서는 Google Play 구독 관리 화면으로 이동
-        // 지금은 테스트용으로 직접 구독 취소
-        setSubscribed(false, 0, Constants.SUBSCRIPTION_NONE);
-    }
-
-    /**
      * 구독 만료까지 남은 일수
      */
     public int getRemainingDays() {
@@ -203,7 +193,7 @@ public class SubscriptionManager {
      */
     public String getMonthlyPrice() {
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getString(Constants.PREF_MONTHLY_PRICE, "월 ₩9,900");
+        return prefs.getString(Constants.PREF_MONTHLY_PRICE, "월 ₩15,000");
     }
 
     /**
@@ -211,14 +201,33 @@ public class SubscriptionManager {
      */
     public String getYearlyPrice() {
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getString(Constants.PREF_YEARLY_PRICE, "연 ₩95,000 (월 ₩7,920)");
+        return prefs.getString(Constants.PREF_YEARLY_PRICE, "연 126,000원 (월 10,500원)");
     }
 
-    /**
-     * 구독이 자동 갱신 상태인지 확인
-     * 이 메서드는 실제로는 Google Play 구독 API에서 확인해야 함
-     */
+    // SubscriptionManager.java의 isAutoRenewing() 메서드 수정
     public boolean isAutoRenewing() {
+        // 먼저 BillingManager가 초기화되었는지 확인
+        BillingManager billingManager = BillingManager.getInstance(context);
+        if (billingManager.isReady()) {
+            // 현재 구독 유형 확인
+            String subscriptionType = getSubscriptionType();
+            String subscriptionId;
+
+            // 구독 유형에 따른 상품 ID 설정
+            if (Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionType)) {
+                subscriptionId = BillingManager.MONTHLY_SUBSCRIPTION_ID;
+            } else if (Constants.SUBSCRIPTION_YEARLY.equals(subscriptionType)) {
+                subscriptionId = BillingManager.YEARLY_SUBSCRIPTION_ID;
+            } else {
+                // 구독이 없는 경우
+                return false;
+            }
+
+            // BillingManager를 통해 자동 갱신 상태 확인
+            return billingManager.isSubscriptionAutoRenewing(subscriptionId);
+        }
+
+        // BillingClient가 준비되지 않은 경우 저장된 값 반환
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
         return prefs.getBoolean(Constants.PREF_SUBSCRIPTION_AUTO_RENEWING, true);
     }
