@@ -109,6 +109,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
 
+    // LoginActivity.java의 firebaseAuthWithGoogle 메서드 수정
     private void firebaseAuthWithGoogle(String idToken) {
         AuthCredential credential = GoogleAuthProvider.getCredential(idToken, null);
         firebaseAuth.signInWithCredential(credential)
@@ -119,8 +120,10 @@ public class LoginActivity extends AppCompatActivity {
                         if (user != null) {
                             saveUserData(user);
 
-                            // 로그인 성공 후 사용자의 구독 상태 동기화
-                            syncUserSubscription(user.getUid());
+                            // 로그인 성공 후 명확하게 사용자 ID 설정 및 구독 상태 동기화
+                            String userId = user.getUid();
+                            BillingManager.getInstance(this).setCurrentUserId(userId);
+                            BillingManager.getInstance(this).syncSubscriptions();
                         }
                         proceedToMainActivity();
                     } else {

@@ -1,6 +1,7 @@
 package com.coinsense.cryptoanalysisai.ui.activities;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -38,10 +39,20 @@ public class SubscriptionActivity extends AppCompatActivity implements BillingMa
         // 현재 구독 상태 표시
         updateSubscriptionStatus();
 
-        // 월 구독 버튼
+        // 월간 구독 버튼도 함께 수정
         binding.btnMonthlySubscription.setOnClickListener(v -> {
-            if (subscriptionManager.isSubscribed() &&
-                    Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionManager.getSubscriptionType())) {
+            // 사용자 ID 확인
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+            String userId = prefs.getString(Constants.PREF_USER_ID, "");
+
+            if (userId.isEmpty()) {
+                Toast.makeText(this, "로그인 후 다시 시도해주세요.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 현재 구독 상태 확인 - 사용자 ID 기반
+            if (subscriptionManager.isSubscribed(userId) &&
+                    Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionManager.getSubscriptionType(userId))) {
                 // 이미 월간 구독 중
                 Toast.makeText(this, "이미 월간 구독 이용 중입니다.", Toast.LENGTH_SHORT).show();
             } else {
@@ -51,14 +62,24 @@ public class SubscriptionActivity extends AppCompatActivity implements BillingMa
             }
         });
 
-        // 연간 구독 버튼
+        // 연간 구독 버튼 클릭 리스너 수정
         binding.btnYearlySubscription.setOnClickListener(v -> {
-            if (subscriptionManager.isSubscribed() &&
-                    Constants.SUBSCRIPTION_YEARLY.equals(subscriptionManager.getSubscriptionType())) {
+            // 사용자 ID 확인
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+            String userId = prefs.getString(Constants.PREF_USER_ID, "");
+
+            if (userId.isEmpty()) {
+                Toast.makeText(this, "로그인 후 다시 시도해주세요.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // 현재 구독 상태 확인 - 사용자 ID 기반
+            if (subscriptionManager.isSubscribed(userId) &&
+                    Constants.SUBSCRIPTION_YEARLY.equals(subscriptionManager.getSubscriptionType(userId))) {
                 // 이미 연간 구독 중
                 Toast.makeText(this, "이미 연간 구독 이용 중입니다.", Toast.LENGTH_SHORT).show();
-            } else if (subscriptionManager.isSubscribed() &&
-                    Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionManager.getSubscriptionType())) {
+            } else if (subscriptionManager.isSubscribed(userId) &&
+                    Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionManager.getSubscriptionType(userId))) {
                 // 월간 구독에서 연간 구독으로 업그레이드
                 binding.progressBar.setVisibility(View.VISIBLE);
                 billingManager.startSubscription(this, BillingManager.YEARLY_SUBSCRIPTION_ID);

@@ -30,10 +30,16 @@ public class SubscriptionManager {
         return instance;
     }
 
+    // 현재 로그인한 사용자 ID 가져오기 (여러 메서드에서 공통으로 사용)
+    private String getCurrentUserId() {
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getString(Constants.PREF_USER_ID, "");
+    }
+
     // 사용자 ID 기반으로 구독 상태 확인
     public boolean isSubscribed(String userId) {
         if (userId == null || userId.isEmpty()) {
-            return isSubscribed(); // 기존 방식으로 폴백
+            return false; // 사용자 ID가 없으면 구독 안 된 것으로 처리
         }
 
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
@@ -51,26 +57,20 @@ public class SubscriptionManager {
     /**
      * 사용자가 구독 중인지 확인
      */
-    // 기존 isSubscribed() 메소드는 유지하되 현재 로그인한 사용자 ID 확인
     public boolean isSubscribed() {
-        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        String currentUserId = prefs.getString(Constants.PREF_USER_ID, "");
-
-        if (currentUserId != null && !currentUserId.isEmpty()) {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
             return isSubscribed(currentUserId);
-        }
-
-        // 기존 코드 (사용자 ID 없는 경우 기기 단위 구독 확인)
-        boolean isSubscribed = prefs.getBoolean(Constants.PREF_IS_SUBSCRIBED, false);
-        if (isSubscribed) {
-            long expiryTimestamp = prefs.getLong(Constants.PREF_SUBSCRIPTION_EXPIRY, 0);
-            return System.currentTimeMillis() < expiryTimestamp;
         }
         return false;
     }
 
     // 사용자 ID 기반 구독 상태 설정
     public void setSubscribed(boolean subscribed, long expiryTimestamp, String subscriptionType, String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return; // 사용자 ID가 없으면 저장하지 않음
+        }
+
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
@@ -84,40 +84,24 @@ public class SubscriptionManager {
             editor.putLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_start", System.currentTimeMillis());
         }
 
-        // 기존 방식과의 호환성 유지
-        editor.putBoolean(Constants.PREF_IS_SUBSCRIBED, subscribed);
-        editor.putLong(Constants.PREF_SUBSCRIPTION_EXPIRY, expiryTimestamp);
-        editor.putString(Constants.PREF_SUBSCRIPTION_TYPE, subscriptionType);
+        // 자동 갱신 상태 저장
+        editor.putBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_auto_renewing", true);
 
         editor.apply();
     }
 
-    // 기존 setSubscribed 메소드 오버로드 (하위 호환성 유지)
+    // 기존 setSubscribed 메소드 오버로드 (현재 로그인 사용자로 설정)
     public void setSubscribed(boolean subscribed, long expiryTimestamp, String subscriptionType) {
-        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        String currentUserId = prefs.getString(Constants.PREF_USER_ID, "");
-
-        if (currentUserId != null && !currentUserId.isEmpty()) {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
             setSubscribed(subscribed, expiryTimestamp, subscriptionType, currentUserId);
-        } else {
-            // 기존 코드 (사용자 ID 없는 경우)
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putBoolean(Constants.PREF_IS_SUBSCRIBED, subscribed);
-            editor.putLong(Constants.PREF_SUBSCRIPTION_EXPIRY, expiryTimestamp);
-            editor.putString(Constants.PREF_SUBSCRIPTION_TYPE, subscriptionType);
-
-            if (subscribed && !prefs.getBoolean(Constants.PREF_IS_SUBSCRIBED, false)) {
-                editor.putLong(Constants.PREF_SUBSCRIPTION_START_TIME, System.currentTimeMillis());
-            }
-
-            editor.apply();
         }
     }
 
     // 구독 유형 반환 (사용자 ID 기반)
     public String getSubscriptionType(String userId) {
         if (userId == null || userId.isEmpty()) {
-            return getSubscriptionType(); // 기존 방식으로 폴백
+            return Constants.SUBSCRIPTION_NONE;
         }
 
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
@@ -125,11 +109,26 @@ public class SubscriptionManager {
     }
 
     /**
-     * 구독 만료까지 남은 일수
+     * 구독 유형 반환 (현재 로그인 사용자)
      */
-    public int getRemainingDays() {
+    public String getSubscriptionType() {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
+            return getSubscriptionType(currentUserId);
+        }
+        return Constants.SUBSCRIPTION_NONE;
+    }
+
+    /**
+     * 구독 만료까지 남은 일수 (사용자 ID 기반)
+     */
+    public int getRemainingDays(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return 0;
+        }
+
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        long expiryTimestamp = prefs.getLong(Constants.PREF_SUBSCRIPTION_EXPIRY, 0);
+        long expiryTimestamp = prefs.getLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_expiry", 0);
 
         if (expiryTimestamp <= System.currentTimeMillis()) {
             return 0;
@@ -140,11 +139,26 @@ public class SubscriptionManager {
     }
 
     /**
-     * 구독 만료일 문자열 (yyyy-MM-dd 형식)
+     * 구독 만료까지 남은 일수 (현재 로그인 사용자)
      */
-    public String getExpiryDateString() {
+    public int getRemainingDays() {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
+            return getRemainingDays(currentUserId);
+        }
+        return 0;
+    }
+
+    /**
+     * 구독 만료일 문자열 (yyyy-MM-dd 형식) - 사용자 ID 기반
+     */
+    public String getExpiryDateString(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return "구독 없음";
+        }
+
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        long expiryTimestamp = prefs.getLong(Constants.PREF_SUBSCRIPTION_EXPIRY, 0);
+        long expiryTimestamp = prefs.getLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_expiry", 0);
 
         if (expiryTimestamp <= 0) {
             return "구독 없음";
@@ -155,11 +169,26 @@ public class SubscriptionManager {
     }
 
     /**
-     * 구독 시작일 문자열 (yyyy-MM-dd 형식)
+     * 구독 만료일 문자열 (현재 로그인 사용자)
      */
-    public String getStartDateString() {
+    public String getExpiryDateString() {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
+            return getExpiryDateString(currentUserId);
+        }
+        return "구독 없음";
+    }
+
+    /**
+     * 구독 시작일 문자열 (yyyy-MM-dd 형식) - 사용자 ID 기반
+     */
+    public String getStartDateString(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return "정보 없음";
+        }
+
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        long startTimestamp = prefs.getLong(Constants.PREF_SUBSCRIPTION_START_TIME, 0);
+        long startTimestamp = prefs.getLong(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_start", 0);
 
         if (startTimestamp <= 0) {
             return "정보 없음";
@@ -170,11 +199,14 @@ public class SubscriptionManager {
     }
 
     /**
-     * 구독 유형 반환
+     * 구독 시작일 문자열 (현재 로그인 사용자)
      */
-    public String getSubscriptionType() {
-        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getString(Constants.PREF_SUBSCRIPTION_TYPE, Constants.SUBSCRIPTION_NONE);
+    public String getStartDateString() {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
+            return getStartDateString(currentUserId);
+        }
+        return "정보 없음";
     }
 
     /**
@@ -204,13 +236,19 @@ public class SubscriptionManager {
         return prefs.getString(Constants.PREF_YEARLY_PRICE, "연 126,000원 (월 10,500원)");
     }
 
-    // SubscriptionManager.java의 isAutoRenewing() 메서드 수정
-    public boolean isAutoRenewing() {
+    /**
+     * 자동 갱신 상태 확인 (사용자 ID 기반)
+     */
+    public boolean isAutoRenewing(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            return false;
+        }
+
         // 먼저 BillingManager가 초기화되었는지 확인
         BillingManager billingManager = BillingManager.getInstance(context);
         if (billingManager.isReady()) {
             // 현재 구독 유형 확인
-            String subscriptionType = getSubscriptionType();
+            String subscriptionType = getSubscriptionType(userId);
             String subscriptionId;
 
             // 구독 유형에 따른 상품 ID 설정
@@ -229,18 +267,40 @@ public class SubscriptionManager {
 
         // BillingClient가 준비되지 않은 경우 저장된 값 반환
         SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
-        return prefs.getBoolean(Constants.PREF_SUBSCRIPTION_AUTO_RENEWING, true);
+        return prefs.getBoolean(PREF_USER_SUBSCRIPTION_PREFIX + userId + "_auto_renewing", false);
     }
 
     /**
-     * 다음 결제일 문자열 반환
+     * 자동 갱신 상태 확인 (현재 로그인 사용자)
      */
-    public String getNextBillingDateString() {
-        if (!isSubscribed()) {
+    public boolean isAutoRenewing() {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
+            return isAutoRenewing(currentUserId);
+        }
+        return false;
+    }
+
+    /**
+     * 다음 결제일 문자열 반환 (사용자 ID 기반)
+     */
+    public String getNextBillingDateString(String userId) {
+        if (userId == null || userId.isEmpty() || !isSubscribed(userId)) {
             return "구독 없음";
         }
 
         // 구독 만료일이 다음 결제일
-        return getExpiryDateString();
+        return getExpiryDateString(userId);
+    }
+
+    /**
+     * 다음 결제일 문자열 반환 (현재 로그인 사용자)
+     */
+    public String getNextBillingDateString() {
+        String currentUserId = getCurrentUserId();
+        if (!currentUserId.isEmpty()) {
+            return getNextBillingDateString(currentUserId);
+        }
+        return "구독 없음";
     }
 }
