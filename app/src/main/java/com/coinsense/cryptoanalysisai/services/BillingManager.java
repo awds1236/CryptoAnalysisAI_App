@@ -23,6 +23,15 @@ import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -219,6 +228,10 @@ public class BillingManager implements PurchasesUpdatedListener {
 
         // 현재 로그인한 사용자 ID 기반으로 구독 상태 업데이트
         if (currentUserId != null && !currentUserId.isEmpty()) {
+            // Firebase에 구독 정보 저장
+            saveSubscriptionToFirebase(currentUserId, isSubscribed, expiryTimestamp, subscriptionType);
+
+            // 로컬에도 저장 (기존 로직 유지)
             subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType, currentUserId);
         } else {
             // 로그인되지 않은 경우 기존 방식으로 처리
@@ -239,6 +252,34 @@ public class BillingManager implements PurchasesUpdatedListener {
                 editor.apply();
             }
         }
+    }
+
+    /**
+     * Firebase에 구독 정보 저장
+     */
+    private void saveSubscriptionToFirebase(String userId, boolean isSubscribed, long expiryTimestamp, String subscriptionType) {
+        if (userId == null || userId.isEmpty()) {
+            Log.e(TAG, "사용자 ID가 없어 Firebase에 저장할 수 없습니다.");
+            return;
+        }
+
+        // Firebase Realtime Database 또는 Firestore 참조 생성
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference userSubscriptionRef = database.getReference("subscriptions").child(userId);
+
+        // 구독 정보 맵 생성
+        Map<String, Object> subscriptionInfo = new HashMap<>();
+        subscriptionInfo.put("isSubscribed", isSubscribed);
+        subscriptionInfo.put("expiryTimestamp", expiryTimestamp);
+        subscriptionInfo.put("subscriptionType", subscriptionType);
+        subscriptionInfo.put("startTimestamp", System.currentTimeMillis());
+        subscriptionInfo.put("autoRenewing", true);
+        subscriptionInfo.put("isCancelled", false); // 취소 상태 추가
+
+        // Firebase에 데이터 저장
+        userSubscriptionRef.setValue(subscriptionInfo)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "구독 정보가 Firebase에 성공적으로 저장되었습니다."))
+                .addOnFailureListener(e -> Log.e(TAG, "구독 정보 Firebase 저장 실패: " + e.getMessage()));
     }
 
     /**
