@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.coinsense.cryptoanalysisai.MainActivity;
 import com.coinsense.cryptoanalysisai.R;
 import com.coinsense.cryptoanalysisai.databinding.ActivityLoginBinding;
+import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.services.FirebaseSubscriptionManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 import com.google.android.gms.auth.api.identity.BeginSignInRequest;
@@ -127,8 +128,14 @@ public class LoginActivity extends AppCompatActivity {
                         if (user != null) {
                             saveUserData(user);
 
+                            // 구독 정보 초기화
+                            SubscriptionManager.getInstance(this).clearLocalSubscriptionData();
+
                             // 사용자 로그인 시 구독 관리자에 사용자 설정
                             SubscriptionManager.getInstance(this).updateUser(user);
+
+                            // Google Play에서 구독 정보 가져오기
+                            BillingManager.getInstance(this).syncSubscriptions();
 
                             // 초기 구독 데이터 생성 (없을 경우만)
                             createInitialSubscriptionData(user);

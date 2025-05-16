@@ -380,11 +380,25 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         // 구독 관리자에 사용자 변경 알림
         SubscriptionManager.getInstance(this).updateUser(null);
 
-        // SharedPreferences 로그인 상태 제거
+        // SharedPreferences 로그인 상태와 구독 관련 정보 모두 제거
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(Constants.PREF_IS_LOGGED_IN, false);
+
+        // 구독 관련 정보 모두 삭제
+        editor.remove(Constants.PREF_IS_SUBSCRIBED);
+        editor.remove(Constants.PREF_SUBSCRIPTION_EXPIRY);
+        editor.remove(Constants.PREF_SUBSCRIPTION_TYPE);
+        editor.remove(Constants.PREF_SUBSCRIPTION_START_TIME);
+        editor.remove(Constants.PREF_SUBSCRIPTION_AUTO_RENEWING);
+        editor.remove(Constants.PREF_MONTHLY_PRICE);
+        editor.remove(Constants.PREF_YEARLY_PRICE);
+
+        // AdManager 관련 SharedPreferences도 초기화
         editor.apply();
+
+        // 광고 관련 캐시도 초기화
+        AdManager.getInstance(this).resetAllPermissions();
 
         // 로그인 화면으로 이동
         Intent intent = new Intent(this, LoginActivity.class);

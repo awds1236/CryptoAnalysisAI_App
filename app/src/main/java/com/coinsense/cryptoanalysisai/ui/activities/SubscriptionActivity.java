@@ -86,6 +86,13 @@ public class SubscriptionActivity extends AppCompatActivity implements BillingMa
     }
 
     private void updateSubscriptionStatus() {
+
+        // 바인딩 객체가 null인지 확인 (액티비티가 소멸된 상태)
+        if (binding == null) {
+            Log.d(TAG, "updateSubscriptionStatus: 액티비티가 이미 소멸됨");
+            return;
+        }
+
         if (subscriptionManager.isSubscribed()) {
             int remainingDays = subscriptionManager.getRemainingDays();
             String expiryDate = subscriptionManager.getExpiryDateString();
@@ -158,6 +165,12 @@ public class SubscriptionActivity extends AppCompatActivity implements BillingMa
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        // 바인딩 null 설정 전에 리스너 제거
+        if (billingManager != null) {
+            billingManager.setBillingStatusListener(null);
+        }
+
         binding = null;
     }
 

@@ -46,6 +46,11 @@ public class FirebaseSubscriptionManager {
         private String monthlyPrice = "월 ₩9,900";
         private String yearlyPrice = "연 ₩95,000";
 
+        // 하나의 필드만 유지하고 나머지는 제거
+        private boolean subscribed = false;  // 이 필드만 유지
+        private boolean isCancelled = false;
+        private long lastUpdated = 0;
+
         public SubscriptionData() {
             // Firebase 필수 기본 생성자
         }
@@ -98,9 +103,31 @@ public class FirebaseSubscriptionManager {
             this.yearlyPrice = yearlyPrice;
         }
 
+        // subscribed 필드의 명확한 getter/setter
         public boolean isSubscribed() {
-            return !Constants.SUBSCRIPTION_NONE.equals(subscriptionType)
-                    && expiryTimestamp > System.currentTimeMillis();
+            return subscribed ||
+                    (!Constants.SUBSCRIPTION_NONE.equals(subscriptionType)
+                            && expiryTimestamp > System.currentTimeMillis());
+        }
+
+        public void setSubscribed(boolean subscribed) {
+            this.subscribed = subscribed;
+        }
+
+        public boolean isCancelled() {
+            return isCancelled;
+        }
+
+        public void setIsCancelled(boolean isCancelled) {
+            this.isCancelled = isCancelled;
+        }
+
+        public long getLastUpdated() {
+            return lastUpdated;
+        }
+
+        public void setLastUpdated(long lastUpdated) {
+            this.lastUpdated = lastUpdated;
         }
     }
 
@@ -133,13 +160,34 @@ public class FirebaseSubscriptionManager {
             subscriptionListener = null;
         }
 
+        // 캐시 데이터 확실히 초기화
+        cachedSubscriptionData = null;
+
         // 새 사용자의 구독 참조 설정
         if (user != null) {
             userSubscriptionRef = subscriptionsRef.child(user.getUid());
+            // 새 사용자의 구독 정보 즉시 로드
+            getSubscriptionData(null);
         } else {
             userSubscriptionRef = null;
-            cachedSubscriptionData = null;
         }
+    }
+
+    /**
+     * 캐시된 데이터 및 리스너 초기화
+     * 로그아웃이나 계정 전환 시 호출됨
+     */
+    public void clearCachedData() {
+        // 캐시된 구독 데이터 초기화
+        cachedSubscriptionData = null;
+
+        // 리스너도 초기화
+        if (subscriptionListener != null && userSubscriptionRef != null) {
+            userSubscriptionRef.removeEventListener(subscriptionListener);
+            subscriptionListener = null;
+        }
+
+        Log.d(TAG, "구독 정보 캐시 및 리스너가 초기화되었습니다.");
     }
 
     /**
@@ -182,10 +230,9 @@ public class FirebaseSubscriptionManager {
                             listener.onError("구독 데이터를 파싱할 수 없습니다");
                         }
                     } else {
-                        // 데이터가 없는 경우는 오류로 처리 (요구사항: 데이터가 있을 때만 작동)
-                        if (listener != null) {
-                            listener.onError("구독 데이터가 존재하지 않습니다");
-                        }
+                        // 데이터가 없는 경우 초기 데이터 생성
+                        SubscriptionData newData = new SubscriptionData();
+                        updateSubscriptionData(newData, listener);
                     }
                 }
 
@@ -225,7 +272,28 @@ public class FirebaseSubscriptionManager {
             return;
         }
 
-        userSubscriptionRef.setValue(subscriptionData)
+        // 데이터베이스에 저장할 값들만 Map으로 구성 (가격 정보 제외)
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("subscriptionType", subscriptionData.getSubscriptionType());
+        updateData.put("expiryTimestamp", subscriptionData.getExpiryTimestamp());
+        updateData.put("startTimestamp", subscriptionData.getStartTimestamp());
+        updateData.put("autoRenewing", subscriptionData.isAutoRenewing());
+
+        // 구독 상태 - 양쪽 필드 모두 업데이트
+        updateData.put("subscribed", subscriptionData.isSubscribed());
+        updateData.put("isSubscribed", subscriptionData.isSubscribed());
+
+        // 취소 상태 - 양쪽 필드 모두 업데이트
+        updateData.put("cancelled", subscriptionData.isCancelled());
+        updateData.put("isCancelled", subscriptionData.isCancelled());
+
+        // 업데이트 시간
+        updateData.put("lastUpdated", System.currentTimeMillis());
+
+        // 가격 정보는 데이터베이스에 저장하지 않음
+        // (단, 로컬 캐시에는 유지하기 위해 subscriptionData 객체는 수정하지 않음)
+
+        userSubscriptionRef.updateChildren(updateData)
                 .addOnSuccessListener(aVoid -> {
                     cachedSubscriptionData = subscriptionData;
                     if (listener != null) {
@@ -258,6 +326,8 @@ public class FirebaseSubscriptionManager {
         newData.expiryTimestamp = expiryTimestamp;
         newData.startTimestamp = System.currentTimeMillis();
         newData.autoRenewing = true;
+        newData.subscribed = subscribed;
+        newData.lastUpdated = System.currentTimeMillis();
 
         // 기존 데이터가 있으면 일부 정보 유지
         if (cachedSubscriptionData != null) {
@@ -300,7 +370,7 @@ public class FirebaseSubscriptionManager {
             updatedData.yearlyPrice = yearlyPrice;
         }
 
-        // 변경사항 저장
+        // 변경사항 저장 (단, 가격 정보는 Firebase에는 저장하지 않음 - updateSubscriptionData에서 처리)
         updateSubscriptionData(updatedData, listener);
     }
 
@@ -343,6 +413,9 @@ public class FirebaseSubscriptionManager {
             cachedSubscriptionData.subscriptionType = Constants.SUBSCRIPTION_NONE;
             cachedSubscriptionData.expiryTimestamp = 0;
             cachedSubscriptionData.autoRenewing = false;
+            cachedSubscriptionData.subscribed = false;
+            cachedSubscriptionData.isCancelled = true;
+            cachedSubscriptionData.lastUpdated = System.currentTimeMillis();
 
             updateSubscriptionData(cachedSubscriptionData, listener);
         } else {

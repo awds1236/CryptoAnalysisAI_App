@@ -22,10 +22,12 @@ public class SubscriptionManager {
     private static SubscriptionManager instance;
     private final Context context;
     private final FirebaseSubscriptionManager firebaseSubscriptionManager;
+    private final BillingManager billingManager; // BillingManager 인스턴스 추가
 
     private SubscriptionManager(Context context) {
         this.context = context.getApplicationContext();
         this.firebaseSubscriptionManager = FirebaseSubscriptionManager.getInstance();
+        this.billingManager = BillingManager.getInstance(context); // BillingManager 초기화
 
         // 로그인된 사용자 설정
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -68,6 +70,41 @@ public class SubscriptionManager {
                         Log.e(TAG, "구독 상태 업데이트 실패: " + errorMessage);
                     }
                 });
+    }
+
+    /**
+     * 현재 구독 상태를 Google Play에서 직접 확인
+     */
+    public void verifySubscription() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Log.d(TAG, "로그인된 사용자 없음, 구독 검증 불가");
+            return;
+        }
+
+        // Google Play에서 현재 구독 상태 확인 (구매 내역 쿼리)
+        billingManager.queryPurchases();
+    }
+
+    /**
+     * 로컬 구독 정보 초기화
+     * 로그인/로그아웃 시 호출됨
+     */
+    public void clearLocalSubscriptionData() {
+        // Firebase 구독 관리자의 캐시 데이터 초기화
+        firebaseSubscriptionManager.clearCachedData();
+
+        // SharedPreferences에서 구독 관련 정보 삭제
+        context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(Constants.PREF_IS_SUBSCRIBED)
+                .remove(Constants.PREF_SUBSCRIPTION_EXPIRY)
+                .remove(Constants.PREF_SUBSCRIPTION_TYPE)
+                .remove(Constants.PREF_SUBSCRIPTION_START_TIME)
+                .remove(Constants.PREF_SUBSCRIPTION_AUTO_RENEWING)
+                .apply();
+
+        Log.d(TAG, "로컬 구독 정보가 초기화되었습니다.");
     }
 
     /**
