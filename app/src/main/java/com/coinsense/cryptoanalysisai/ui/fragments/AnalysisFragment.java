@@ -153,7 +153,7 @@ public class AnalysisFragment extends Fragment {
             if (coinInfo != null && coinInfo.getMarket() != null) {
                 loadAnalysisFromApi();
             } else {
-                Toast.makeText(getContext(), "코인을 먼저 선택해주세요", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), getString(R.string.select_coin_first), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -161,7 +161,7 @@ public class AnalysisFragment extends Fragment {
         if (coinInfo != null && coinInfo.getMarket() != null) {
             updateCoin(coinInfo, exchangeType);
         } else {
-            binding.tvCoinTitle.setText("코인을 선택해주세요");
+            binding.tvCoinTitle.setText(getString(R.string.select_coin_first));
             binding.progressAnalysis.setVisibility(View.GONE);
         }
 
@@ -308,7 +308,7 @@ public class AnalysisFragment extends Fragment {
 
                             @Override
                             public void onFailure(@NonNull Call<BinanceTicker> call, @NonNull Throwable t) {
-                                Log.e(TAG, "24시간 가격 변화 정보 로드 실패: " + t.getMessage());
+                                Log.e(TAG, getString(R.string.price_change_load_failed, t.getMessage()));
                             }
                         });
                     }
@@ -317,7 +317,7 @@ public class AnalysisFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<BinanceTicker> call, @NonNull Throwable t) {
-                Log.e(TAG, "현재가 정보 로드 실패: " + t.getMessage());
+                Log.e(TAG, getString(R.string.network_error, t.getMessage()));
             }
         });
     }
@@ -441,7 +441,7 @@ public class AnalysisFragment extends Fragment {
 
         // 분석 버튼 비활성화
         binding.btnStartAnalysis.setEnabled(false);
-        binding.btnStartAnalysis.setText(getString(R.string.analysis_loading_log));
+        binding.btnStartAnalysis.setText(getString(R.string.analysis_loading));
 
         analysisApiService.getLatestAnalysis(coinInfo.getSymbol(),
                 new AnalysisApiService.OnAnalysisRetrievedListener() {
@@ -513,17 +513,19 @@ public class AnalysisFragment extends Fragment {
         // 분석 시간 표시
         if (analysisResult.getTimestamp() > 0) {
             Date analysisDate = new Date(analysisResult.getTimestamp());
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+
+            // 날짜 형식 리소스에서 가져오기
+            String dateFormatPattern = getString(R.string.date_format);
+            SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern, Locale.getDefault());
             sdf.setTimeZone(TimeZone.getDefault());
 
-            // 분석 시간이 얼마나 지났는지 표시 (예: "10분 전")
-            String timeAgo = DateUtils.getRelativeTimeSpanString(
-                    analysisResult.getTimestamp(),
-                    System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS
-            ).toString();
+            // 날짜를 형식에 맞게 변환
+            String formattedDate = sdf.format(analysisDate);
 
-            binding.tvAnalysisTime.setText(timeAgo);
+            // 최종 텍스트 생성 ("yyyy년 MM월 dd일 HH:mm에 분석됨")
+            String timestampText = String.format(getString(R.string.analysis_timestamp_format), formattedDate);
+
+            binding.tvAnalysisTime.setText(timestampText);
             binding.tvAnalysisTime.setVisibility(View.VISIBLE);
         } else {
             binding.tvAnalysisTime.setVisibility(View.GONE);
@@ -536,7 +538,7 @@ public class AnalysisFragment extends Fragment {
             summary = highlightKeywords(summary);
             binding.tvAnalysisSummary.setText(Html.fromHtml(summary, Html.FROM_HTML_MODE_LEGACY));
         } else {
-            binding.tvAnalysisSummary.setText("분석 요약 정보가 없습니다.");
+            binding.tvAnalysisSummary.setText(getString(R.string.no_analysis_summary));
         }
 
         // 매수/매도 추천
@@ -546,9 +548,10 @@ public class AnalysisFragment extends Fragment {
             Constants.RecommendationType recommendType = Constants.RecommendationType.fromString(recommendation.getRecommendation());
 
             // 강조된 추천 메시지 구성
-            String recommendText = "<b>" + recommendType.getDisplayName() + " 추천</b>";
+            String recommendationTypeText = getString(recommendType.getDisplayNameResId());
+            String recommendText = "<b>" + String.format(getString(R.string.recommendation_text_format), recommendationTypeText) + "</b>";
             if (recommendation.getConfidence() >= 8) {
-                recommendText += " (높은 신뢰도)";
+                recommendText += " " + getString(R.string.high_confidence);
             }
 
             binding.tvRecommendation.setText(Html.fromHtml(recommendText, Html.FROM_HTML_MODE_LEGACY));
@@ -560,9 +563,13 @@ public class AnalysisFragment extends Fragment {
 
             // 확률 텍스트 업데이트 - 시각적 강조
             StringBuilder probText = new StringBuilder();
-            probText.append("<b>매수: </b><font color='#4CAF50'>")
+            probText.append("<b>")
+                    .append(getString(R.string.buy_label))
+                    .append("</b><font color='#4CAF50'>")
                     .append(String.format("%.1f%%", recommendation.getBuyProbability()))
-                    .append("</font> / <b>매도: </b><font color='#F44336'>")
+                    .append("</font> / <b>")
+                    .append(getString(R.string.sell_label))
+                    .append("</b><font color='#F44336'>")
                     .append(String.format("%.1f%%", recommendation.getSellProbability()))
                     .append("</font>");
 
@@ -580,8 +587,6 @@ public class AnalysisFragment extends Fragment {
             } else {
                 binding.tvConfidenceValue.setTextColor(Color.parseColor("#F44336")); // 낮음 - 빨간색
             }
-
-
         }
 
         Log.d("AnalysisFragment", "Calling updateStrategyFragments()");
@@ -597,7 +602,7 @@ public class AnalysisFragment extends Fragment {
                 shortTerm = highlightKeywords(shortTerm);
                 binding.tvShortTerm.setText(Html.fromHtml(shortTerm, Html.FROM_HTML_MODE_LEGACY));
             } else {
-                binding.tvShortTerm.setText("정보 없음");
+                binding.tvShortTerm.setText(getString(R.string.no_info));
             }
 
             // 중기 전망 - 키워드 강조
@@ -606,7 +611,7 @@ public class AnalysisFragment extends Fragment {
                 midTerm = highlightKeywords(midTerm);
                 binding.tvMidTerm.setText(Html.fromHtml(midTerm, Html.FROM_HTML_MODE_LEGACY));
             } else {
-                binding.tvMidTerm.setText("정보 없음");
+                binding.tvMidTerm.setText(getString(R.string.no_info));
             }
 
             // 장기 전망 - 키워드 강조
@@ -615,7 +620,7 @@ public class AnalysisFragment extends Fragment {
                 longTerm = highlightKeywords(longTerm);
                 binding.tvLongTerm.setText(Html.fromHtml(longTerm, Html.FROM_HTML_MODE_LEGACY));
             } else {
-                binding.tvLongTerm.setText("정보 없음");
+                binding.tvLongTerm.setText(getString(R.string.no_info));
             }
         }
 
@@ -626,24 +631,53 @@ public class AnalysisFragment extends Fragment {
         if (analysisResult.getRiskFactors() != null && !analysisResult.getRiskFactors().isEmpty()) {
             StringBuilder riskFactors = new StringBuilder();
 
+            // 위험 키워드 가져오기
+            String severeKeywords = getString(R.string.risk_keyword_severe);
+            String moderateKeywords = getString(R.string.risk_keyword_moderate);
+            String warningSymbol = getString(R.string.risk_warning_symbol);
+
             for (int i = 0; i < analysisResult.getRiskFactors().size(); i++) {
                 String risk = analysisResult.getRiskFactors().get(i);
+                String riskLower = risk.toLowerCase();
 
-                // 위험 요소 심각도에 따른 색상 코드 (예시)
+                // 위험 요소 심각도에 따른 색상 코드
                 String colorCode = "#F44336"; // 기본 빨간색
 
-                // 키워드 기반 중요도 판단 (예시)
-                if (risk.toLowerCase().contains("급격한") ||
-                        risk.toLowerCase().contains("심각한") ||
-                        risk.toLowerCase().contains("충격")) {
+                // 키워드 기반 중요도 판단 - 언어별 키워드 사용
+                String[] severeKeywordArray = severeKeywords.split("\\|");
+                String[] moderateKeywordArray = moderateKeywords.split("\\|");
+
+                boolean isSevere = false;
+                boolean isModerate = false;
+
+                // 심각한 위험 키워드 검사
+                for (String keyword : severeKeywordArray) {
+                    if (riskLower.contains(keyword)) {
+                        isSevere = true;
+                        break;
+                    }
+                }
+
+                // 중간 위험 키워드 검사
+                if (!isSevere) {
+                    for (String keyword : moderateKeywordArray) {
+                        if (riskLower.contains(keyword)) {
+                            isModerate = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (isSevere) {
                     colorCode = "#D32F2F"; // 더 진한 빨간색
-                } else if (risk.toLowerCase().contains("가능성")) {
+                } else if (isModerate) {
                     colorCode = "#FF9800"; // 주황색
                 }
 
                 riskFactors.append("<font color='")
                         .append(colorCode)
-                        .append("'>⚠️ ")
+                        .append("'>")
+                        .append(warningSymbol)
                         .append(risk)
                         .append("</font>");
 
@@ -773,21 +807,22 @@ public class AnalysisFragment extends Fragment {
                     String colorCode;
                     String strengthText;
 
-                    if ("강".equals(trendStrength)) {
+                    // 언어에 독립적인 비교를 위해 리소스 값과 비교
+                    if (trendStrength.equalsIgnoreCase(getString(R.string.trend_strength_strong))) {
                         colorCode = "#4CAF50"; // 녹색
-                        strengthText = "강함 (🔥)";
-                    } else if ("중".equals(trendStrength)) {
+                        strengthText = getString(R.string.trend_strong);
+                    } else if (trendStrength.equalsIgnoreCase(getString(R.string.trend_strength_medium))) {
                         colorCode = "#FFC107"; // 노란색
-                        strengthText = "중간 (➡️)";
+                        strengthText = getString(R.string.trend_medium);
                     } else {
                         colorCode = "#F44336"; // 빨간색
-                        strengthText = "약함 (💧)";
+                        strengthText = getString(R.string.trend_weak);
                     }
 
                     binding.tvTrendStrength.setText(Html.fromHtml("<font color='" +
                             colorCode + "'><b>" + strengthText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
                 } else {
-                    binding.tvTrendStrength.setText("정보 없음");
+                    binding.tvTrendStrength.setText(getString(R.string.no_info));
                 }
 
                 // 주요 패턴 - 키워드 강조
@@ -796,7 +831,7 @@ public class AnalysisFragment extends Fragment {
                     pattern = highlightKeywords(pattern);
                     binding.tvPattern.setText(Html.fromHtml(pattern, Html.FROM_HTML_MODE_LEGACY));
                 } else {
-                    binding.tvPattern.setText("정보 없음");
+                    binding.tvPattern.setText(getString(R.string.no_info));
                 }
 
                 // 이동평균선 신호 표시 - 새로 추가 (있는 경우에만)
@@ -808,15 +843,15 @@ public class AnalysisFragment extends Fragment {
 
                         switch (crossSignal) {
                             case "GOLDEN_CROSS":
-                                displayText = "골든 크로스 (매수 신호) ⬆️";
+                                displayText = getString(R.string.golden_cross);
                                 colorCode = "#4CAF50"; // 녹색
                                 break;
                             case "DEATH_CROSS":
-                                displayText = "데드 크로스 (매도 신호) ⬇️";
+                                displayText = getString(R.string.death_cross);
                                 colorCode = "#F44336"; // 빨간색
                                 break;
                             default:
-                                displayText = "없음 (중립) ↔️";
+                                displayText = getString(R.string.no_cross);
                                 colorCode = "#FFC107"; // 노란색
                                 break;
                         }
@@ -846,9 +881,12 @@ public class AnalysisFragment extends Fragment {
 
                 // 텍스트로 비율 표시
                 if (binding.tvLongShortRatioText != null) {
-                    String ratioText = String.format("<font color='#4CAF50'><b>롱: %.1f%%</b></font> vs " +
-                                    "<font color='#F44336'><b>숏: %.1f%%</b></font>",
-                            longPercent, shortPercent);
+                    String longRatioFormatted = String.format(getString(R.string.long_ratio_format), longPercent);
+                    String shortRatioFormatted = String.format(getString(R.string.short_ratio_format), shortPercent);
+
+                    String ratioText = String.format("<font color='#4CAF50'><b>%s</b></font>%s<font color='#F44336'><b>%s</b></font>",
+                            longRatioFormatted, getString(R.string.ratio_vs), shortRatioFormatted);
+
                     binding.tvLongShortRatioText.setText(Html.fromHtml(ratioText, Html.FROM_HTML_MODE_LEGACY));
 
                     // 추가 정보 - 현재 시장 편향
@@ -873,7 +911,8 @@ public class AnalysisFragment extends Fragment {
 
                     binding.tvLongShortRatioText.append("\n");
                     binding.tvLongShortRatioText.append(Html.fromHtml(
-                            String.format("<br><font color='%s'>현재 시장: <b>%s</b></font>", biasColor, marketBias),
+                            String.format("<br><font color='%s'>%s<b>%s</b></font>",
+                                    biasColor, getString(R.string.current_market), marketBias),
                             Html.FROM_HTML_MODE_LEGACY
                     ));
                 }
@@ -887,13 +926,13 @@ public class AnalysisFragment extends Fragment {
 
                         // 비율에 따른 텍스트 및 색상 결정
                         if (buySellRatio > 0.65) {
-                            displayText = "매수세 강함 (" + String.format("%.2f", buySellRatio * 100) + "%)";
+                            displayText = String.format(getString(R.string.buy_strength_strong), buySellRatio * 100);
                             colorCode = "#4CAF50"; // 녹색
                         } else if (buySellRatio < 0.35) {
-                            displayText = "매도세 강함 (" + String.format("%.2f", (1 - buySellRatio) * 100) + "%)";
+                            displayText = String.format(getString(R.string.sell_strength_strong), (1 - buySellRatio) * 100);
                             colorCode = "#F44336"; // 빨간색
                         } else {
-                            displayText = "중립 (" + String.format("%.2f", buySellRatio * 100) + "%)";
+                            displayText = String.format(getString(R.string.market_neutral), buySellRatio * 100);
                             colorCode = "#FFC107"; // 노란색
                         }
 
@@ -1018,21 +1057,21 @@ public class AnalysisFragment extends Fragment {
         if (shortTermFragment != null && analysisResult.getShortTermStrategy() != null) {
             shortTermFragment.setStrategy(analysisResult.getShortTermStrategy());
             shortTermFragment.setCoinInfo(coinInfo); // coinInfo를 프래그먼트에 전달
-            Log.d("AnalysisFragment", "shortTermFragment updated with coinInfo");
+            Log.d("AnalysisFragment", getString(R.string.short_term_fragment_updated));
         }
 
         // 중기 전략 업데이트
         if (midTermFragment != null && analysisResult.getMidTermStrategy() != null) {
             midTermFragment.setStrategy(analysisResult.getMidTermStrategy());
             midTermFragment.setCoinInfo(coinInfo); // coinInfo를 프래그먼트에 전달
-            Log.d("AnalysisFragment", "midTermFragment updated with coinInfo");
+            Log.d("AnalysisFragment", getString(R.string.mid_term_fragment_updated));
         }
 
         // 장기 전략 업데이트
         if (longTermFragment != null && analysisResult.getLongTermStrategy() != null) {
             longTermFragment.setStrategy(analysisResult.getLongTermStrategy());
             longTermFragment.setCoinInfo(coinInfo); // coinInfo를 프래그먼트에 전달
-            Log.d("AnalysisFragment", "longTermFragment updated with coinInfo");
+            Log.d("AnalysisFragment", getString(R.string.long_term_fragment_updated));
         }
     }
 

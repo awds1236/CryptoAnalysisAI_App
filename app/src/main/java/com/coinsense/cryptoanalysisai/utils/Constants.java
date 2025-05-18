@@ -1,5 +1,9 @@
 package com.coinsense.cryptoanalysisai.utils;
+import android.content.Context;
+
 import com.coinsense.cryptoanalysisai.BuildConfig;
+import com.coinsense.cryptoanalysisai.R;
+
 public class Constants {
 
     // API 기본 URL
@@ -131,20 +135,24 @@ public class Constants {
 
     // 추천 유형
     public enum RecommendationType {
-        BUY("매수", android.graphics.Color.rgb(76, 175, 80)),  // 초록색
-        SELL("매도", android.graphics.Color.rgb(244, 67, 54)), // 빨간색
-        HOLD("관망", android.graphics.Color.rgb(255, 152, 0)); // 주황색
+        BUY(R.string.buy_recommendation, android.graphics.Color.rgb(76, 175, 80)),  // 초록색
+        SELL(R.string.sell_recommendation, android.graphics.Color.rgb(244, 67, 54)), // 빨간색
+        HOLD(R.string.hold_recommendation, android.graphics.Color.rgb(255, 152, 0)); // 주황색
 
-        private final String displayName;
+        private final int displayNameResId;
         private final int color;
 
-        RecommendationType(String displayName, int color) {
-            this.displayName = displayName;
+        RecommendationType(int displayNameResId, int color) {
+            this.displayNameResId = displayNameResId;
             this.color = color;
         }
 
-        public String getDisplayName() {
-            return displayName;
+        public int getDisplayNameResId() {
+            return displayNameResId;
+        }
+
+        public String getDisplayName(Context context) {
+            return context.getString(displayNameResId);
         }
 
         public int getColor() {
@@ -152,12 +160,14 @@ public class Constants {
         }
 
         public static RecommendationType fromString(String value) {
-            if (value != null) {
-                for (RecommendationType type : RecommendationType.values()) {
-                    if (type.displayName.equalsIgnoreCase(value)) {
-                        return type;
-                    }
-                }
+            // 이 메서드는 API에서 온 값을 처리하므로
+            // 다음과 같이 값을 하드코딩하거나 더 나은 방법 필요
+            if ("매수".equals(value) || "Buy".equals(value)) {
+                return BUY;
+            } else if ("매도".equals(value) || "Sell".equals(value)) {
+                return SELL;
+            } else if ("관망".equals(value) || "Hold".equals(value)) {
+                return HOLD;
             }
             return HOLD; // 기본값
         }
