@@ -1,23 +1,31 @@
 package com.coinsense.cryptoanalysisai.models;
 
+import android.content.Context;
+
+import com.coinsense.cryptoanalysisai.R;
+
 public enum ExchangeType {
-    UPBIT("upbit", "업비트"),
-    BINANCE("binance", "바이낸스");
+    UPBIT("upbit", R.string.upbit),
+    BINANCE("binance", R.string.binance);
 
     private final String code;
-    private final String displayName;
+    private final int displayNameResId;
 
-    ExchangeType(String code, String displayName) {
+    ExchangeType(String code, int displayNameResId) {
         this.code = code;
-        this.displayName = displayName;
+        this.displayNameResId = displayNameResId;
     }
 
     public String getCode() {
         return code;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    public String getDisplayName(Context context) {
+        return context.getString(displayNameResId);
+    }
+
+    public int getDisplayNameResId() {
+        return displayNameResId;
     }
 
     public static ExchangeType fromCode(String code) {

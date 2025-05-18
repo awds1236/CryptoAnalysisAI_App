@@ -45,8 +45,8 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
         binding.btnMonthlySubscription.setOnClickListener(v -> {
             if (subscriptionManager.isSubscribed() &&
                     Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionManager.getSubscriptionType())) {
-                // 이미 월간 구독 중
-                Toast.makeText(this, "이미 월간 구독 이용 중입니다.", Toast.LENGTH_SHORT).show();
+                // 이미 월간 구독 중 - 문자열 리소스로 변경
+                Toast.makeText(this, getString(R.string.already_monthly_subscriber), Toast.LENGTH_SHORT).show();
             } else {
                 // 월간 구독 시작
                 binding.progressBar.setVisibility(View.VISIBLE);
@@ -58,8 +58,8 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
         binding.btnYearlySubscription.setOnClickListener(v -> {
             if (subscriptionManager.isSubscribed() &&
                     Constants.SUBSCRIPTION_YEARLY.equals(subscriptionManager.getSubscriptionType())) {
-                // 이미 연간 구독 중
-                Toast.makeText(this, "이미 연간 구독 이용 중입니다.", Toast.LENGTH_SHORT).show();
+                // 이미 연간 구독 중 - 문자열 리소스로 변경
+                Toast.makeText(this, getString(R.string.already_yearly_subscriber), Toast.LENGTH_SHORT).show();
             } else if (subscriptionManager.isSubscribed() &&
                     Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionManager.getSubscriptionType())) {
                 // 월간 구독에서 연간 구독으로 업그레이드
@@ -89,7 +89,6 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
     }
 
     private void updateSubscriptionStatus() {
-
         // 바인딩 객체가 null인지 확인 (액티비티가 소멸된 상태)
         if (binding == null) {
             Log.d(TAG, "updateSubscriptionStatus: 액티비티가 이미 소멸됨");
@@ -103,43 +102,51 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
             boolean isAutoRenewing = subscriptionManager.isAutoRenewing();
             String nextBillingDate = subscriptionManager.getNextBillingDateString();
 
+            // 문자열 리소스 사용
             String typeName = Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionType)
-                    ? "월간" : "연간";
+                    ? getString(R.string.monthly) : getString(R.string.yearly);
 
-            // 구독 상태 텍스트 업데이트
+            // 구독 상태 텍스트 업데이트 - 문자열 리소스 사용
             binding.tvSubscriptionStatus.setText(
-                    String.format("프리미엄 구독 중 (%s)\n만료일: %s (%d일 남음)",
+                    getString(R.string.premium_subscriber_status_format,
                             typeName, expiryDate, remainingDays));
 
-            // 결제 정보 섹션 추가
+            // 결제 정보 섹션 추가 - 문자열 리소스 사용
             binding.tvBillingInfo.setVisibility(View.VISIBLE);
             binding.tvBillingInfo.setText(
-                    String.format("결제 정보:\n• 구독 시작일: %s\n• 다음 결제일: %s\n• 자동 갱신: %s",
+                    getString(R.string.billing_info_format,
                             subscriptionManager.getStartDateString(),
                             nextBillingDate,
-                            isAutoRenewing ? "활성화됨" : "비활성화됨"));
+                            isAutoRenewing ?
+                                    getString(R.string.auto_renew_enabled) :
+                                    getString(R.string.auto_renew_disabled)));
 
             // 구독 취소 버튼 활성화, 구독 버튼 비활성화
             binding.btnCancelSubscription.setVisibility(View.VISIBLE);
-            binding.btnMonthlySubscription.setText(subscriptionManager.getMonthlyPrice() + " 구독 중");
+            binding.btnMonthlySubscription.setText(
+                    getString(R.string.subscribed_to_format, subscriptionManager.getMonthlyPrice()));
             binding.btnMonthlySubscription.setEnabled(false);
 
             if (Constants.SUBSCRIPTION_YEARLY.equals(subscriptionType)) {
-                binding.btnYearlySubscription.setText(subscriptionManager.getYearlyPrice() + " 구독 중");
+                binding.btnYearlySubscription.setText(
+                        getString(R.string.subscribed_to_format, subscriptionManager.getYearlyPrice()));
                 binding.btnYearlySubscription.setEnabled(false);
             } else {
-                binding.btnYearlySubscription.setText(subscriptionManager.getYearlyPrice() + "으로 업그레이드");
+                binding.btnYearlySubscription.setText(
+                        getString(R.string.upgrade_to_format, subscriptionManager.getYearlyPrice()));
                 binding.btnYearlySubscription.setEnabled(true);
             }
         } else {
-            binding.tvSubscriptionStatus.setText("무료 사용자");
+            binding.tvSubscriptionStatus.setText(getString(R.string.free_user));
             binding.tvBillingInfo.setVisibility(View.GONE);
 
             // 구독 버튼 활성화, 구독 취소 버튼 비활성화
             binding.btnCancelSubscription.setVisibility(View.GONE);
-            binding.btnMonthlySubscription.setText(subscriptionManager.getMonthlyPrice() + " 구독하기");
+            binding.btnMonthlySubscription.setText(
+                    getString(R.string.subscribe_to_format, subscriptionManager.getMonthlyPrice()));
             binding.btnMonthlySubscription.setEnabled(true);
-            binding.btnYearlySubscription.setText(subscriptionManager.getYearlyPrice() + " 구독하기");
+            binding.btnYearlySubscription.setText(
+                    getString(R.string.subscribe_to_format, subscriptionManager.getYearlyPrice()));
             binding.btnYearlySubscription.setEnabled(true);
         }
 
@@ -151,17 +158,15 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
      */
     private void showSubscriptionManagementDialog() {
         androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("구독 관리")
-                .setMessage("구독을 취소하시면 다음 결제일인 " +
-                        subscriptionManager.getNextBillingDateString() +
-                        " 이후에는 프리미엄 서비스 이용이 불가능합니다.\n\n" +
-                        "취소 후에도 결제일까지는 서비스를 계속 이용할 수 있습니다.")
-                .setPositiveButton("구독 관리로 이동", (dialogInterface, which) -> {
+                .setTitle(getString(R.string.subscription_management))
+                .setMessage(getString(R.string.cancel_subscription_message,
+                        subscriptionManager.getNextBillingDateString()))
+                .setPositiveButton(getString(R.string.go_to_subscription_management), (dialogInterface, which) -> {
                     // Google Play 구독 관리 페이지로 이동
                     startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(
                             "https://play.google.com/store/account/subscriptions")));
                 })
-                .setNegativeButton("취소", (dialogInterface, which) -> dialogInterface.dismiss())
+                .setNegativeButton(getString(R.string.cancel), (dialogInterface, which) -> dialogInterface.dismiss())
                 .create();
 
         // 다이얼로그 보이기 전에 버튼 색상 설정

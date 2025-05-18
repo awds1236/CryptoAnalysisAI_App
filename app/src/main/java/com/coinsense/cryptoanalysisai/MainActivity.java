@@ -49,8 +49,8 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
     private CoinInfo selectedCoin;
     private ExchangeType selectedExchange = ExchangeType.BINANCE; // 바이낸스로 변경
 
-    // 차트 탭 제거: 코인 목록과 분석 탭만 유지
-    private final String[] tabTitles = new String[]{"코인 목록", "분석"};
+    // 탭 타이틀을 하드코딩에서 리소스로 변경
+    private String[] tabTitles;
 
     // 가격 업데이트 핸들러
     private final Handler priceUpdateHandler = new Handler(Looper.getMainLooper());
@@ -63,7 +63,6 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
     private long backPressedTime;
 
     private static final String PREF_DARK_MODE = "pref_dark_mode";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +82,9 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
             finish();
             return;
         }
+
+        // 탭 타이틀 초기화 - 리소스에서 가져오기
+        tabTitles = new String[]{getString(R.string.tab_coin_list), getString(R.string.tab_analysis)};
 
         // 한 번만 바인딩 초기화
         binding = ActivityMainBinding.inflate(getLayoutInflater());
@@ -136,10 +138,6 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
             }
         }
 
-
-
-
-
         // 뒤로가기 처리를 위한 콜백 등록
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             private boolean doubleBackToExitPressedOnce = false;
@@ -161,8 +159,10 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
                     }
 
                     doubleBackToExitPressedOnce = true;
-                    //Toast.makeText(MainActivity.this, "뒤로가기를 한번 더 누르면 종료됩니다", Toast.LENGTH_SHORT).show();
-                    Snackbar.make(binding.getRoot(), "뒤로가기를 한번 더 누르면 종료됩니다", 1000).show();
+                    // 하드코딩된 메시지를 리소스로 변경
+                    Snackbar.make(binding.getRoot(),
+                            getString(R.string.press_back_to_exit),
+                            1000).show();
                     handler.postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
                 }
             }
