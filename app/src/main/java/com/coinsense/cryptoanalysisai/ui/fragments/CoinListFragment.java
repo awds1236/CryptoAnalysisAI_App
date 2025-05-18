@@ -1,6 +1,7 @@
 package com.coinsense.cryptoanalysisai.ui.fragments;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -57,8 +58,6 @@ public class CoinListFragment extends Fragment {
     private Map<String, CoinInfo> coinCache = new HashMap<>();
     // 분석 결과 캐시
     private Map<String, AnalysisResult> analysisCache = new HashMap<>();
-
-    // 자동 새로고침 관련 변수와 메서드 제거됨
 
     public CoinListFragment() {
         // 기본 생성자
@@ -117,8 +116,6 @@ public class CoinListFragment extends Fragment {
         binding.swipeRefreshLayout.setOnRefreshListener(this::refreshData);
     }
 
-    // onResume, onPause에서의 타이머 시작/중지 호출 제거됨
-
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
@@ -133,17 +130,13 @@ public class CoinListFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         listener = null;
-        // stopAutoRefresh() 호출 제거됨
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
-        // stopAutoRefresh() 호출 제거됨
     }
-
-    // startAutoRefresh(), stopAutoRefresh(), priceUpdateRunnable 메서드 제거됨
 
     /**
      * 검색 기능 초기화
@@ -219,11 +212,10 @@ public class CoinListFragment extends Fragment {
 
             @Override
             public void onFailure(String errorMessage) {
-                Log.e(TAG, "분석 결과 로드 실패: " + errorMessage);
+                Log.e(TAG, getString(R.string.analysis_load_failed, errorMessage));
             }
         });
     }
-
 
     /**
      * 바이낸스 마켓 목록 로드
@@ -283,26 +275,25 @@ public class CoinListFragment extends Fragment {
                     // 가격 정보 로드
                     loadBinancePrices(usdtMarkets);
                 } else {
-                    showError("바이낸스 마켓 정보를 가져오는데 실패했습니다.");
+                    showError(getString(R.string.binance_market_error));
                     showLoading(false);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<BinanceModels.BinanceExchangeInfo> call, @NonNull Throwable t) {
-                showError("네트워크 오류: " + t.getMessage());
+                showError(getString(R.string.network_error, t.getMessage()));
                 showLoading(false);
             }
         });
     }
-
 
     /**
      * 바이낸스 가격 정보 로드
      */
     private void loadBinancePrices(List<CoinInfo> markets) {
         if (markets.isEmpty()) {
-            showError("마켓 정보가 없습니다.");
+            showError(getString(R.string.no_market_info));
             showLoading(false);
             return;
         }
@@ -347,14 +338,14 @@ public class CoinListFragment extends Fragment {
                     // 리스트 갱신
                     updateCoinList(markets);
                 } else {
-                    showError("가격 정보를 가져오는데 실패했습니다.");
+                    showError(getString(R.string.price_info_error));
                     showLoading(false);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<BinanceTicker>> call, @NonNull Throwable t) {
-                showError("네트워크 오류: " + t.getMessage());
+                showError(getString(R.string.network_error, t.getMessage()));
                 showLoading(false);
             }
         });
@@ -409,7 +400,7 @@ public class CoinListFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<List<BinanceTicker>> call, @NonNull Throwable t) {
                 // 실패해도 조용히 넘어감 (silent fail) - 다음 갱신 시도에서 다시 시도
-                Log.w(TAG, "가격 갱신 실패: " + t.getMessage());
+                Log.w(TAG, getString(R.string.price_update_failed, t.getMessage()));
             }
         });
     }
@@ -437,7 +428,7 @@ public class CoinListFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<BinanceTicker> call, @NonNull Throwable t) {
-                Log.e(TAG, "24시간 변화 정보 로딩 실패: " + t.getMessage());
+                Log.e(TAG, getString(R.string.price_change_load_failed, t.getMessage()));
             }
         });
     }
@@ -490,28 +481,26 @@ public class CoinListFragment extends Fragment {
     }
 
     /**
-     * 바이낸스 코인 한글명 가져오기
+     * 코인의 이름을 가져오기
      */
     private String getKoreanName(String symbol) {
-        // 주요 코인에 대한 한글 이름 매핑
-        Map<String, String> koreanNames = new HashMap<>();
-        // 기본 코인
-        koreanNames.put("BTC", "비트코인");
-        koreanNames.put("ETH", "이더리움");
-        koreanNames.put("XRP", "리플");
-        koreanNames.put("SOL", "솔라나");
-
-        // 프리미엄 코인
-        koreanNames.put("DOGE", "도지코인");
-        koreanNames.put("ADA", "에이다");
-        koreanNames.put("TRX", "트론");
-        koreanNames.put("SUI", "수이");
-        koreanNames.put("LINK", "체인링크");
-        koreanNames.put("AVAX", "아발란체");
-        koreanNames.put("XLM", "스텔라루멘");
-        koreanNames.put("HBAR", "헤데라");
-
-        return koreanNames.getOrDefault(symbol, symbol);
+        // 리소스 ID가 통일되었으므로 이제 언어 설정을 확인할 필요 없이
+        // 바로 해당 리소스 ID를 사용하면 Android 시스템이 현재 언어에 맞는 문자열을 반환합니다
+        switch (symbol) {
+            case "BTC": return getString(R.string.bitcoin);
+            case "ETH": return getString(R.string.ethereum);
+            case "XRP": return getString(R.string.ripple);
+            case "SOL": return getString(R.string.solana);
+            case "DOGE": return getString(R.string.dogecoin);
+            case "ADA": return getString(R.string.cardano);
+            case "TRX": return getString(R.string.tron);
+            case "SUI": return getString(R.string.sui);
+            case "LINK": return getString(R.string.chainlink);
+            case "AVAX": return getString(R.string.avalanche);
+            case "XLM": return getString(R.string.stellar);
+            case "HBAR": return getString(R.string.hedera);
+            default: return symbol;
+        }
     }
 
     /**
@@ -550,15 +539,20 @@ public class CoinListFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             CoinInfo coin = filteredList.get(position);
+            Context context = holder.itemView.getContext();
 
             // 코인 심볼 (BTC, ETH, ...)
             holder.tvCoinSymbol.setText(coin.getSymbol());
 
-            // 코인 이름 (비트코인, 이더리움, ...) - 프리미엄 코인이면 표시
-            String displayName = coin.getDisplayName();
+            // 코인 이름 (비트코인/Bitcoin, 이더리움/Ethereum, ...)
+            // 언어 설정은 Android 시스템이 자동으로 처리
+            String displayName = coin.getKoreanName();
+
+            // 프리미엄 코인 표시
             if (coin.isPremium()) {
-                displayName += " 💎"; // 프리미엄 코인에 다이아몬드 이모지 추가
+                displayName += context.getString(R.string.premium_coin_indicator);
             }
+
             holder.tvCoinName.setText(displayName);
 
             // 현재 가격
@@ -570,7 +564,7 @@ public class CoinListFragment extends Fragment {
                     android.graphics.Color.rgb(76, 175, 80) : // 상승: 초록색
                     android.graphics.Color.rgb(244, 67, 54)); // 하락: 빨간색
 
-            // 분석 결과 관련 부분 제거 (RDS 데이터를 보여주지 않음)
+            // 분석 결과 관련 부분
             holder.tvAnalysisRecommendation.setVisibility(View.GONE);
             holder.cardView.setStrokeWidth(0);
 
@@ -635,7 +629,7 @@ public class CoinListFragment extends Fragment {
         /**
          * 뷰홀더
          */
-        static class ViewHolder extends RecyclerView.ViewHolder {
+        class ViewHolder extends RecyclerView.ViewHolder {
             TextView tvCoinSymbol;
             TextView tvCoinName;
             TextView tvPrice;

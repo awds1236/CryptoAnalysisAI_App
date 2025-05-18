@@ -52,7 +52,7 @@
     <string name="usd_unit">달러(USD)</string>
 
     <!-- Google 로그인 관련 -->
-    <string name="google_web_client_id" translatable="false">YOUR_WEB_CLIENT_ID_HERE</string>
+    <string name="google_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
     <string name="login_welcome">암호화폐 분석 AI에 오신 것을 환영합니다</string>
     <string name="login_description">AI가 분석한 암호화폐 시장 분석 및 투자 전략</string>
     <string name="login_with_google">Google 계정으로 로그인</string>
@@ -63,8 +63,8 @@
     <string name="subscription_description">프리미엄 구독자만 암호화폐 AI 매매 전략을 확인할 수 있습니다.</string>
     <string name="subscription_monthly">월간 구독</string>
     <string name="subscription_yearly">연간 구독 (20% 할인)</string>
-    <string name="subscription_monthly_price">월 9,900원</string>
-    <string name="subscription_yearly_price">연 95,000원 (월 7,920원)</string>
+    <string name="subscription_monthly_price">월 15,000원</string>
+    <string name="subscription_yearly_price">연 125,000원 (월 10,400원)</string>
     <string name="subscription_features">• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인</string>
     <string name="subscribe_button">구독하기</string>
     <string name="cancel_subscription">구독 취소하기</string>
@@ -78,6 +78,28 @@
     <string name="korean">한국어</string>
     <string name="english">영어</string>
     <string name="save">저장</string>
+
+    <!-- values/strings.xml에 추가 -->
+    <string name="binance_market_error">바이낸스 마켓 정보를 가져오는데 실패했습니다.</string>
+    <string name="price_info_error">가격 정보를 가져오는데 실패했습니다.</string>
+    <string name="analysis_load_failed">분석 결과 로드 실패: %1$s</string>
+    <string name="price_update_failed">가격 갱신 실패: %1$s</string>
+    <string name="price_change_load_failed">24시간 변화 정보 로딩 실패: %1$s</string>
+    <string name="premium_coin_indicator"> 💎</string>
+
+    <!-- 코인 한글 이름 -->
+    <string name="bitcoin">비트코인</string>
+    <string name="ethereum">이더리움</string>
+    <string name="ripple">리플</string>
+    <string name="solana">솔라나</string>
+    <string name="dogecoin">도지코인</string>
+    <string name="cardano">에이다</string>
+    <string name="tron">트론</string>
+    <string name="sui">수이</string>
+    <string name="chainlink">체인링크</string>
+    <string name="avalanche">아발란체</string>
+    <string name="stellar">스텔라루멘</string>
+    <string name="hedera">헤데라</string>
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->
     <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>

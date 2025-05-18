@@ -11,6 +11,7 @@ import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -28,19 +29,21 @@ import com.coinsense.cryptoanalysisai.services.AdManager;
 import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.services.ExchangeRateManager;
 import com.coinsense.cryptoanalysisai.services.SubscriptionManager;
+import com.coinsense.cryptoanalysisai.ui.activities.BaseActivity;
 import com.coinsense.cryptoanalysisai.ui.activities.LoginActivity;
 import com.coinsense.cryptoanalysisai.ui.activities.SettingsActivity;
 import com.coinsense.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.coinsense.cryptoanalysisai.ui.fragments.AnalysisFragment;
 import com.coinsense.cryptoanalysisai.ui.fragments.CoinListFragment;
 import com.coinsense.cryptoanalysisai.utils.Constants;
+import com.coinsense.cryptoanalysisai.utils.LocaleHelper;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
 
 import androidx.appcompat.app.AlertDialog;
 
-public class MainActivity extends AppCompatActivity implements CoinListFragment.OnCoinSelectedListener {
+public class MainActivity extends BaseActivity implements CoinListFragment.OnCoinSelectedListener {
 
     private ActivityMainBinding binding;
     private CoinInfo selectedCoin;
@@ -559,4 +562,5 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
         AlertDialog dialog = builder.create();
         dialog.show();
     }
+
 }

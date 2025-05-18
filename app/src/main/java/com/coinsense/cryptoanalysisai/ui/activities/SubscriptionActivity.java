@@ -1,6 +1,8 @@
 package com.coinsense.cryptoanalysisai.ui.activities;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,10 +17,11 @@ import com.coinsense.cryptoanalysisai.databinding.ActivitySubscriptionBinding;
 import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.services.SubscriptionManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
+import com.coinsense.cryptoanalysisai.utils.LocaleHelper;
 
 import java.util.List;
 
-public class SubscriptionActivity extends AppCompatActivity implements BillingManager.BillingStatusListener {
+public class SubscriptionActivity extends BaseActivity implements BillingManager.BillingStatusListener {
 
     private static final String TAG = "SubscriptionActivity";
     private ActivitySubscriptionBinding binding;
@@ -251,4 +254,5 @@ public class SubscriptionActivity extends AppCompatActivity implements BillingMa
         binding.progressBar.setVisibility(View.GONE);
         Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
     }
+
 }

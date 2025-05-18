@@ -1,5 +1,6 @@
 package com.coinsense.cryptoanalysisai.ui.activities;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import com.coinsense.cryptoanalysisai.databinding.ActivityLoginBinding;
 import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.services.FirebaseSubscriptionManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
+import com.coinsense.cryptoanalysisai.utils.LocaleHelper;
 import com.google.android.gms.auth.api.identity.BeginSignInRequest;
 import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.auth.api.identity.SignInClient;
@@ -39,7 +41,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseActivity {
 
     private static final String TAG = "LoginActivity";
     private ActivityLoginBinding binding;
@@ -220,4 +222,5 @@ public class LoginActivity extends AppCompatActivity {
         super.onDestroy();
         binding = null;
     }
+
 }
