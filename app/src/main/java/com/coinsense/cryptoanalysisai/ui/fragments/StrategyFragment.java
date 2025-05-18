@@ -74,7 +74,13 @@ public class StrategyFragment extends Fragment {
 
     public void setCoinInfo(CoinInfo coinInfo) {
         if (coinInfo == null) {
-            Log.e("StrategyFragment", "setCoinInfo: coinInfo is null");
+            // Context 체크를 추가하여 Fragment가 연결된 경우에만 getString() 호출
+            if (isAdded()) {
+                Log.e("StrategyFragment", getString(R.string.no_coin_info_log));
+            } else {
+                // Fragment가 연결되지 않은 경우 하드코딩 문자열 사용
+                Log.e("StrategyFragment", "setCoinInfo: coinInfo is null");
+            }
             return;
         }
 
@@ -87,8 +93,18 @@ public class StrategyFragment extends Fragment {
         // 같은 코인이 아닌 경우에만 설정 (중복 업데이트 방지)
         if (!isSameCoin) {
             this.coinInfo = coinInfo;
-            Log.d("StrategyFragment", "setCoinInfo: " +
-                    (coinInfo != null ? "coinInfo set, symbol: " + coinInfo.getSymbol() : "coinInfo is null"));
+
+            // Context 체크 추가
+            if (isAdded()) {
+                Log.d("StrategyFragment", coinInfo != null ?
+                        getString(R.string.coin_info_set_log_format, coinInfo.getSymbol()) :
+                        getString(R.string.no_coin_info_log));
+            } else {
+                // Fragment가 연결되지 않은 경우 하드코딩 문자열 사용
+                Log.d("StrategyFragment", coinInfo != null ?
+                        "setCoinInfo: coinInfo set, symbol: " + coinInfo.getSymbol() :
+                        "setCoinInfo: coinInfo is null");
+            }
 
             // coinInfo 정보 저장 (테마 변경 시 복원을 위해)
             saveCurrentCoinInfo();
@@ -472,24 +488,42 @@ public class StrategyFragment extends Fragment {
     }
 
     // 콘텐츠 접근 권한 UI 업데이트
-    // 콘텐츠 접근 권한 UI 업데이트
     public void updateContentAccessUI() {
         // View가 아직 생성되지 않았으면 아무것도 하지 않고 리턴
         if (getView() == null) {
-            Log.d("StrategyFragment", "updateContentAccessUI: View is not created yet");
+            // Context 체크 추가
+            if (isAdded()) {
+                Log.d("StrategyFragment", getString(R.string.view_not_created_log));
+            } else {
+                Log.d("StrategyFragment", "updateContentAccessUI: View is not created yet");
+            }
             return;
         }
 
         // UI 요소들이 null인지 확인
         if (blurOverlay == null || pixelatedOverlay == null || additionalBlurLayer == null ||
                 contentArea == null || btnSubscribe == null || btnWatchAd == null || tvAdStatus == null) {
-            Log.d("StrategyFragment", "updateContentAccessUI: Some UI elements are null");
+            // Context 체크 추가
+            if (isAdded()) {
+                Log.d("StrategyFragment", getString(R.string.ui_elements_null_log));
+            } else {
+                Log.d("StrategyFragment", "updateContentAccessUI: Some UI elements are null");
+            }
             return;
         }
 
         // coinInfo 확인 추가
         if (coinInfo == null) {
-            Log.w("StrategyFragment", "updateContentAccessUI: coinInfo is null");
+            // 문자열 리소스 사용
+
+            // Context 체크 추가
+            if (isAdded()) {
+                Log.w("StrategyFragment", getString(R.string.update_content_access_ui_warning));
+            } else {
+                Log.w("StrategyFragment", "updateContentAccessUI: coinInfo is null");
+            }
+
+            Log.w("StrategyFragment", getString(R.string.update_content_access_ui_warning));
             // coinInfo가 null인 경우 기본 UI 상태 설정 (구독자가 아닌 상태로 간주)
             blurOverlay.setVisibility(View.VISIBLE);
             pixelatedOverlay.setVisibility(View.VISIBLE);
@@ -524,7 +558,8 @@ public class StrategyFragment extends Fragment {
             if (!isSubscribed && hasAdPermission && tvAdStatus != null) {
                 int remainingMinutes = adManager.getRemainingMinutes(coinInfo.getSymbol());
                 tvAdStatus.setVisibility(View.VISIBLE);
-                tvAdStatus.setText("광고 시청 후 " + remainingMinutes + "분 남음");
+                // 문자열 리소스 사용
+                tvAdStatus.setText(getString(R.string.ad_remaining_minutes_format, remainingMinutes));
             } else if (tvAdStatus != null) {
                 tvAdStatus.setVisibility(View.GONE);
             }

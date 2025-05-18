@@ -52,7 +52,6 @@
     <string name="usd_unit">달러(USD)</string>
 
     <!-- Google 로그인 관련 -->
-    <string name="google_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
     <string name="login_welcome">암호화폐 분석 AI에 오신 것을 환영합니다</string>
     <string name="login_description">AI가 분석한 암호화폐 시장 분석 및 투자 전략</string>
     <string name="login_with_google">Google 계정으로 로그인</string>
@@ -100,6 +99,97 @@
     <string name="avalanche">아발란체</string>
     <string name="stellar">스텔라루멘</string>
     <string name="hedera">헤데라</string>
+
+    <!-- MainActivity 관련 새 문자열 -->
+    <string name="press_back_to_exit">뒤로가기를 한번 더 누르면 종료됩니다</string>
+
+    <!-- SubscriptionActivity 관련 새 문자열 -->
+    <string name="already_monthly_subscriber">이미 월간 구독 이용 중입니다.</string>
+    <string name="already_yearly_subscriber">이미 연간 구독 이용 중입니다.</string>
+    <string name="monthly">월간</string>
+    <string name="yearly">연간</string>
+    <string name="premium_subscriber_status_format">프리미엄 구독 중 (%1$s)\n만료일: %2$s (%3$d일 남음)</string>
+    <string name="billing_info_format">결제 정보:\n• 구독 시작일: %1$s\n• 다음 결제일: %2$s\n• 자동 갱신: %3$s</string>
+    <string name="auto_renew_enabled">활성화됨</string>
+    <string name="auto_renew_disabled">비활성화됨</string>
+    <string name="subscribed_to_format">%1$s 구독 중</string>
+    <string name="upgrade_to_format">%1$s으로 업그레이드</string>
+    <string name="subscribe_to_format">%1$s 구독하기</string>
+    <string name="free_user">무료 사용자</string>
+    <string name="subscription_management">구독 관리</string>
+    <string name="cancel_subscription_message">구독을 취소하시면 다음 결제일인 %1$s 이후에는 프리미엄 서비스 이용이 불가능합니다.\n\n취소 후에도 결제일까지는 서비스를 계속 이용할 수 있습니다.</string>
+    <string name="go_to_subscription_management">구독 관리로 이동</string>
+    <string name="cancel">취소</string>
+
+    <!-- AdViewDialog 관련 새 문자열 -->
+    <string name="ad_title_format">%1$s 분석 보기</string>
+    <string name="ad_description_format">광고를 시청하면 10분 동안 %1$s의 매매 전략과 기술적 분석을 볼 수 있습니다.</string>
+    <string name="ad_view_completed_log">광고 시청 완료: %1$s</string>
+
+    <!-- StrategyFragment 관련 새 문자열 -->
+    <string name="ad_remaining_minutes_format">광고 시청 후 %1$d분 남음</string>
+    <string name="no_coin_info_log">setCoinInfo: coinInfo is null</string>
+    <string name="coin_info_log_format">setCoinInfo: %1$s</string>
+    <string name="coin_info_set_log_format">coinInfo set, symbol: %1$s</string>
+    <string name="view_not_created_log">updateContentAccessUI: View is not created yet</string>
+    <string name="ui_elements_null_log">updateContentAccessUI: Some UI elements are null</string>
+    <string name="update_content_access_ui_warning">updateContentAccessUI: coinInfo is null</string>
+
+    <!-- AnalysisFragment 관련 새 문자열 -->
+    <string name="analysis_loading_log">분석 데이터 로딩 중...</string>
+    <string name="analysis_subscription_success">구독이 성공적으로 완료되었습니다.</string>
+    <string name="no_analysis_data">저장된 분석 결과가 없습니다</string>
+    <string name="analysis_not_found_retry">분석 결과 없음 - 다시 시도</string>
+    <string name="analysis_load_error">분석 결과 로드 실패: %1$s</string>
+    <string name="retry">다시 시도</string>
+    <string name="masked_content">**********</string>
+    <string name="masked_content_short">*****</string>
+    <string name="masked_ratio">***** vs *****</string>
+    <string name="short_term_fragment_updated">단기 전략 프래그먼트가 업데이트됨</string>
+    <string name="mid_term_fragment_updated">중기 전략 프래그먼트가 업데이트됨</string>
+    <string name="long_term_fragment_updated">장기 전략 프래그먼트가 업데이트됨</string>
+    <string name="analysis_button_format">분석 결과 불러오기 - 현재가: %1$s %2$s (%3$s)</string>
+    <string name="premium_subscription_button">프리미엄 구독으로 기술적 분석 보기</string>
+    <string name="watch_ad_button">광고 보고 10분 동안 보기</string>
+    <string name="current_price_position">현재가 위치: %1$s (저항 %2$.2f%% ↑, 지지 %3$.2f%% ↓)</string>
+    <string name="support_zone">지지 구간</string>
+    <string name="resistance_zone">저항 구간</string>
+    <string name="neutral_zone">중간 구간</string>
+
+    <!-- AnalysisFragment 관련 문자 강조 처리 -->
+    <string name="keyword_pattern_up">(?i)\\b(상승|오름|증가|높아짐|돌파|성장|강세|급등)\\b</string>
+    <string name="keyword_pattern_down">(?i)\\b(하락|내림|감소|낮아짐|약세|약화|급락|조정)\\b</string>
+    <string name="keyword_pattern_neutral">(?i)\\b(횡보|보합|유지|중립|관망|안정)\\b</string>
+    <string name="keyword_pattern_buy">(?i)\\b(매수|진입|매집|분할매수)\\b</string>
+    <string name="keyword_pattern_sell">(?i)\\b(매도|매각|이익실현|손절)\\b</string>
+    <string name="keyword_pattern_support">(?i)\\b(지지선|바닥|저점)\\b</string>
+    <string name="keyword_pattern_resistance">(?i)\\b(저항선|천장|고점)\\b</string>
+    <string name="keyword_pattern_patterns">(?i)\\b(패턴|추세|흐름|모멘텀|변동성)\\b</string>
+    <string name="keyword_pattern_timeframe">(?i)\\b(단기|중기|장기)\\b</string>
+
+    <string name="color_up">#4CAF50</string>
+    <string name="color_down">#F44336</string>
+    <string name="color_neutral">#FFC107</string>
+    <string name="color_buy">#4CAF50</string>
+    <string name="color_sell">#F44336</string>
+    <string name="color_support">#4CAF50</string>
+    <string name="color_resistance">#F44336</string>
+    <string name="color_pattern">#2196F3</string>
+    <string name="color_timeframe">#9C27B0</string>
+
+    <string name="market_bias_strong_long">강한 롱 우세</string>
+    <string name="market_bias_weak_long">약한 롱 우세</string>
+    <string name="market_bias_strong_short">강한 숏 우세</string>
+    <string name="market_bias_weak_short">약한 숏 우세</string>
+    <string name="market_bias_neutral">중립</string>
+
+    <string name="color_strong_long">#4CAF50</string>
+    <string name="color_weak_long">#8BC34A</string>
+    <string name="color_strong_short">#F44336</string>
+    <string name="color_weak_short">#FF9800</string>
+
+
+
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->
     <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>

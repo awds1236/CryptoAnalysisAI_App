@@ -96,4 +96,92 @@
     <string name="avalanche">Avalanche</string>
     <string name="stellar">Stellar</string>
     <string name="hedera">Hedera</string>
+
+    <!-- MainActivity 관련 새 문자열 -->
+    <string name="press_back_to_exit">Press back again to exit</string>
+
+    <!-- SubscriptionActivity 관련 새 문자열 -->
+    <string name="already_monthly_subscriber">You are already subscribed to monthly plan.</string>
+    <string name="already_yearly_subscriber">You are already subscribed to yearly plan.</string>
+    <string name="monthly">Monthly</string>
+    <string name="yearly">Yearly</string>
+    <string name="premium_subscriber_status_format">Premium subscriber (%1$s)\nExpiration: %2$s (%3$d days left)</string>
+    <string name="billing_info_format">Billing info:\n• Subscription start date: %1$s\n• Next billing date: %2$s\n• Auto renewal: %3$s</string>
+    <string name="auto_renew_enabled">Enabled</string>
+    <string name="auto_renew_disabled">Disabled</string>
+    <string name="subscribed_to_format">Subscribed to %1$s</string>
+    <string name="upgrade_to_format">Upgrade to %1$s</string>
+    <string name="subscribe_to_format">Subscribe to %1$s</string>
+    <string name="free_user">Free user</string>
+    <string name="subscription_management">Subscription Management</string>
+    <string name="cancel_subscription_message">If you cancel your subscription, you won\'t be able to use premium services after the next billing date, %1$s.\n\nYou can continue to use the service until the billing date.</string>
+    <string name="go_to_subscription_management">Go to subscription management</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- AdViewDialog 관련 새 문자열 -->
+    <string name="ad_title_format">View %1$s Analysis</string>
+    <string name="ad_description_format">Watch an ad to view trading strategies and technical analysis for %1$s for 10 minutes.</string>
+    <string name="ad_view_completed_log">Ad view completed: %1$s</string>
+
+    <!-- StrategyFragment 관련 새 문자열 -->
+    <string name="ad_remaining_minutes_format">%1$d minutes left after watching ad</string>
+    <string name="no_coin_info_log">setCoinInfo: coinInfo is null</string>
+    <string name="coin_info_log_format">setCoinInfo: %1$s</string>
+    <string name="coin_info_set_log_format">coinInfo set, symbol: %1$s</string>
+    <string name="view_not_created_log">updateContentAccessUI: View is not created yet</string>
+    <string name="ui_elements_null_log">updateContentAccessUI: Some UI elements are null</string>
+    <string name="update_content_access_ui_warning">updateContentAccessUI: coinInfo is null</string>
+
+    <!-- AnalysisFragment 관련 새 문자열 -->
+    <string name="analysis_loading_log">Loading analysis data...</string>
+    <string name="analysis_subscription_success">Subscription was completed successfully.</string>
+    <string name="no_analysis_data">No saved analysis results found</string>
+    <string name="analysis_not_found_retry">No analysis results - try again</string>
+    <string name="analysis_load_error">Failed to load analysis results: %1$s</string>
+    <string name="retry">Try Again</string>
+    <string name="masked_content">**********</string>
+    <string name="masked_content_short">*****</string>
+    <string name="masked_ratio">***** vs *****</string>
+    <string name="short_term_fragment_updated">Short-term strategy fragment updated</string>
+    <string name="mid_term_fragment_updated">Mid-term strategy fragment updated</string>
+    <string name="long_term_fragment_updated">Long-term strategy fragment updated</string>
+    <string name="analysis_button_format">Load Analysis - Current Price: %1$s %2$s (%3$s)</string>
+    <string name="premium_subscription_button">View Technical Analysis with Premium Subscription</string>
+    <string name="watch_ad_button">Watch Ad to View for 10 Minutes</string>
+    <string name="current_price_position">Current Price Position: %1$s (Resistance %2$.2f%% ↑, Support %3$.2f%% ↓)</string>
+    <string name="support_zone">Support Zone</string>
+    <string name="resistance_zone">Resistance Zone</string>
+    <string name="neutral_zone">Neutral Zone</string>
+
+    <!-- values-en/strings.xml (영어) -->
+    <string name="keyword_pattern_up">(?i)\\b(up|rise|increase|growth|rally|bullish|surge)\\b</string>
+    <string name="keyword_pattern_down">(?i)\\b(down|fall|decrease|decline|bearish|drop|correction)\\b</string>
+    <string name="keyword_pattern_neutral">(?i)\\b(consolidation|stable|neutral|wait|equilibrium)\\b</string>
+    <string name="keyword_pattern_buy">(?i)\\b(buy|entry|accumulate|purchase)\\b</string>
+    <string name="keyword_pattern_sell">(?i)\\b(sell|exit|take profit|stop loss)\\b</string>
+    <string name="keyword_pattern_support">(?i)\\b(support|floor|bottom)\\b</string>
+    <string name="keyword_pattern_resistance">(?i)\\b(resistance|ceiling|top)\\b</string>
+    <string name="keyword_pattern_patterns">(?i)\\b(pattern|trend|flow|momentum|volatility)\\b</string>
+    <string name="keyword_pattern_timeframe">(?i)\\b(short-term|mid-term|long-term)\\b</string>
+
+    <string name="color_up">#4CAF50</string>
+    <string name="color_down">#F44336</string>
+    <string name="color_neutral">#FFC107</string>
+    <string name="color_buy">#4CAF50</string>
+    <string name="color_sell">#F44336</string>
+    <string name="color_support">#4CAF50</string>
+    <string name="color_resistance">#F44336</string>
+    <string name="color_pattern">#2196F3</string>
+    <string name="color_timeframe">#9C27B0</string>
+
+    <string name="market_bias_strong_long">Strong long bias</string>
+    <string name="market_bias_weak_long">Slight long bias</string>
+    <string name="market_bias_strong_short">Strong short bias</string>
+    <string name="market_bias_weak_short">Slight short bias</string>
+    <string name="market_bias_neutral">Neutral</string>
+
+    <string name="color_strong_long">#4CAF50</string>
+    <string name="color_weak_long">#8BC34A</string>
+    <string name="color_strong_short">#F44336</string>
+    <string name="color_weak_short">#FF9800</string>
 </resources>

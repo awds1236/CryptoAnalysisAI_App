@@ -87,10 +87,10 @@ public class AdViewDialog extends DialogFragment {
         btnCancel = view.findViewById(R.id.btnCancel);
         btnSubscribe = view.findViewById(R.id.btnSubscribe);
 
-        // 코인 정보 설정
+        // 코인 정보 설정 - 리소스 이용
         if (coinName != null && !coinName.isEmpty()) {
-            tvAdTitle.setText(coinName + " 분석 보기");
-            tvAdDescription.setText("광고를 시청하면 10분 동안 " + coinName + "의 매매 전략과 기술적 분석을 볼 수 있습니다.");
+            tvAdTitle.setText(getString(R.string.ad_title_format, coinName));
+            tvAdDescription.setText(getString(R.string.ad_description_format, coinName));
         }
 
         // 버튼 이벤트 설정
@@ -119,7 +119,7 @@ public class AdViewDialog extends DialogFragment {
                 // 광고 시청 완료
                 if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
-                        Log.d("AdViewDialog", "광고 시청 완료: " + coinSymbol);
+                        Log.d("AdViewDialog", getString(R.string.ad_view_completed_log, coinSymbol));
 
                         if (completionListener != null) {
                             completionListener.onAdCompleted(coinSymbol);
