@@ -58,8 +58,8 @@
     <string name="subscription_description">Only premium subscribers can access AI cryptocurrency trading strategies.</string>
     <string name="subscription_monthly">Monthly Subscription</string>
     <string name="subscription_yearly">Annual Subscription (20% discount)</string>
-    <string name="subscription_monthly_price">$9.99/month</string>
-    <string name="subscription_yearly_price">$95.00/year ($7.92/month)</string>
+    <string name="subscription_monthly_price">$10.7/month</string>
+    <string name="subscription_yearly_price">$90.00/year ($7.5/month)</string>
     <string name="subscription_features">• View strategy analysis for all coins\n• Check real-time trading signals\n• View support/resistance level analysis</string>
     <string name="subscribe_button">Subscribe</string>
     <string name="cancel_subscription">Cancel Subscription</string>
@@ -73,4 +73,27 @@
     <string name="korean">Korean</string>
     <string name="english">English</string>
     <string name="save">Save</string>
+
+
+    <!-- values-en/strings.xml에 추가 -->
+    <string name="binance_market_error">Failed to fetch Binance market information.</string>
+    <string name="price_info_error">Failed to get price information.</string>
+    <string name="analysis_load_failed">Failed to load analysis results: %1$s</string>
+    <string name="price_update_failed">Price update failed: %1$s</string>
+    <string name="price_change_load_failed">Failed to load 24h price change: %1$s</string>
+    <string name="premium_coin_indicator"> 💎</string>
+
+    <!-- 코인 영문 이름 -->
+    <string name="bitcoin">Bitcoin</string>
+    <string name="ethereum">Ethereum</string>
+    <string name="ripple">Ripple</string>
+    <string name="solana">Solana</string>
+    <string name="dogecoin">Dogecoin</string>
+    <string name="cardano">Cardano</string>
+    <string name="tron">Tron</string>
+    <string name="sui">Sui</string>
+    <string name="chainlink">Chainlink</string>
+    <string name="avalanche">Avalanche</string>
+    <string name="stellar">Stellar</string>
+    <string name="hedera">Hedera</string>
 </resources>

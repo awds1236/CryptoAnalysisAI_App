@@ -1,5 +1,9 @@
 package com.coinsense.cryptoanalysisai.models;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import com.coinsense.cryptoanalysisai.utils.Constants;
 import com.google.gson.annotations.SerializedName;
 
 public class CoinInfo {
@@ -134,14 +138,40 @@ public class CoinInfo {
     }
 
     // 업비트용 코인 이름 얻기 (한글 또는 영문)
+    // CoinInfo.java에서 수정
     public String getDisplayName() {
-        if (koreanName != null && !koreanName.isEmpty()) {
-            return koreanName;
-        } else if (baseAsset != null && !baseAsset.isEmpty()) {
-            return baseAsset;
+        // 언어 설정 가져오기
+        SharedPreferences prefs = getSystemContext().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        String language = prefs.getString("pref_language", "ko"); // 기본값은 한국어
+
+        if ("en".equals(language)) {
+            // 영어 모드일 때는 영문 이름만 표시
+            return englishName != null ? englishName : symbol;
         } else {
-            return symbol != null ? symbol : market;
+            // 한국어 모드일 때는 한글 이름과 영문 심볼 함께 표시
+            if (koreanName != null && !koreanName.isEmpty()) {
+                return koreanName + " (" + symbol + ")";
+            } else {
+                return symbol != null ? symbol : market;
+            }
         }
+    }
+
+    // Context 가져오기 위한 헬퍼 메서드
+    private Context getSystemContext() {
+        try {
+            // Application context 가져오기
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Object activityThread = activityThreadClass.getMethod("currentActivityThread").invoke(null);
+            Object app = activityThreadClass.getMethod("getApplication").invoke(activityThread);
+            if (app instanceof Context) {
+                return (Context) app;
+            }
+        } catch (Exception e) {
+            // 실패 시 처리
+        }
+
+        return null;
     }
 
     // 화폐 단위 얻기 (KRW 또는 USDT)

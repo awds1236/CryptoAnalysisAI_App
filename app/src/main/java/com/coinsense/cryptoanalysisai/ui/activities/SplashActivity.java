@@ -13,7 +13,7 @@ import com.coinsense.cryptoanalysisai.MainActivity;
 import com.coinsense.cryptoanalysisai.R;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends BaseActivity {
 
     private static final long SPLASH_DELAY = 1500; // 1.5초
 

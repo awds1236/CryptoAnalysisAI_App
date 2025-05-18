@@ -1,30 +1,27 @@
-// SettingsActivity.java 파일 생성
 package com.coinsense.cryptoanalysisai.ui.activities;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
-import android.content.res.Resources;
 import android.os.Bundle;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.RadioButton;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 
 import com.coinsense.cryptoanalysisai.R;
 import com.coinsense.cryptoanalysisai.databinding.ActivitySettingsBinding;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 import com.coinsense.cryptoanalysisai.utils.LocaleHelper;
 
-import java.util.Locale;
-
-public class SettingsActivity extends AppCompatActivity {
+public class SettingsActivity extends BaseActivity {
 
     private ActivitySettingsBinding binding;
     private static final String PREF_DARK_MODE = "pref_dark_mode";
     private static final String PREF_LANGUAGE = "pref_language";
+
+    // 임시 변수 추가
+    private boolean tempIsDarkMode;
+    private String tempLanguage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,38 +36,29 @@ public class SettingsActivity extends AppCompatActivity {
             getSupportActionBar().setTitle(R.string.action_settings);
         }
 
-        // 테마 설정 상태 불러오기
-        boolean isDarkMode = isDarkModeEnabled();
-        if (isDarkMode) {
-            binding.rbDarkMode.setChecked(true);
-        } else {
-            binding.rbLightMode.setChecked(true);
-        }
+        // 현재 설정 불러오기
+        tempIsDarkMode = isDarkModeEnabled();
+        tempLanguage = getCurrentLanguage();
 
-        // 언어 설정 상태 불러오기
-        String currentLanguage = getCurrentLanguage();
-        if ("en".equals(currentLanguage)) {
-            binding.rbEnglish.setChecked(true);
-        } else {
-            binding.rbKorean.setChecked(true);
-        }
+        // UI 초기 상태 설정
+        updateUI();
 
         // 테마 라디오 버튼 리스너
         binding.rgTheme.setOnCheckedChangeListener((group, checkedId) -> {
-            boolean darkModeEnabled = (checkedId == R.id.rbDarkMode);
-            setDarkMode(darkModeEnabled);
+            // 즉시 적용하지 않고 임시 변수에 저장
+            tempIsDarkMode = (checkedId == R.id.rbDarkMode);
         });
 
         // 언어 라디오 버튼 리스너
         binding.rgLanguage.setOnCheckedChangeListener((group, checkedId) -> {
-            String languageCode = (checkedId == R.id.rbEnglish) ? "en" : "ko";
-            setLanguage(languageCode);
+            // 즉시 적용하지 않고 임시 변수에 저장
+            tempLanguage = (checkedId == R.id.rbEnglish) ? "en" : "ko";
         });
 
         // 저장 버튼
         binding.btnSave.setOnClickListener(v -> {
-            // 설정이 즉시 적용되므로 바로 종료
-            finish();
+            // 모든 설정을 한 번에 저장하고 앱 재시작
+            saveAllSettings();
         });
     }
 
@@ -93,31 +81,34 @@ public class SettingsActivity extends AppCompatActivity {
         return prefs.getString(PREF_LANGUAGE, "ko"); // 기본값은 한국어
     }
 
-    private void setDarkMode(boolean enabled) {
-        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean(PREF_DARK_MODE, enabled);
-        editor.apply();
-
-        // 테마 모드 설정
-        if (enabled) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+    // UI 상태 업데이트 메서드 추가
+    private void updateUI() {
+        // 테마 설정
+        if (tempIsDarkMode) {
+            binding.rbDarkMode.setChecked(true);
         } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            binding.rbLightMode.setChecked(true);
         }
 
-        // 액티비티 재생성
-        recreate();
+        // 언어 설정
+        if ("en".equals(tempLanguage)) {
+            binding.rbEnglish.setChecked(true);
+        } else {
+            binding.rbKorean.setChecked(true);
+        }
     }
 
-    private void setLanguage(String languageCode) {
+    // 모든 설정을 한 번에 저장하고 앱을 재시작하는 메서드
+    private void saveAllSettings() {
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(PREF_LANGUAGE, languageCode);
+
+        // 변경된 설정 저장
+        editor.putBoolean(PREF_DARK_MODE, tempIsDarkMode);
+        editor.putString(PREF_LANGUAGE, tempLanguage);
         editor.apply();
 
-        // 언어 변경 및 앱 재시작
-        LocaleHelper.setLocale(this, languageCode);
+        // 앱 재시작
         recreateApp();
     }
 
@@ -132,4 +123,5 @@ public class SettingsActivity extends AppCompatActivity {
             overridePendingTransition(0, 0);
         }
     }
+
 }
