@@ -188,7 +188,48 @@
     <string name="color_strong_short">#F44336</string>
     <string name="color_weak_short">#FF9800</string>
 
+    <string name="no_analysis_summary">분석 요약 정보가 없습니다.</string>
+    <string name="high_confidence">(높은 신뢰도)</string>
+    <string name="buy_label">매수: </string>
+    <string name="sell_label">매도: </string>
+    <string name="no_info">정보 없음</string>
+    <string name="info_not_available">설정된 정보 없음</string>
+    <string name="golden_cross">골든 크로스 (매수 신호) ⬆️</string>
+    <string name="death_cross">데드 크로스 (매도 신호) ⬇️</string>
+    <string name="no_cross">없음 (중립) ↔️</string>
+    <string name="trend_strong">강함 (🔥)</string>
+    <string name="trend_medium">중간 (➡️)</string>
+    <string name="trend_weak">약함 (💧)</string>
+    <string name="current_market">현재 시장: </string>
+    <string name="loading_coin_data">코인 데이터를 로딩 중입니다...</string>
+    <string name="no_targets_available">설정된 목표가 없음</string>
+    <string name="no_stoploss_available">설정된 손절매 라인 없음</string>
+    <string name="target_label">목표 %d: </string>
+    <string name="loading_price">가격 로딩 중...</string>
 
+    <string name="buy_strength_strong">매수세 강함 (%.2f%%)</string>
+    <string name="sell_strength_strong">매도세 강함 (%.2f%%)</string>
+    <string name="market_neutral">중립 (%.2f%%)</string>
+
+    <string name="long_ratio_format">롱: %.1f%%</string>
+    <string name="short_ratio_format">숏: %.1f%%</string>
+    <string name="ratio_vs"> vs </string>
+
+    <string name="trend_strength_strong">강</string>
+    <string name="trend_strength_medium">중</string>
+    <string name="trend_strength_weak">약</string>
+
+    <string name="risk_warning_symbol">⚠️ </string>
+    <string name="risk_keyword_severe">급격한|심각한|충격</string>
+    <string name="risk_keyword_moderate">가능성</string>
+
+    <string name="recommendation_text_format">%s 추천</string>
+    <string name="buy_recommendation">매수</string>
+    <string name="sell_recommendation">매도</string>
+    <string name="hold_recommendation">관망</string>
+
+    <string name="date_format">yyyy년 MM월 dd일 HH시</string>
+    <string name="analysis_timestamp_format">%s에 분석됨</string>
 
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->

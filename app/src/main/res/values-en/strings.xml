@@ -184,4 +184,47 @@
     <string name="color_weak_long">#8BC34A</string>
     <string name="color_strong_short">#F44336</string>
     <string name="color_weak_short">#FF9800</string>
+
+    <string name="no_analysis_summary">No analysis summary information available.</string>
+    <string name="high_confidence">(High confidence)</string>
+    <string name="buy_label">Buy: </string>
+    <string name="sell_label">Sell: </string>
+    <string name="no_info">No information</string>
+    <string name="info_not_available">No information set</string>
+    <string name="golden_cross">Golden Cross (Buy Signal) ⬆️</string>
+    <string name="death_cross">Death Cross (Sell Signal) ⬇️</string>
+    <string name="no_cross">None (Neutral) ↔️</string>
+    <string name="trend_strong">Strong (🔥)</string>
+    <string name="trend_medium">Medium (➡️)</string>
+    <string name="trend_weak">Weak (💧)</string>
+    <string name="current_market">Current Market: </string>
+    <string name="loading_coin_data">Loading coin data...</string>
+    <string name="no_targets_available">No target prices set</string>
+    <string name="no_stoploss_available">No stop-loss level set</string>
+    <string name="target_label">Target %d: </string>
+    <string name="loading_price">Loading price...</string>
+
+    <string name="buy_strength_strong">Strong buying pressure (%.2f%%)</string>
+    <string name="sell_strength_strong">Strong selling pressure (%.2f%%)</string>
+    <string name="market_neutral">Neutral (%.2f%%)</string>
+
+    <string name="long_ratio_format">Long: %.1f%%</string>
+    <string name="short_ratio_format">Short: %.1f%%</string>
+    <string name="ratio_vs"> vs </string>
+
+    <string name="trend_strength_strong">strong</string>
+    <string name="trend_strength_medium">medium</string>
+    <string name="trend_strength_weak">weak</string>
+
+    <string name="risk_warning_symbol">⚠️ </string>
+    <string name="risk_keyword_severe">급격한|심각한|충격</string>
+    <string name="risk_keyword_moderate">가능성</string>
+
+    <string name="recommendation_text_format">%s Recommendation</string>
+    <string name="buy_recommendation">Buy</string>
+    <string name="sell_recommendation">Sell</string>
+    <string name="hold_recommendation">Hold</string>
+
+    <string name="date_format">MMMM dd, yyyy HH:00</string>
+    <string name="analysis_timestamp_format">Analyzed on %s</string>
 </resources>
