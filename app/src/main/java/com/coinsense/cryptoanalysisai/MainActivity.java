@@ -29,6 +29,7 @@ import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.services.ExchangeRateManager;
 import com.coinsense.cryptoanalysisai.services.SubscriptionManager;
 import com.coinsense.cryptoanalysisai.ui.activities.LoginActivity;
+import com.coinsense.cryptoanalysisai.ui.activities.SettingsActivity;
 import com.coinsense.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.coinsense.cryptoanalysisai.ui.fragments.AnalysisFragment;
 import com.coinsense.cryptoanalysisai.ui.fragments.CoinListFragment;
@@ -353,8 +354,9 @@ public class MainActivity extends AppCompatActivity implements CoinListFragment.
             refreshCurrentFragment();
             return true;
         } else if (id == R.id.action_settings) {
-            // 다크 모드 설정 다이얼로그 표시
-            showThemeSettingsDialog();
+            // 설정 화면으로 이동
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         } else if (id == R.id.action_subscription) {
             // 구독 관리 화면으로 이동

@@ -147,19 +147,38 @@ public class SubscriptionActivity extends AppCompatActivity implements BillingMa
      * Google Play 구독 관리 페이지로 이동하는 대화상자 표시
      */
     private void showSubscriptionManagementDialog() {
-        new androidx.appcompat.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog dialog = new androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("구독 관리")
                 .setMessage("구독을 취소하시면 다음 결제일인 " +
                         subscriptionManager.getNextBillingDateString() +
                         " 이후에는 프리미엄 서비스 이용이 불가능합니다.\n\n" +
                         "취소 후에도 결제일까지는 서비스를 계속 이용할 수 있습니다.")
-                .setPositiveButton("구독 관리로 이동", (dialog, which) -> {
+                .setPositiveButton("구독 관리로 이동", (dialogInterface, which) -> {
                     // Google Play 구독 관리 페이지로 이동
                     startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(
                             "https://play.google.com/store/account/subscriptions")));
                 })
-                .setNegativeButton("취소", (dialog, which) -> dialog.dismiss())
-                .show();
+                .setNegativeButton("취소", (dialogInterface, which) -> dialogInterface.dismiss())
+                .create();
+
+        // 다이얼로그 보이기 전에 버튼 색상 설정
+        dialog.setOnShowListener(dialogInterface -> {
+            // 다크 모드인지 확인
+            int nightModeFlags = getResources().getConfiguration().uiMode &
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+
+            boolean isNightMode = nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+
+            if (isNightMode) {
+                // 다크 모드면 버튼 텍스트 색상을 흰색으로 설정
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+                        .setTextColor(getResources().getColor(android.R.color.white));
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)
+                        .setTextColor(getResources().getColor(android.R.color.white));
+            }
+        });
+
+        dialog.show();
     }
 
     @Override
