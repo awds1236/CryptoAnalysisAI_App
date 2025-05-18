@@ -46,5 +46,10 @@
             android:name=".ui.activities.SubscriptionActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.activities.SettingsActivity"
+            android:exported="false"
+            android:label="@string/action_settings" />
+
     </application>
 </manifest>

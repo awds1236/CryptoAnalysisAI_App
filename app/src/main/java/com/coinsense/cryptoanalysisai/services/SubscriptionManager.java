@@ -213,7 +213,7 @@ public class SubscriptionManager {
                 firebaseSubscriptionManager.getCachedSubscriptionData();
 
         if (data == null) {
-            return "월 ₩9,900";
+            return "월 ₩15,000";
         }
 
         return data.getMonthlyPrice();
@@ -227,7 +227,7 @@ public class SubscriptionManager {
                 firebaseSubscriptionManager.getCachedSubscriptionData();
 
         if (data == null) {
-            return "연 ₩95,000 (월 ₩7,920)";
+            return "연 ₩125,000 (월 ₩10,400)";
         }
 
         return data.getYearlyPrice();

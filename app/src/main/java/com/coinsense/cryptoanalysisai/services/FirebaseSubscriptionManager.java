@@ -43,8 +43,8 @@ public class FirebaseSubscriptionManager {
         private long expiryTimestamp = 0;
         private long startTimestamp = 0;
         private boolean autoRenewing = false;
-        private String monthlyPrice = "월 ₩9,900";
-        private String yearlyPrice = "연 ₩95,000";
+        private String monthlyPrice = "월 ₩15,000";
+        private String yearlyPrice = "연 ₩125,000";
 
         // 하나의 필드만 유지하고 나머지는 제거
         private boolean subscribed = false;  // 이 필드만 유지

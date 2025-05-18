@@ -169,8 +169,8 @@ public class LoginActivity extends AppCompatActivity {
                     initialData.setExpiryTimestamp(0);
                     initialData.setStartTimestamp(System.currentTimeMillis());
                     initialData.setAutoRenewing(false);
-                    initialData.setMonthlyPrice("월 ₩9,900");
-                    initialData.setYearlyPrice("연 ₩95,000 (월 ₩7,920)");
+                    initialData.setMonthlyPrice("월 ₩15,000");
+                    initialData.setYearlyPrice("연 ₩125,000 (월 ₩10,400)");
 
                     subscriptionRef.setValue(initialData)
                             .addOnSuccessListener(aVoid -> Log.d("LoginActivity", "초기 구독 데이터 생성 완료"))
