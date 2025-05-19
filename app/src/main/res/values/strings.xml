@@ -263,4 +263,10 @@
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->
     <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>
+
+    <string name="select_language">언어 선택 / Select Language</string>
+    <string name="confirm">확인 / Confirm</string>
+    <string name="is_first_run">is_first_run</string>
+
+    <string name="buy_recommendation1">매수 추천 ✓</string>
 </resources>

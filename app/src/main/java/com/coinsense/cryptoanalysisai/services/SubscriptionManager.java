@@ -212,12 +212,20 @@ public class SubscriptionManager {
      */
     // getMonthlyPrice() 메서드 수정
     public String getMonthlyPrice() {
-        // 항상 문자열 리소스에서 가져오기
+        // 항상 현재 활동 컨텍스트 사용
+        if (context == null) {
+            Log.e("SubscriptionManager", "Context is null in getMonthlyPrice");
+            return "$10.7/MONTH"; // 기본값
+        }
         return context.getString(R.string.subscription_monthly_price);
     }
 
     public String getYearlyPrice() {
-        // 항상 문자열 리소스에서 가져오기
+        // 항상 현재 활동 컨텍스트 사용
+        if (context == null) {
+            Log.e("SubscriptionManager", "Context is null in getYearlyPrice");
+            return "$90.00/YEAR ($7.5/MONTH)"; // 기본값
+        }
         return context.getString(R.string.subscription_yearly_price);
     }
     /**

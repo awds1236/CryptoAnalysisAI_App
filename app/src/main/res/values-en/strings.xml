@@ -258,4 +258,11 @@
     <!-- 메뉴 항목 -->
     <string name="action_subscription">Subscribe</string>
     <string name="action_logout">Logout</string>
+
+    <string name="select_language">Select Language</string>
+    <string name="confirm">Confirm</string>
+    <string name="is_first_run">is_first_run</string>
+
+    <string name="buy_recommendation1">Buy Signal ✓</string>
+
 </resources>

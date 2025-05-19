@@ -171,7 +171,7 @@ public class CoinListFragment extends Fragment {
             if (listener != null) {
                 listener.onCoinSelected(coinInfo, exchangeType);
             }
-        });
+        }, analysisCache); // 분석 캐시 전달
 
         binding.recyclerCoins.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerCoins.setAdapter(adapter);
@@ -193,6 +193,7 @@ public class CoinListFragment extends Fragment {
     /**
      * 모든 코인의 분석 결과 로드
      */
+    // loadAllAnalyses 메서드 수정
     private void loadAllAnalyses() {
         analysisApiService.getAllLatestAnalyses(new AnalysisApiService.OnAllAnalysesRetrievedListener() {
             @Override
@@ -203,10 +204,33 @@ public class CoinListFragment extends Fragment {
                     analysisCache.put(result.getCoinSymbol(), result);
                 }
 
-                // 어댑터에 분석 결과 추가
+                // 어댑터에 분석 결과 추가 및 데이터 정렬 다시 실행
                 if (adapter != null && getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
-                        adapter.notifyDataSetChanged();
+                        // 분석 캐시 업데이트
+                        adapter.updateAnalysisCache(analysisCache);
+
+                        // 정렬 다시 수행
+                        if (!adapter.getOriginalList().isEmpty()) {
+                            List<CoinInfo> sortedList = new ArrayList<>(adapter.getOriginalList());
+
+                            // 여기서 다시 정렬 수행
+                            Collections.sort(sortedList, (o1, o2) -> {
+                                boolean o1Buy = isBuyRecommended(o1.getSymbol());
+                                boolean o2Buy = isBuyRecommended(o2.getSymbol());
+
+                                if (o1Buy && !o2Buy) return -1;
+                                if (!o1Buy && o2Buy) return 1;
+
+                                if (!o1.isPremium() && o2.isPremium()) return -1;
+                                if (o1.isPremium() && !o2.isPremium()) return 1;
+
+                                return Double.compare(o2.getCurrentPrice(), o1.getCurrentPrice());
+                            });
+
+                            // 정렬된 목록으로 업데이트
+                            adapter.updateData(sortedList);
+                        }
                     });
                 }
             }
@@ -342,18 +366,30 @@ public class CoinListFragment extends Fragment {
                         }
                     }
 
-                    // 코인 목록 정렬 수정: 기본 코인 먼저, 프리미엄 코인 나중에, 같은 카테고리 내에서는 가격 높은 순
+                    // 코인 목록 정렬: 매수 추천 코인 먼저, 그 다음 기본 코인, 마지막으로 프리미엄 코인
+                    // 같은 카테고리 내에서는 가격 높은 순으로 정렬
                     Collections.sort(markets, new Comparator<CoinInfo>() {
                         @Override
                         public int compare(CoinInfo o1, CoinInfo o2) {
-                            // 기본 코인과 프리미엄 코인 비교
-                            if (!o1.isPremium() && o2.isPremium()) {
-                                return -1; // o1(기본 코인)이 앞으로
-                            } else if (o1.isPremium() && !o2.isPremium()) {
-                                return 1;  // o2(기본 코인)이 앞으로
+                            // 분석 결과에서 추천 정보 가져오기
+                            boolean o1Buy = isBuyRecommended(o1.getSymbol());
+                            boolean o2Buy = isBuyRecommended(o2.getSymbol());
+
+                            // 매수 추천 상태에 따라 정렬
+                            if (o1Buy && !o2Buy) {
+                                return -1; // o1(매수 추천)이 앞으로
+                            } else if (!o1Buy && o2Buy) {
+                                return 1;  // o2(매수 추천)이 앞으로
                             } else {
-                                // 같은 카테고리 내에서는 가격 높은 순으로 정렬
-                                return Double.compare(o2.getCurrentPrice(), o1.getCurrentPrice());
+                                // 매수 추천이 같은 경우, 기본/프리미엄 구분
+                                if (!o1.isPremium() && o2.isPremium()) {
+                                    return -1; // o1(기본 코인)이 앞으로
+                                } else if (o1.isPremium() && !o2.isPremium()) {
+                                    return 1;  // o2(기본 코인)이 앞으로
+                                } else {
+                                    // 같은 카테고리 내에서는 가격 높은 순으로 정렬
+                                    return Double.compare(o2.getCurrentPrice(), o1.getCurrentPrice());
+                                }
                             }
                         }
                     });
@@ -372,6 +408,22 @@ public class CoinListFragment extends Fragment {
                 showLoading(false);
             }
         });
+    }
+
+    /**
+     * 특정 코인이 매수 추천인지 확인
+     */
+    private boolean isBuyRecommended(String symbol) {
+        if (symbol == null || analysisCache == null) return false;
+
+        AnalysisResult result = analysisCache.get(symbol);
+        if (result != null && result.getRecommendation() != null) {
+            String recommendation = result.getRecommendation().getRecommendation();
+            return recommendation != null &&
+                    (recommendation.equalsIgnoreCase("매수") ||
+                            recommendation.equalsIgnoreCase("Buy"));
+        }
+        return false;
     }
 
     /**
@@ -542,10 +594,36 @@ public class CoinListFragment extends Fragment {
         private List<CoinInfo> filteredList;
         private final OnCoinClickListener listener;
 
-        public CoinListAdapter(List<CoinInfo> coins, OnCoinClickListener listener) {
+        private Map<String, AnalysisResult> analysisCache;
+
+
+        // 생성자 수정
+        public CoinListAdapter(List<CoinInfo> coins, OnCoinClickListener listener, Map<String, AnalysisResult> analysisCache) {
             this.originalList = new ArrayList<>(coins);
             this.filteredList = new ArrayList<>(coins);
             this.listener = listener;
+            this.analysisCache = analysisCache;
+        }
+
+        // 분석 캐시 업데이트 메서드 추가
+        public void updateAnalysisCache(Map<String, AnalysisResult> newCache) {
+            this.analysisCache = newCache;
+            notifyDataSetChanged();
+        }
+
+
+        // 추천 확인 메서드
+        private boolean isBuyRecommended(String symbol) {
+            if (symbol == null || analysisCache == null) return false;
+
+            AnalysisResult result = analysisCache.get(symbol);
+            if (result != null && result.getRecommendation() != null) {
+                String recommendation = result.getRecommendation().getRecommendation();
+                return recommendation != null &&
+                        (recommendation.equalsIgnoreCase("매수") ||
+                                recommendation.equalsIgnoreCase("Buy"));
+            }
+            return false;
         }
 
         public List<CoinInfo> getOriginalList() {
@@ -568,7 +646,6 @@ public class CoinListFragment extends Fragment {
             holder.tvCoinSymbol.setText(coin.getSymbol());
 
             // 코인 이름 (비트코인/Bitcoin, 이더리움/Ethereum, ...)
-            // 언어 설정은 Android 시스템이 자동으로 처리
             String displayName = coin.getKoreanName();
 
             // 프리미엄 코인 표시
@@ -587,9 +664,23 @@ public class CoinListFragment extends Fragment {
                     android.graphics.Color.rgb(76, 175, 80) : // 상승: 초록색
                     android.graphics.Color.rgb(244, 67, 54)); // 하락: 빨간색
 
-            // 분석 결과 관련 부분
-            holder.tvAnalysisRecommendation.setVisibility(View.GONE);
-            holder.cardView.setStrokeWidth(0);
+            // 분석 결과의 추천 상태 표시
+            boolean isBuyRecommended = isBuyRecommended(coin.getSymbol());
+            if (isBuyRecommended) {
+                // 매수 추천 표시
+                holder.tvAnalysisRecommendation.setVisibility(View.VISIBLE);
+                holder.tvAnalysisRecommendation.setText(context.getString(R.string.buy_recommendation1));
+                holder.tvAnalysisRecommendation.setTextColor(android.graphics.Color.rgb(76, 175, 80)); // 녹색
+
+                // 카드 테두리만 얇게 적용 (1dp)
+                holder.cardView.setStrokeWidth(4); // 얇은 테두리
+                holder.cardView.setStrokeColor(android.graphics.Color.rgb(76, 175, 80)); // 녹색 테두리
+                // 배경색은 변경하지 않음 - 기본 흰색 유지
+            } else {
+                // 비 매수 추천 코인은 강조 없음
+                holder.tvAnalysisRecommendation.setVisibility(View.GONE);
+                holder.cardView.setStrokeWidth(0); // 테두리 없음
+            }
 
             // 클릭 리스너
             holder.itemView.setOnClickListener(v -> {

@@ -52,5 +52,9 @@ public class LocaleHelper {
         }
 
         resources.updateConfiguration(config, resources.getDisplayMetrics());
+
+        // 언어 변경 플래그 설정 (활동 재시작용)
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("language_changed", true).apply();
     }
 }
