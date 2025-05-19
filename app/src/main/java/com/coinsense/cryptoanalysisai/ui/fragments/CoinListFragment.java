@@ -86,7 +86,8 @@ public class CoinListFragment extends Fragment {
             exchangeType = ExchangeType.BINANCE;
         }
 
-        analysisApiService = AnalysisApiService.getInstance();
+        analysisApiService = AnalysisApiService.getInstance(requireContext());  // context 전달
+
     }
 
     @Nullable

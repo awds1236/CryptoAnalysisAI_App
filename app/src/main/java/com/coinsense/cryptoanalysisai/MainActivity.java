@@ -174,6 +174,24 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
         super.onResume();
         isAutoRefreshEnabled = true;
         startPriceUpdates();
+
+        // 언어가 변경되었는지 확인
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        boolean languageChanged = prefs.getBoolean("language_changed", false);
+
+        if (languageChanged) {
+            // 언어 변경 플래그 초기화
+            prefs.edit().putBoolean("language_changed", false).apply();
+
+            // 분석 결과 다시 로드
+            if (selectedCoin != null) {
+                AnalysisFragment analysisFragment = (AnalysisFragment) getSupportFragmentManager()
+                        .findFragmentByTag("f1");
+                if (analysisFragment != null) {
+                    analysisFragment.loadAnalysisFromApi();
+                }
+            }
+        }
     }
 
     @Override

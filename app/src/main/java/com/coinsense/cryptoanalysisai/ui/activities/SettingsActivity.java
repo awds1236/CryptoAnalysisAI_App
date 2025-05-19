@@ -103,10 +103,20 @@ public class SettingsActivity extends BaseActivity {
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
+        // 이전 언어 설정 저장
+        String oldLanguage = prefs.getString(PREF_LANGUAGE, "ko");
+
         // 변경된 설정 저장
         editor.putBoolean(PREF_DARK_MODE, tempIsDarkMode);
         editor.putString(PREF_LANGUAGE, tempLanguage);
         editor.apply();
+
+        // 언어가 변경되었는지 확인
+        if (!oldLanguage.equals(tempLanguage)) {
+            // 언어 변경을 위한 플래그 설정
+            editor.putBoolean("language_changed", true);
+            editor.apply();
+        }
 
         // 앱 재시작
         recreateApp();
