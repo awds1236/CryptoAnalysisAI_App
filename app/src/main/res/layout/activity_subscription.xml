@@ -14,7 +14,7 @@
             android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="프리미엄 구독"
+            android:text="@string/subscription_title"
             android:textSize="24sp"
             android:textStyle="bold"
             app:layout_constraintTop_toTopOf="parent" />
@@ -24,7 +24,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="프리미엄 구독자만 암호화폐 AI 매매 전략을 확인할 수 있습니다."
+            android:text="@string/subscription_description"
             app:layout_constraintTop_toBottomOf="@id/tvTitle" />
 
         <TextView
@@ -63,7 +63,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="월간 구독"
+                    android:text="@string/subscription_monthly"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -71,20 +71,20 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="월 15,000원" />
+                    android:text="@string/subscription_monthly_price" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="• 프리미엄 코인 전략 분석 독점 이용\n• 광고 시청 없이 모든 분석 이용\n• 지지선/저항선 분석 확인" />
+                    android:text="@string/subscription_features" />
 
                 <Button
                     android:id="@+id/btnMonthlySubscription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="월간 구독하기" />
+                    android:text="@string/subscribe_button" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -106,7 +106,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="연간 구독 (30% 할인)"
+                    android:text="@string/subscription_yearly"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -114,20 +114,20 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="연 126,000원 (월 10,500원)" />
+                    android:text="@string/subscription_yearly_price" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="• 프리미엄 코인 전략 분석 독점 이용\n• 광고 시청 없이 모든 분석 이용\n• 지지선/저항선 분석 확인" />
+                    android:text="@string/subscription_features" />
 
                 <Button
                     android:id="@+id/btnYearlySubscription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="연간 구독하기" />
+                    android:text="@string/subscribe_button" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -136,7 +136,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="구독 취소하기"
+            android:text="@string/cancel_subscription"
             android:textColor="#F44336"
             android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@id/cardYearly" />
@@ -147,7 +147,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="16dp"
-            android:text="닫기"
+            android:text="@string/close"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnCancelSubscription" />
 

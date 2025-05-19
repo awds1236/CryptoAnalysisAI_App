@@ -246,9 +246,9 @@ public class AnalysisFragment extends Fragment {
         this.exchangeType = exchangeType;
 
         if (binding != null && coinInfo != null && isAdded()) {
-            // 타이틀 설정
+            // 타이틀 설정 - 심볼 중복 추가 없이 displayName만 사용
             binding.tvCoinTitle.setText(coinInfo.getDisplayName() != null ?
-                    coinInfo.getDisplayName() + " (" + coinInfo.getSymbol() + ")" : coinInfo.getMarket());
+                    coinInfo.getDisplayName() : coinInfo.getMarket());
 
             // 거래소 정보 설정 - 리소스 사용
             binding.tvExchangeInfo.setText(getString(R.string.exchange_info,

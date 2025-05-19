@@ -446,32 +446,35 @@
             <Button
                 android:id="@+id/btnTechnicalSubscribe"
                 android:layout_width="match_parent"
-                android:layout_height="45dp"
+                android:layout_height="50dp"
                 android:layout_gravity="center"
                 android:layout_marginHorizontal="32dp"
-                android:layout_marginTop="-10dp"
+                android:layout_marginTop="-20dp"
+                android:drawablePadding="4dp"
                 android:background="@drawable/rounded_button"
                 android:text="@string/premium_subscription_button"
                 android:textColor="#FFFFFF"
-                android:textSize="16sp"
+                android:textSize="13sp"
                 android:elevation="10dp"
+                android:stateListAnimator="@null"
                 android:visibility="visible" />
 
             <!-- For btnTechnicalWatchAd, adjust positioning -->
             <Button
                 android:id="@+id/btnTechnicalWatchAd"
                 android:layout_width="match_parent"
-                android:layout_height="45dp"
+                android:layout_height="50dp"
                 android:layout_gravity="center"
                 android:layout_marginHorizontal="32dp"
                 android:layout_marginTop="50dp"
                 android:background="@drawable/rounded_button"
                 android:drawableStart="@android:drawable/ic_menu_view"
-                android:drawablePadding="8dp"
+                android:drawablePadding="4dp"
                 android:text="@string/watch_ad_button"
                 android:textColor="#FFFFFF"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:elevation="10dp"
+                android:stateListAnimator="@null"
                 android:visibility="visible" />
         </FrameLayout>
 
