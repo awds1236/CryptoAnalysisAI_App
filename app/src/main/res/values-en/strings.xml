@@ -227,4 +227,12 @@
 
     <string name="date_format">MMMM dd, yyyy HH:00</string>
     <string name="analysis_timestamp_format">Analyzed on %s</string>
+
+    <string name="back">Back</string>
+    <string name="cross_signal">Golden / Death Cross Signal</string>
+    <string name="long_short_ratio">Long:Short Position Ratio</string>
+
+    <string name="entry_point">Entry Point</string>
+    <string name="masked_strategy_content">*** *** ***** (Available with Premium Subscription)</string>
+    <string name="see_more_strategies">+ More strategy information available after subscription</string>
 </resources>

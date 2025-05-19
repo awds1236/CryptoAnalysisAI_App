@@ -554,13 +554,12 @@ public class StrategyFragment extends Fragment {
             btnSubscribe.setVisibility(View.GONE);
             btnWatchAd.setVisibility(View.GONE);
 
-            // 중요: 구독자가 아니고 광고 시청한 경우 남은 시간 표시
-            if (!isSubscribed && hasAdPermission && tvAdStatus != null) {
+            // 구독자가 아니고 광고 시청한 경우 남은 시간 표시
+            if (!isSubscribed && hasAdPermission) {
                 int remainingMinutes = adManager.getRemainingMinutes(coinInfo.getSymbol());
                 tvAdStatus.setVisibility(View.VISIBLE);
-                // 문자열 리소스 사용
                 tvAdStatus.setText(getString(R.string.ad_remaining_minutes_format, remainingMinutes));
-            } else if (tvAdStatus != null) {
+            } else {
                 tvAdStatus.setVisibility(View.GONE);
             }
 
@@ -589,10 +588,9 @@ public class StrategyFragment extends Fragment {
             pixelatedOverlay.setVisibility(View.VISIBLE);
             additionalBlurLayer.setVisibility(View.VISIBLE);
             contentArea.setAlpha(0.5f);
-
-            // 구독 버튼 및 광고 버튼 표시
             btnSubscribe.setVisibility(View.VISIBLE);
             btnWatchAd.setVisibility(isPremiumCoin ? View.GONE : View.VISIBLE);
+            tvAdStatus.setVisibility(View.GONE);
 
             // 버튼 위치 조정 - btnWatchAd의 margin을 설정
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) btnWatchAd.getLayoutParams();
@@ -601,8 +599,11 @@ public class StrategyFragment extends Fragment {
                 btnWatchAd.setLayoutParams(params);
             }
 
-            // 광고 상태 숨김
-            tvAdStatus.setVisibility(View.GONE);
+            // 콘텐츠 마스킹 처리 - 리소스 사용으로 변경
+            tvTargetPrice.setText(getString(R.string.masked_content));
+            tvStopLoss.setText(getString(R.string.masked_content));
+            tvRiskReward.setText(getString(R.string.masked_content_short));
+            tvStrategyDetail.setText(getString(R.string.masked_content));
 
             // 콘텐츠 마스킹 코드...
         }
@@ -703,15 +704,16 @@ public class StrategyFragment extends Fragment {
         String price = String.format("%s%,.2f", currencySymbol, step.getPrice());
         // 가격 일부만 보이게 처리
         String maskedPrice = price.substring(0, Math.min(price.length(), 2)) + "********";
-        String title = emoji + "진입점: " + maskedPrice;
+        // 리소스 사용으로 변경
+        String title = emoji + getString(R.string.entry_point) + ": " + maskedPrice;
 
         tvBuyStepTitle.setText(title);
         tvBuyStepTitle.setTextColor(Color.parseColor("#4CAF50")); // 녹색
 
         tvBuyStepPercentage.setText("**%");
 
-        // 설명 모두 마스킹
-        tvBuyStepDescription.setText("*** *** ***** (프리미엄 구독 시 확인 가능)");
+        // 설명 모두 마스킹 - 리소스 사용으로 변경
+        tvBuyStepDescription.setText(getString(R.string.masked_strategy_content));
 
         // 아이템 반투명하게 설정
         itemView.setAlpha(0.3f);
@@ -719,9 +721,9 @@ public class StrategyFragment extends Fragment {
         // 컨테이너에 추가
         container.addView(itemView);
 
-        // "더 보기" 텍스트 추가
+        // "더 보기" 텍스트 추가 - 리소스 사용으로 변경
         TextView tvMore = new TextView(getContext());
-        tvMore.setText("+ 더 많은 전략 정보는 구독 후 확인 가능");
+        tvMore.setText(getString(R.string.see_more_strategies));
         tvMore.setTextSize(14);
         tvMore.setTypeface(null, Typeface.ITALIC);
         tvMore.setTextColor(Color.GRAY);
