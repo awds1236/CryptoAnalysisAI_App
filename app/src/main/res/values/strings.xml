@@ -231,6 +231,14 @@
     <string name="date_format">yyyy년 MM월 dd일 HH시</string>
     <string name="analysis_timestamp_format">%s에 분석됨</string>
 
+    <string name="back">뒤로가기</string>
+    <string name="cross_signal">골든 / 데드 크로스 신호</string>
+    <string name="long_short_ratio">롱:숏 포지션 비율</string>
+
+    <string name="entry_point">진입점</string>
+    <string name="masked_strategy_content">*** *** ***** (프리미엄 구독 시 확인 가능)</string>
+    <string name="see_more_strategies">+ 더 많은 전략 정보는 구독 후 확인 가능</string>
+
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->
     <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>

@@ -26,7 +26,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="뒤로가기"
+                android:contentDescription="@string/back"
                 android:src="@android:drawable/ic_menu_revert"
                 android:padding="8dp"/>
 
@@ -65,7 +65,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="분석 시작"
+            android:text="@string/analysis_loading"
             app:layout_constraintTop_toBottomOf="@id/tvExchangeInfo" />
 
         <!-- 현재가 위치 정보 (카드가 아닌 독립 뷰로) -->
@@ -98,7 +98,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="분석 요약"
+                    android:text="@string/analysis_title"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -129,7 +129,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="매수/매도 추천"
+                    android:text="@string/recommendation_title"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -167,7 +167,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="신뢰도"
+                        android:text="@string/confidence"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -190,9 +190,6 @@
                         android:textStyle="bold"
                         tools:text="7.0/10" />
                 </LinearLayout>
-
-
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -232,7 +229,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="시간별 전망"
+                    android:text="@string/outlook_title"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -240,7 +237,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="단기 (24시간)"
+                    android:text="@string/short_term"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -255,7 +252,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="중기 (1주일)"
+                    android:text="@string/mid_term"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -270,7 +267,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="장기 (1개월)"
+                    android:text="@string/long_term"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -307,7 +304,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="기술적 분석"
+                        android:text="@string/technical_analysis"
                         android:textSize="18sp"
                         android:textStyle="bold" />
 
@@ -315,7 +312,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="주요 지지선"
+                        android:text="@string/support_levels"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -330,7 +327,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="주요 저항선"
+                        android:text="@string/resistance_levels"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -345,7 +342,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="추세 강도"
+                        android:text="@string/trend_strength"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -360,7 +357,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="주요 패턴"
+                        android:text="@string/pattern"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -375,7 +372,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="골든 / 데드 크로스 신호"
+                        android:text="@string/cross_signal"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -391,7 +388,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="롱:숏 포지션 비율"
+                        android:text="@string/long_short_ratio"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
@@ -454,7 +451,7 @@
                 android:layout_marginHorizontal="32dp"
                 android:layout_marginTop="-10dp"
                 android:background="@drawable/rounded_button"
-                android:text="프리미엄 구독으로 기술적 분석 보기"
+                android:text="@string/premium_subscription_button"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:elevation="10dp"
@@ -471,7 +468,7 @@
                 android:background="@drawable/rounded_button"
                 android:drawableStart="@android:drawable/ic_menu_view"
                 android:drawablePadding="8dp"
-                android:text="광고 보고 10분 동안 보기"
+                android:text="@string/watch_ad_button"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:elevation="10dp"
@@ -496,7 +493,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="위험 요소"
+                    android:text="@string/risk_factors"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 

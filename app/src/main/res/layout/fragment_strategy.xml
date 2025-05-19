@@ -163,31 +163,29 @@
         android:layout_height="45dp"
         android:layout_gravity="center"
         android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="-10dp"
         android:background="@drawable/rounded_button"
-        android:drawableStart="@drawable/ic_lock"
-        android:drawablePadding="8dp"
-        android:text="프리미엄 구독으로 매매 전략 보기"
+        android:text="@string/premium_subscription_button"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
-        android:elevation="4dp"
+        android:elevation="10dp"
         android:visibility="visible" />
 
-    <!-- 광고 보기 버튼 추가 -->
+    <!-- 광고 시청 버튼 -->
     <Button
         android:id="@+id/btnWatchAd"
         android:layout_width="match_parent"
         android:layout_height="45dp"
         android:layout_gravity="center"
         android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="50dp"
         android:background="@drawable/rounded_button"
-        android:drawableStart="@drawable/ic_lock"
+        android:drawableStart="@android:drawable/ic_menu_view"
         android:drawablePadding="8dp"
-        android:text="광고 보고 10분 동안 보기"
+        android:text="@string/watch_ad_button"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
-        android:elevation="4dp"
+        android:elevation="10dp"
         android:visibility="visible" />
 
 
