@@ -19,7 +19,8 @@ public interface LambdaApiService {
     @GET("api/analyses/{coin_symbol}")
     Call<AnalysisResult> getLatestAnalysis(
             @Path("coin_symbol") String coinSymbol,
-            @Query("exchange") String exchange
+            @Query("exchange") String exchange,
+            @Query("language") String language  // 언어 파라미터 추가
     );
 
     /**
@@ -27,6 +28,7 @@ public interface LambdaApiService {
      */
     @GET("api/analyses")
     Call<List<AnalysisResult>> getAllLatestAnalyses(
-            @Query("exchange") String exchange
+            @Query("exchange") String exchange,
+            @Query("language") String language  // 언어 파라미터 추가
     );
 }

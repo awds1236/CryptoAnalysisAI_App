@@ -8,41 +8,52 @@ import java.util.Map;
 
 public class AnalysisResult {
 
-    @SerializedName("통화단위")
+    // 원래 한국어 필드명과 영어 필드명 모두 지원
+    @SerializedName(value = "통화단위", alternate = {"currency_unit"})
     private String currencySymbol;
 
-    @SerializedName("거래소")
+    @SerializedName(value = "거래소", alternate = {"exchange"})
     private String exchange;
 
-    @SerializedName("분석_요약")
+    @SerializedName(value = "분석_요약", alternate = {"analysis_summary"})
     private String summary;
 
-    @SerializedName("매수매도_추천")
+    @SerializedName(value = "매수매도_추천", alternate = {"buy_sell_recommendation"})
     private Recommendation recommendation;
 
     // 단기/중기/장기 전략으로 분리
-    @SerializedName("단기_전략")
+    @SerializedName(value = "단기_전략", alternate = {"short_term_strategy"})
     private Strategy shortTermStrategy;
 
-    @SerializedName("중기_전략")
+    @SerializedName(value = "중기_전략", alternate = {"mid_term_strategy"})
     private Strategy midTermStrategy;
 
-    @SerializedName("장기_전략")
+    @SerializedName(value = "장기_전략", alternate = {"long_term_strategy"})
     private Strategy longTermStrategy;
 
-    @SerializedName("시간별_전망")
+    @SerializedName(value = "시간별_전망", alternate = {"time_based_outlook"})
     private Outlook outlook;
 
-    @SerializedName("기술적_분석")
+    @SerializedName(value = "기술적_분석", alternate = {"technical_analysis"})
     private TechnicalAnalysis technicalAnalysis;
 
-    @SerializedName("위험_요소")
+    @SerializedName(value = "위험_요소", alternate = {"risk_factors"})
     private List<String> riskFactors;
 
     @SerializedName("coin_symbol")
     private String coinSymbol;
 
+    // 언어 필드 추가
+    @SerializedName("language")
+    private String language;
 
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
 
     public String getCoinSymbol() {
         return coinSymbol;
@@ -63,26 +74,22 @@ public class AnalysisResult {
         this.timestamp = timestamp;
     }
 
-
-
     // 내부 클래스 정의
     public static class Recommendation {
-        @SerializedName("매수_확률")
+        @SerializedName(value = "매수_확률", alternate = {"buy_probability"})
         private double buyProbability;
 
-        @SerializedName("매도_확률")
+        @SerializedName(value = "매도_확률", alternate = {"sell_probability"})
         private double sellProbability;
 
-        @SerializedName("추천")
+        @SerializedName(value = "추천", alternate = {"recommendation"})
         private String recommendation;
 
-        @SerializedName("신뢰도")
+        @SerializedName(value = "신뢰도", alternate = {"confidence"})
         private double confidence;
 
-        @SerializedName("근거")
+        @SerializedName(value = "근거", alternate = {"reason"})
         private String reason;
-
-
 
         // Getters and Setters
         public double getBuyProbability() {
@@ -127,22 +134,22 @@ public class AnalysisResult {
     }
 
     public static class Strategy {
-        @SerializedName("기간")
+        @SerializedName(value = "기간", alternate = {"period"})
         private String period;
 
-        @SerializedName("매수_분할")
+        @SerializedName(value = "매수_분할", alternate = {"buying_steps"})
         private List<TradingStep> buySteps;
 
-        @SerializedName("수익실현_목표가")
+        @SerializedName(value = "수익실현_목표가", alternate = {"target_prices"})
         private List<Double> targetPrices;
 
-        @SerializedName("손절매_라인")
+        @SerializedName(value = "손절매_라인", alternate = {"stop_loss"})
         private double stopLoss;
 
-        @SerializedName("리스크_보상_비율")
+        @SerializedName(value = "리스크_보상_비율", alternate = {"risk_reward_ratio"})
         private double riskRewardRatio;
 
-        @SerializedName("전략_설명")
+        @SerializedName(value = "전략_설명", alternate = {"strategy_explanation"})
         private String explanation;
 
         // Getters and Setters
@@ -196,13 +203,13 @@ public class AnalysisResult {
 
         // 매매 단계 클래스
         public static class TradingStep {
-            @SerializedName("가격")
+            @SerializedName(value = "가격", alternate = {"price"})
             private double price;
 
-            @SerializedName("비율")
+            @SerializedName(value = "비율", alternate = {"ratio"})
             private int percentage;
 
-            @SerializedName("설명")
+            @SerializedName(value = "설명", alternate = {"description"})
             private String description;
 
             // Getters and Setters
@@ -233,13 +240,13 @@ public class AnalysisResult {
     }
 
     public static class Outlook {
-        @SerializedName("단기_24시간")
+        @SerializedName(value = "단기_24시간", alternate = {"short_term_24h"})
         private String shortTerm;
 
-        @SerializedName("중기_1주일")
+        @SerializedName(value = "중기_1주일", alternate = {"mid_term_1week"})
         private String midTerm;
 
-        @SerializedName("장기_1개월")
+        @SerializedName(value = "장기_1개월", alternate = {"long_term_1month"})
         private String longTerm;
 
         // Getters and Setters
@@ -269,28 +276,28 @@ public class AnalysisResult {
     }
 
     public static class TechnicalAnalysis {
-        @SerializedName("주요_지지선")
+        @SerializedName(value = "주요_지지선", alternate = {"key_support_levels"})
         private List<Double> supportLevels;
 
-        @SerializedName("주요_저항선")
+        @SerializedName(value = "주요_저항선", alternate = {"key_resistance_levels"})
         private List<Double> resistanceLevels;
 
-        @SerializedName("추세_강도")
+        @SerializedName(value = "추세_강도", alternate = {"trend_strength"})
         private String trendStrength;
 
-        @SerializedName("주요_패턴")
+        @SerializedName(value = "주요_패턴", alternate = {"major_pattern"})
         private String pattern;
 
-        @SerializedName("이동평균선_신호")
+        @SerializedName(value = "이동평균선_신호", alternate = {"moving_average_signal"})
         private String crossSignal;
 
-        @SerializedName("매수매도_세력_비율")
+        @SerializedName(value = "매수매도_세력_비율", alternate = {"buy_sell_ratio"})
         private double buySellRatio;
 
-        @SerializedName("롱_비율")
+        @SerializedName(value = "롱_비율", alternate = {"long_ratio"})
         private double longPercent = 50.0;
 
-        @SerializedName("숏_비율")
+        @SerializedName(value = "숏_비율", alternate = {"short_ratio"})
         private double shortPercent = 50.0;
 
         // Getter와 Setter 추가
@@ -312,7 +319,6 @@ public class AnalysisResult {
         public void put(String key, Object value) {
             additionalData.put(key, value);
         }
-
 
         // Getters and Setters
         public List<Double> getSupportLevels() {
@@ -444,5 +450,4 @@ public class AnalysisResult {
     public void setRiskFactors(List<String> riskFactors) {
         this.riskFactors = riskFactors;
     }
-
 }

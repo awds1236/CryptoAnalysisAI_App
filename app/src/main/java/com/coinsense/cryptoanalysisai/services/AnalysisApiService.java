@@ -1,5 +1,7 @@
 package com.coinsense.cryptoanalysisai.services;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -7,6 +9,7 @@ import android.util.Log;
 import com.coinsense.cryptoanalysisai.api.LambdaApiService;
 import com.coinsense.cryptoanalysisai.api.RetrofitClient;
 import com.coinsense.cryptoanalysisai.models.AnalysisResult;
+import com.coinsense.cryptoanalysisai.utils.Constants;
 
 import java.util.List;
 
@@ -25,14 +28,16 @@ public class AnalysisApiService {
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
     private static AnalysisApiService instance;
     private final LambdaApiService apiService;
+    private Context context;  // 언어 설정을 가져오기 위한 컨텍스트 추가
 
-    private AnalysisApiService() {
+    private AnalysisApiService(Context context) {
+        this.context = context.getApplicationContext();
         apiService = RetrofitClient.getLambdaApiService();
     }
 
-    public static synchronized AnalysisApiService getInstance() {
+    public static synchronized AnalysisApiService getInstance(Context context) {
         if (instance == null) {
-            instance = new AnalysisApiService();
+            instance = new AnalysisApiService(context);
         }
         return instance;
     }
@@ -46,8 +51,11 @@ public class AnalysisApiService {
             return;
         }
 
-        // 쿼리 파라미터를 URL에 직접 추가
-        apiService.getLatestAnalysis(coinSymbol, "binance")
+        // 현재 설정된 언어 가져오기
+        String language = getCurrentLanguage();
+
+        // 쿼리 파라미터를 URL에 직접 추가 (언어 파라미터 포함)
+        apiService.getLatestAnalysis(coinSymbol, "binance", language)
                 .enqueue(new Callback<AnalysisResult>() {
                     @Override
                     public void onResponse(Call<AnalysisResult> call, Response<AnalysisResult> response) {
@@ -82,7 +90,10 @@ public class AnalysisApiService {
             return;
         }
 
-        apiService.getAllLatestAnalyses("binance")
+        // 현재 설정된 언어 가져오기
+        String language = getCurrentLanguage();
+
+        apiService.getAllLatestAnalyses("binance", language)
                 .enqueue(new Callback<List<AnalysisResult>>() {
                     @Override
                     public void onResponse(Call<List<AnalysisResult>> call, Response<List<AnalysisResult>> response) {
@@ -101,6 +112,14 @@ public class AnalysisApiService {
                         listener.onFailure(errorMessage);
                     }
                 });
+    }
+
+    /**
+     * 현재 설정된 언어 코드 반환 (기본값: ko)
+     */
+    private String getCurrentLanguage() {
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getString("pref_language", "ko"); // 기본값은 한국어
     }
 
     // 콜백 인터페이스

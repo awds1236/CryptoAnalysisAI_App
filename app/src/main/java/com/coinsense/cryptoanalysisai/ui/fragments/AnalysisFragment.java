@@ -1,6 +1,8 @@
 package com.coinsense.cryptoanalysisai.ui.fragments;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -122,7 +124,7 @@ public class AnalysisFragment extends Fragment {
             exchangeType = ExchangeType.BINANCE;
         }
 
-        analysisApiService = AnalysisApiService.getInstance();
+        analysisApiService = AnalysisApiService.getInstance(requireContext());  // context 전달
         subscriptionManager = SubscriptionManager.getInstance(requireContext());
         adManager = AdManager.getInstance(requireContext());
 
@@ -500,6 +502,17 @@ public class AnalysisFragment extends Fragment {
     private void updateAnalysisUI() {
         if (binding == null || analysisResult == null) return;
 
+        // 분석 결과의 언어 확인
+        String analysisLanguage = analysisResult.getLanguage();
+        // 현재 설정된 앱 언어 확인
+        SharedPreferences prefs = getContext().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        String appLanguage = prefs.getString("pref_language", "ko"); // 기본값은 한국어
+
+        // 언어가 일치하지 않는 경우 로그 출력
+        if (!appLanguage.equals(analysisLanguage)) {
+            Log.w(TAG, "앱 언어와 분석 결과 언어가 일치하지 않습니다. 앱: " + appLanguage + ", 분석: " + analysisLanguage);
+        }
+
         // coinInfo 확인
         if (coinInfo == null) {
             Log.e("AnalysisFragment", "updateAnalysisUI: coinInfo is null");
@@ -508,6 +521,8 @@ public class AnalysisFragment extends Fragment {
         }
 
         boolean isSubscribed = subscriptionManager != null && subscriptionManager.isSubscribed();
+
+
 
 
         // 분석 시간 표시
