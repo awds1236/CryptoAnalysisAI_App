@@ -142,12 +142,10 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
 
             // 구독 버튼 활성화, 구독 취소 버튼 비활성화
             binding.btnCancelSubscription.setVisibility(View.GONE);
-            binding.btnMonthlySubscription.setText(
-                    getString(R.string.subscribe_to_format, subscriptionManager.getMonthlyPrice()));
-            binding.btnMonthlySubscription.setEnabled(true);
-            binding.btnYearlySubscription.setText(
-                    getString(R.string.subscribe_to_format, subscriptionManager.getYearlyPrice()));
-            binding.btnYearlySubscription.setEnabled(true);
+            binding.btnMonthlySubscription.setText(getString(R.string.subscribe_to_format,
+                    getString(R.string.subscription_monthly_price)));
+            binding.btnYearlySubscription.setText(getString(R.string.subscribe_to_format,
+                    getString(R.string.subscription_yearly_price)));
         }
 
         binding.progressBar.setVisibility(View.GONE);
