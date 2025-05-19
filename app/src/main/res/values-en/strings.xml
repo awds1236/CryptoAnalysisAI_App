@@ -57,7 +57,7 @@
     <string name="subscription_title">Premium Subscription</string>
     <string name="subscription_description">Only premium subscribers can access AI cryptocurrency trading strategies.</string>
     <string name="subscription_monthly">Monthly Subscription</string>
-    <string name="subscription_yearly">Annual Subscription (20% discount)</string>
+    <string name="subscription_yearly">Annual Subscription (30% discount)</string>
     <string name="subscription_monthly_price">$10.7/month</string>
     <string name="subscription_yearly_price">$90.00/year ($7.5/month)</string>
     <string name="subscription_features">• View strategy analysis for all coins\n• Check real-time trading signals\n• View support/resistance level analysis</string>

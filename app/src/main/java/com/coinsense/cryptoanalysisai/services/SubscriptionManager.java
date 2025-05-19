@@ -1,5 +1,7 @@
 package com.coinsense.cryptoanalysisai.services;
 
+import com.coinsense.cryptoanalysisai.R;
+
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -208,31 +210,16 @@ public class SubscriptionManager {
     /**
      * 월간 구독 가격 반환
      */
+    // getMonthlyPrice() 메서드 수정
     public String getMonthlyPrice() {
-        FirebaseSubscriptionManager.SubscriptionData data =
-                firebaseSubscriptionManager.getCachedSubscriptionData();
-
-        if (data == null) {
-            return "월 ₩15,000";
-        }
-
-        return data.getMonthlyPrice();
+        // 항상 문자열 리소스에서 가져오기
+        return context.getString(R.string.subscription_monthly_price);
     }
 
-    /**
-     * 연간 구독 가격 반환
-     */
     public String getYearlyPrice() {
-        FirebaseSubscriptionManager.SubscriptionData data =
-                firebaseSubscriptionManager.getCachedSubscriptionData();
-
-        if (data == null) {
-            return "연 ₩125,000 (월 ₩10,400)";
-        }
-
-        return data.getYearlyPrice();
+        // 항상 문자열 리소스에서 가져오기
+        return context.getString(R.string.subscription_yearly_price);
     }
-
     /**
      * 구독이 자동 갱신 상태인지 확인
      */
