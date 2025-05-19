@@ -12,6 +12,7 @@
     <string name="analysis_title">분석 요약</string>
     <string name="recommendation_title">매수/매도 추천</string>
     <string name="strategy_title">매매 전략</string>
+    <string name="entry_strategy">진입 전략</string>
     <string name="target_price">수익실현 목표가</string>
     <string name="stop_loss">손절매 라인</string>
     <string name="risk_reward">리스크 대비 보상 비율</string>
@@ -61,7 +62,7 @@
     <string name="subscription_title">프리미엄 구독</string>
     <string name="subscription_description">프리미엄 구독자만 암호화폐 AI 매매 전략을 확인할 수 있습니다.</string>
     <string name="subscription_monthly">월간 구독</string>
-    <string name="subscription_yearly">연간 구독 (20% 할인)</string>
+    <string name="subscription_yearly">연간 구독 (30% 할인)</string>
     <string name="subscription_monthly_price">월 15,000원</string>
     <string name="subscription_yearly_price">연 125,000원 (월 10,400원)</string>
     <string name="subscription_features">• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인</string>
@@ -252,6 +253,13 @@
     <string name="no_information">정보 없음</string>
     <string name="target_price_format">목표 %d: %s</string>
 
+    <string name="app_description">AI가 분석한 암호화폐 시장 분석 및 투자 전략</string>
+    <string name="google_sign_in">Google 계정으로 로그인</string>
+    <string name="terms_agreement">로그인함으로써 이용약관 및 개인정보처리방침에 동의합니다.</string>
+
+    <!-- 메뉴 항목 -->
+    <string name="action_subscription">구독하기</string>
+    <string name="action_logout">로그아웃</string>
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->
     <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>

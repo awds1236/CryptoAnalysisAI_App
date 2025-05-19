@@ -545,6 +545,19 @@ public class StrategyFragment extends Fragment {
             isPremiumCoin = coinInfo.isPremium(); // 여기서 프리미엄 플래그 사용
         }
 
+        if (!isSubscribed && !hasAdPermission) {
+            // 마스킹 처리 - 언어별 리소스 사용
+            tvTargetPrice.setText(getString(R.string.masked_content));
+            tvStopLoss.setText(getString(R.string.masked_content));
+            tvRiskReward.setText(getString(R.string.masked_content_short));
+            tvStrategyDetail.setText(getString(R.string.masked_strategy_content));
+
+            // 첫 번째 매수 단계만 블러 처리
+            if (strategy != null && strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
+                displayFirstBuyStepWithBlur(layoutBuySteps, strategy.getBuySteps().get(0));
+            }
+        }
+
         if (isSubscribed || hasAdPermission) {
             // 구독자이거나 광고 시청한 경우 콘텐츠 표시
             blurOverlay.setVisibility(View.GONE);
@@ -700,32 +713,29 @@ public class StrategyFragment extends Fragment {
         TextView tvBuyStepPercentage = itemView.findViewById(R.id.tvBuyStepPercentage);
         TextView tvBuyStepDescription = itemView.findViewById(R.id.tvBuyStepDescription);
 
-        // 첫 진입점 표시 - 일부만 보이고 나머지는 별표로
+        // 진입점 표시 - 언어 리소스 사용
         String emoji = "1️⃣ ";
-        String price = String.format("%s%,.2f", currencySymbol, step.getPrice());
-        // 가격 일부만 보이게 처리
-        String maskedPrice = price.substring(0, Math.min(price.length(), 2)) + "********";
-        // 리소스 사용으로 변경
-        String title = emoji + getString(R.string.entry_point) + ": " + maskedPrice;
+        String entryPoint = getString(R.string.entry_point); // 언어별 리소스 사용
+        String maskedPrice = "****"; // 완전히 마스킹 처리
+        String title = emoji + entryPoint + ": " + maskedPrice;
 
         tvBuyStepTitle.setText(title);
-        tvBuyStepTitle.setTextColor(Color.parseColor("#4CAF50")); // 녹색
+        tvBuyStepTitle.setTextColor(Color.parseColor("#4CAF50"));
 
         tvBuyStepPercentage.setText("**%");
 
-        // 설명 모두 마스킹 - 리소스 사용으로 변경
+        // 마스킹된 콘텐츠 - 언어별 리소스 사용
         tvBuyStepDescription.setText(getString(R.string.masked_strategy_content));
 
-        // 아이템 반투명하게 설정
+        // 아이템 투명도 조정
         itemView.setAlpha(0.3f);
 
-        // 컨테이너에 추가
         container.addView(itemView);
 
-        // "더 보기" 텍스트 추가 - 리소스 사용으로 변경
+        // "더 보기" 텍스트 추가 - 언어별 리소스 사용
         TextView tvMore = new TextView(getContext());
         tvMore.setText(getString(R.string.see_more_strategies));
-        tvMore.setTextSize(14);
+        tvMore.setTextSize(12); // 글자 크기 줄임
         tvMore.setTypeface(null, Typeface.ITALIC);
         tvMore.setTextColor(Color.GRAY);
         tvMore.setPadding(0, 16, 0, 16);

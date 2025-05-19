@@ -261,10 +261,10 @@ public class CoinListFragment extends Fragment {
 
                             if (isInterestingCoin) {
                                 CoinInfo coinInfo = symbolInfo.toUpbitFormat();
-                                String koreanName = getKoreanName(symbolInfo.getBaseAsset());
-                                coinInfo.setKoreanName(koreanName);
-                                coinInfo.setEnglishName(symbolInfo.getBaseAsset());
-                                coinInfo.setPremium(isPremiumCoin); // 프리미엄 코인 플래그 설정
+                                String localizedName = getKoreanName(symbolInfo.getBaseAsset()); // 현재 언어에 맞는 이름 가져오기
+                                coinInfo.setKoreanName(localizedName);
+                                coinInfo.setEnglishName(localizedName); // 영어 이름에도 현지화된 이름 설정
+                                coinInfo.setPremium(isPremiumCoin);
                                 usdtMarkets.add(coinInfo);
 
                                 // 코인 캐시에 추가
@@ -287,6 +287,28 @@ public class CoinListFragment extends Fragment {
                 showLoading(false);
             }
         });
+    }
+
+    /**
+     * 코인의 영어 이름을 가져오기
+     */
+    private String getEnglishName(String symbol) {
+        // 동일한 리소스 ID를 사용하여 현재 영어 모드에서는 영어 이름을 반환
+        switch (symbol) {
+            case "BTC": return "Bitcoin";
+            case "ETH": return "Ethereum";
+            case "XRP": return "Ripple";
+            case "SOL": return "Solana";
+            case "DOGE": return "Dogecoin";
+            case "ADA": return "Cardano";
+            case "TRX": return "Tron";
+            case "SUI": return "Sui";
+            case "LINK": return "Chainlink";
+            case "AVAX": return "Avalanche";
+            case "XLM": return "Stellar";
+            case "HBAR": return "Hedera";
+            default: return symbol;
+        }
     }
 
     /**

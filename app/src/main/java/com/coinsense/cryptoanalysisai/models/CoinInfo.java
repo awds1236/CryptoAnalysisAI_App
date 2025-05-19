@@ -145,8 +145,12 @@ public class CoinInfo {
         String language = prefs.getString("pref_language", "ko"); // 기본값은 한국어
 
         if ("en".equals(language)) {
-            // 영어 모드일 때는 영문 이름만 표시
-            return englishName != null ? englishName : symbol;
+            // 영어 모드일 때는 영문 이름과 심볼 함께 표시
+            if (englishName != null && !englishName.isEmpty()) {
+                return englishName + " (" + symbol + ")";
+            } else {
+                return symbol != null ? symbol : market;
+            }
         } else {
             // 한국어 모드일 때는 한글 이름과 영문 심볼 함께 표시
             if (koreanName != null && !koreanName.isEmpty()) {

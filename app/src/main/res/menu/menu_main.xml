@@ -10,19 +10,19 @@
 
     <item
         android:id="@+id/action_settings"
-        android:title="설정"
+        android:title="@string/action_settings"
         app:showAsAction="never" />
 
     <!-- app/src/main/res/menu/menu_main.xml 파일에 추가 -->
     <item
         android:id="@+id/action_subscription"
         android:orderInCategory="100"
-        android:title="구독하기"
+        android:title="@string/action_subscription"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_logout"
         android:orderInCategory="101"
-        android:title="로그아웃"
+        android:title="@string/action_logout"
         app:showAsAction="never" />
 </menu>

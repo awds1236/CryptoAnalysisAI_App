@@ -248,4 +248,14 @@
     <string name="no_stop_loss">No stop loss level set</string>
     <string name="no_information">No information</string>
     <string name="target_price_format">Target %d: %s</string>
+
+    <string name="entry_strategy">Entry Strategy</string>
+
+    <string name="app_description">AI analyzed cryptocurrency market analysis and investment strategies</string>
+    <string name="google_sign_in">Sign in with Google account</string>
+    <string name="terms_agreement">By logging in, you agree to the terms of service and privacy policy</string>
+
+    <!-- 메뉴 항목 -->
+    <string name="action_subscription">Subscribe</string>
+    <string name="action_logout">Logout</string>
 </resources>
