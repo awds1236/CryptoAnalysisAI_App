@@ -214,22 +214,22 @@ public class StrategyFragment extends Fragment {
 
         switch (strategyType) {
             case STRATEGY_SHORT_TERM:
-                title = "단기 매매 전략 (24시간)";
+                title = getString(R.string.short_term_strategy_title);
                 titleColor = Color.parseColor("#4CAF50"); // 녹색
                 emoji = "⚡"; // 번개 이모지
                 break;
             case STRATEGY_MID_TERM:
-                title = "중기 매매 전략 (1주일)";
+                title = getString(R.string.mid_term_strategy_title);
                 titleColor = Color.parseColor("#2196F3"); // 파란색
                 emoji = "📈"; // 차트 이모지
                 break;
             case STRATEGY_LONG_TERM:
-                title = "장기 매매 전략 (1개월)";
+                title = getString(R.string.long_term_strategy_title);
                 titleColor = Color.parseColor("#9C27B0"); // 보라색
                 emoji = "🔮"; // 수정구슬 이모지
                 break;
             default:
-                title = "매매 전략";
+                title = getString(R.string.default_strategy_title);
                 titleColor = Color.BLACK;
                 emoji = "📊";
                 break;
@@ -269,8 +269,8 @@ public class StrategyFragment extends Fragment {
                     }
 
                     // 목표 번호와 가격
-                    String targetLabel = String.format(Locale.getDefault(), "목표 %d: %s",
-                            i + 1, displayPrice);
+                    String targetLabel = String.format(Locale.getDefault(),
+                            getString(R.string.target_price_format), i + 1, displayPrice);
 
                     // 색상 코드 등 기존 표시 로직 유지
                     String colorCode;
@@ -290,7 +290,7 @@ public class StrategyFragment extends Fragment {
                 }
                 tvTargetPrice.setText(Html.fromHtml(targetPrices.toString(), Html.FROM_HTML_MODE_LEGACY));
             } else {
-                tvTargetPrice.setText("설정된 목표가 없음");
+                tvTargetPrice.setText(getString(R.string.no_target_prices));
             }
 
             // 손절매 라인 표시
@@ -310,7 +310,7 @@ public class StrategyFragment extends Fragment {
                 tvStopLoss.setText(Html.fromHtml("<font color='#F44336'><b>" + displayStopLoss +
                         "</b></font>", Html.FROM_HTML_MODE_LEGACY));
             } else {
-                tvStopLoss.setText("설정된 손절매 라인 없음");
+                tvStopLoss.setText(getString(R.string.no_stop_loss));
             }
 
             // 리스크 대비 보상 비율 표시
@@ -327,7 +327,7 @@ public class StrategyFragment extends Fragment {
                 String rrText = String.format(Locale.getDefault(), "%.1f:1", strategy.getRiskRewardRatio());
                 tvRiskReward.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" + rrText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
             } else {
-                tvRiskReward.setText("정보 없음");
+                tvRiskReward.setText(getString(R.string.no_information));
             }
 
             // 전략 설명 표시
@@ -335,14 +335,14 @@ public class StrategyFragment extends Fragment {
                 String explanation = highlightStrategyText(strategy.getExplanation());
                 tvStrategyDetail.setText(Html.fromHtml(explanation, Html.FROM_HTML_MODE_LEGACY));
             } else {
-                tvStrategyDetail.setText("전략 설명 없음");
+                tvStrategyDetail.setText(getString(R.string.no_strategy_description));
             }
         } else {
             // 전략 데이터 없음
-            tvTargetPrice.setText("데이터 없음");
-            tvStopLoss.setText("데이터 없음");
-            tvRiskReward.setText("데이터 없음");
-            tvStrategyDetail.setText("데이터 없음");
+            tvTargetPrice.setText(getString(R.string.no_data));
+            tvStopLoss.setText(getString(R.string.no_data));
+            tvRiskReward.setText(getString(R.string.no_data));
+            tvStrategyDetail.setText(getString(R.string.no_data));
         }
 
         // onViewCreated() 메서드 내에서 구독 상태 체크 부분 수정
@@ -363,10 +363,10 @@ public class StrategyFragment extends Fragment {
             // 추가: 텍스트 내용을 별표나 의미 없는 문자로 대체하여 이중으로 보호
             if (strategy != null) {
                 // 목표가, 손절매 등에 별표 처리 추가
-                tvTargetPrice.setText("목표 1: **********\n목표 2: **********");
-                tvStopLoss.setText("**********");
-                tvRiskReward.setText("*.**:*");
-                tvStrategyDetail.setText("**************** ******** ***** ************\n****************** ************");
+                tvTargetPrice.setText(getString(R.string.masked_content));
+                tvStopLoss.setText(getString(R.string.masked_content));
+                tvRiskReward.setText(getString(R.string.masked_content_short));
+                tvStrategyDetail.setText(getString(R.string.masked_content));
 
                 // 진입 지점 정보 숨기기 (첫 번째만 제외하고)
                 if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
@@ -619,7 +619,8 @@ public class StrategyFragment extends Fragment {
                 // 기존 목표가 업데이트 코드...
                 double targetPrice = strategy.getTargetPrices().get(i);
                 // 포맷팅 코드...
-                String targetLabel = String.format("목표 %d: %s%.2f", i + 1, currencySymbol, targetPrice);
+                String targetLabel = String.format(getString(R.string.target_price_format),
+                        i + 1, String.format("%s%.2f", currencySymbol, targetPrice));
                 targetPrices.append(targetLabel);
                 if (i < strategy.getTargetPrices().size() - 1) {
                     targetPrices.append("\n");
@@ -627,7 +628,7 @@ public class StrategyFragment extends Fragment {
             }
             tvTargetPrice.setText(targetPrices.toString());
         } else {
-            tvTargetPrice.setText("설정된 목표가 없음");
+            tvTargetPrice.setText(getString(R.string.no_target_prices));
         }
     }
 
@@ -637,7 +638,7 @@ public class StrategyFragment extends Fragment {
         if (strategy.getStopLoss() > 0) {
             tvStopLoss.setText(String.format("%s%.2f", currencySymbol, strategy.getStopLoss()));
         } else {
-            tvStopLoss.setText("설정된 손절매 라인 없음");
+            tvStopLoss.setText(getString(R.string.no_stop_loss));
         }
     }
 
@@ -647,7 +648,7 @@ public class StrategyFragment extends Fragment {
         if (strategy.getRiskRewardRatio() > 0) {
             tvRiskReward.setText(String.format("%.1f:1", strategy.getRiskRewardRatio()));
         } else {
-            tvRiskReward.setText("정보 없음");
+            tvRiskReward.setText(getString(R.string.no_information));
         }
     }
 
@@ -658,7 +659,7 @@ public class StrategyFragment extends Fragment {
             String explanation = highlightStrategyText(strategy.getExplanation());
             tvStrategyDetail.setText(Html.fromHtml(explanation, Html.FROM_HTML_MODE_LEGACY));
         } else {
-            tvStrategyDetail.setText("전략 설명 없음");
+            tvStrategyDetail.setText(getString(R.string.no_strategy_description));
         }
     }
 
@@ -767,7 +768,7 @@ public class StrategyFragment extends Fragment {
 
         if (buySteps == null || buySteps.isEmpty()) {
             TextView tvEmpty = new TextView(getContext());
-            tvEmpty.setText("분석 시점에는 매수할 적절한 시점이 아닙니다.\n조정 후 진입 기회를 대기하세요.");
+            tvEmpty.setText(getString(R.string.no_appropriate_buy_time));
             tvEmpty.setTextColor(Color.parseColor("#FF9800")); // 주황색
             container.addView(tvEmpty);
             return;
@@ -808,7 +809,7 @@ public class StrategyFragment extends Fragment {
                 formattedPrice = formattedUsdPrice;
             }
 
-            String title = emoji + "진입점: " + formattedPrice;
+            String title = emoji + String.format(getString(R.string.entry_point_format), formattedPrice);
             tvBuyStepTitle.setText(title);
             tvBuyStepTitle.setTextColor(titleColor);
 

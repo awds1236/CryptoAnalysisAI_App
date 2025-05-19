@@ -239,6 +239,19 @@
     <string name="masked_strategy_content">*** *** ***** (프리미엄 구독 시 확인 가능)</string>
     <string name="see_more_strategies">+ 더 많은 전략 정보는 구독 후 확인 가능</string>
 
+    <!-- StrategyFragment 관련 문자열 -->
+    <string name="short_term_strategy_title">단기 매매 전략 (24시간)</string>
+    <string name="mid_term_strategy_title">중기 매매 전략 (1주일)</string>
+    <string name="long_term_strategy_title">장기 매매 전략 (1개월)</string>
+    <string name="default_strategy_title">매매 전략</string>
+    <string name="no_appropriate_buy_time">분석 시점에는 매수할 적절한 시점이 아닙니다.\n조정 후 진입 기회를 대기하세요.</string>
+    <string name="entry_point_format">진입점: %s</string>
+    <string name="no_strategy_description">전략 설명 없음</string>
+    <string name="no_target_prices">설정된 목표가 없음</string>
+    <string name="no_stop_loss">설정된 손절매 라인 없음</string>
+    <string name="no_information">정보 없음</string>
+    <string name="target_price_format">목표 %d: %s</string>
+
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->
     <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>
