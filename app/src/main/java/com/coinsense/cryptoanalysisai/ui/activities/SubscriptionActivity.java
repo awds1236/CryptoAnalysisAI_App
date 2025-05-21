@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.Toast;
 
@@ -134,6 +135,7 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
             } else {
                 binding.btnYearlySubscription.setText(
                         getString(R.string.upgrade_to_format, subscriptionManager.getYearlyPrice()));
+                binding.btnYearlySubscription.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14); // 폰트 크기를 14sp로 설정
                 binding.btnYearlySubscription.setEnabled(true);
             }
         } else {
