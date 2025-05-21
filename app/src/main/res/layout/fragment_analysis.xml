@@ -508,6 +508,21 @@
                     android:textSize="14sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+        <!-- 분석 화면의 투자 주의사항 - 가독성 향상 -->
+        <TextView
+            android:id="@+id/tvAnalysisDisclaimer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="#F5F5F5"
+            android:padding="12dp"
+            android:lineSpacingExtra="4dp"
+            android:text="@string/investment_notice"
+            android:textSize="12sp"
+            android:textColor="#424242"
+            app:layout_constraintTop_toBottomOf="@id/cardRisk"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
         <ProgressBar
             android:id="@+id/progressAnalysis"

@@ -265,4 +265,7 @@
 
     <string name="buy_recommendation1">Buy Signal ✓</string>
 
+
+    <!-- 투자 주의사항 영문 -->
+    <string name="investment_notice">The information provided in this app is for reference only. Users are solely responsible for their investment decisions. Cryptocurrency markets are highly volatile and capital loss is possible. Please gather diverse information and exercise careful judgment before investing.</string>
 </resources>
