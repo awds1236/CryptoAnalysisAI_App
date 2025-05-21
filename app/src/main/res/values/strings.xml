@@ -269,4 +269,7 @@
     <string name="is_first_run">is_first_run</string>
 
     <string name="buy_recommendation1">매수 추천 ✓</string>
+
+    <!-- 투자 주의사항 -->
+    <string name="investment_notice">본 앱에서 제공하는 정보는 참고용이며, 투자 결정에 대한 책임은 사용자 본인에게 있습니다. 암호화폐 시장은 변동성이 크므로 투자 시 원금 손실 가능성을 충분히 고려하시기 바랍니다. 투자 전 다양한 정보를 수집하고 신중하게 판단하세요.</string>
 </resources>

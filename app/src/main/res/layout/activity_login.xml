@@ -85,9 +85,25 @@
         android:id="@+id/tvTerms"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="16dp"
         android:gravity="center"
+        android:text="@string/terms_agreement"
         android:textSize="12sp"
+        app:layout_constraintBottom_toTopOf="@+id/tvDisclaimer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- 투자 면책조항 추가 -->
+    <TextView
+        android:id="@+id/tvDisclaimer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"
+        android:text="@string/investment_notice"
+        android:textSize="14sp"
+        android:textColor="#757575"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
