@@ -4,6 +4,7 @@ import com.coinsense.cryptoanalysisai.R;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
 
@@ -212,21 +213,27 @@ public class SubscriptionManager {
      */
     // getMonthlyPrice() 메서드 수정
     public String getMonthlyPrice() {
-        // 항상 현재 활동 컨텍스트 사용
-        if (context == null) {
-            Log.e("SubscriptionManager", "Context is null in getMonthlyPrice");
-            return "$10.7/MONTH"; // 기본값
+        // 현재 언어 설정 확인
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        String language = prefs.getString("pref_language", "ko"); // 기본값은 한국어
+
+        if ("ko".equals(language)) {
+            return "월 ₩15,000원";
+        } else {
+            return "$10.7/month";
         }
-        return context.getString(R.string.subscription_monthly_price);
     }
 
     public String getYearlyPrice() {
-        // 항상 현재 활동 컨텍스트 사용
-        if (context == null) {
-            Log.e("SubscriptionManager", "Context is null in getYearlyPrice");
-            return "$90.00/YEAR ($7.5/MONTH)"; // 기본값
+        // 현재 언어 설정 확인
+        SharedPreferences prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE);
+        String language = prefs.getString("pref_language", "ko"); // 기본값은 한국어
+
+        if ("ko".equals(language)) {
+            return "연 ₩125,000원 (월 ₩10,400원)";
+        } else {
+            return "$90.00/year ($7.5/month)";
         }
-        return context.getString(R.string.subscription_yearly_price);
     }
     /**
      * 구독이 자동 갱신 상태인지 확인
