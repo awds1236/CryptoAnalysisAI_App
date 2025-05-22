@@ -308,6 +308,7 @@
     <string name="terms_of_service_title">서비스 이용약관</string>
     <string name="privacy_policy_title">개인정보처리방침</string>
     <string name="terms_agreement_link">로그인함으로써 <u>이용약관</u> 및 <u>개인정보처리방침</u>에 동의합니다.</string>
-
+    <!-- app/src/main/res/values/strings.xml -->
+    <string name="ai_analysis_footer">⚠️ 본 분석은 인공지능(AI)에 의해 자동 생성되었으며,\n개발자의 개인적 견해나 투자 의견을 포함하지 않습니다.</string>
 
 </resources>
