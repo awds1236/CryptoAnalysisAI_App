@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- 다이얼로그 제목 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/analysis_info_dialog_title"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 구분선 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 스크롤 가능한 내용 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxHeight="500dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- 지지선 설명 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/support_explanation_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/support_explanation_content"
+                android:textSize="14sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 저항선 설명 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/resistance_explanation_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/resistance_explanation_content"
+                android:textSize="14sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 위험 관리 구간 설명 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/risk_management_explanation_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/risk_management_explanation_content"
+                android:textSize="14sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="20dp" />
+
+            <!-- 구분선 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?android:attr/listDivider"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 면책 조항 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/detailed_disclaimer_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FF6B00"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/detailed_disclaimer_content"
+                android:textSize="13sp"
+                android:textColor="?android:attr/textColorSecondary"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="24dp" />
+
+            <!-- 확인 버튼을 ScrollView 안으로 이동 -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOk"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="@string/confirm_info"
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:backgroundTint="?android:attr/colorAccent" />
+
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

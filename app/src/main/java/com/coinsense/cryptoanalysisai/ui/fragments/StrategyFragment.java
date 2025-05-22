@@ -14,12 +14,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
@@ -202,6 +204,9 @@ public class StrategyFragment extends Fragment {
         btnSubscribe = view.findViewById(R.id.btnSubscribe);
         contentArea = view.findViewById(R.id.contentArea);
         btnWatchAd = view.findViewById(R.id.btnWatchAd);
+
+        ImageButton btnInfoDialog = view.findViewById(R.id.btnInfoDialog);
+        btnInfoDialog.setOnClickListener(v -> showAnalysisInfoDialog());
         if (btnWatchAd == null) {
             Log.e("StrategyFragment", "btnWatchAd를 찾을 수 없습니다");
         }
@@ -449,6 +454,34 @@ public class StrategyFragment extends Fragment {
     public void onDestroyView() {
         stopAdTimer();
         super.onDestroyView();
+    }
+
+    private void showAnalysisInfoDialog() {
+        if (getContext() == null) return;
+
+        // 다이얼로그 레이아웃 인플레이트
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_analysis_info, null);
+
+        // 다이얼로그 생성
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setView(dialogView)
+                .setCancelable(true)
+                .create();
+
+        // 확인 버튼 클릭 리스너
+        Button btnOk = dialogView.findViewById(R.id.btnOk);
+        btnOk.setOnClickListener(v -> dialog.dismiss());
+
+        // 다이얼로그 표시
+        dialog.show();
+
+        // 다이얼로그 크기 조정 (선택사항)
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
     }
 
 
@@ -722,7 +755,7 @@ public class StrategyFragment extends Fragment {
         tvBuyStepTitle.setText(title);
         tvBuyStepTitle.setTextColor(Color.parseColor("#4CAF50"));
 
-        tvBuyStepPercentage.setText("**%");
+        tvBuyStepPercentage.setVisibility(View.GONE);
 
         // 마스킹된 콘텐츠 - 언어별 리소스 사용
         tvBuyStepDescription.setText(getString(R.string.masked_strategy_content));
@@ -776,6 +809,10 @@ public class StrategyFragment extends Fragment {
     private void displayBuySteps(LinearLayout container, List<AnalysisResult.Strategy.TradingStep> buySteps) {
         container.removeAllViews();
 
+        String currentLanguage = getResources().getConfiguration().locale.getLanguage();
+        boolean isKorean = "ko".equals(currentLanguage);
+
+
         if (buySteps == null || buySteps.isEmpty()) {
             TextView tvEmpty = new TextView(getContext());
             tvEmpty.setText(getString(R.string.no_appropriate_buy_time));
@@ -811,8 +848,8 @@ public class StrategyFragment extends Fragment {
             String formattedUsdPrice = String.format("%s%.2f", currencySymbol, price);
             String formattedPrice;
 
-            // 달러 가격에 원화 추가
-            if ("$".equals(currencySymbol) && exchangeRateManager.getUsdToKrwRate() > 0) {
+            // 한국어일 때만 달러 가격에 원화 추가
+            if (isKorean && "$".equals(currencySymbol) && exchangeRateManager.getUsdToKrwRate() > 0) {
                 double krwPrice = exchangeRateManager.convertUsdToKrw(price);
                 formattedPrice = String.format("%s (₩%,.0f)", formattedUsdPrice, krwPrice);
             } else {
@@ -823,7 +860,7 @@ public class StrategyFragment extends Fragment {
             tvBuyStepTitle.setText(title);
             tvBuyStepTitle.setTextColor(titleColor);
 
-            tvBuyStepPercentage.setText(String.format("%d%%", step.getPercentage()));
+            tvBuyStepPercentage.setVisibility(View.GONE);
 
             // 설명 텍스트 강조
             if (step.getDescription() != null && !step.getDescription().isEmpty()) {

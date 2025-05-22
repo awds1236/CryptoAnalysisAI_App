@@ -10,12 +10,12 @@
     <string name="tab_chart">Chart</string>
     <string name="tab_analysis">Analysis</string>
     <string name="analysis_title">Analysis Summary</string>
-    <string name="recommendation_title">Buy/Sell Recommendation</string>
+    <string name="recommendation_title">Upward/Downward Possibility</string>
     <string name="strategy_title">Trading Strategy</string>
-    <string name="target_price">Target Price</string>
-    <string name="stop_loss">Stop Loss</string>
+    <string name="target_price">Key Resistance Levels</string>
+    <string name="stop_loss">Risk Management Zone</string>
     <string name="risk_reward">Risk/Reward Ratio</string>
-    <string name="strategy_explanation">Strategy Explanation</string>
+    <string name="strategy_explanation">Reference Information</string>
     <string name="short_term">Short-term (24 hrs)</string>
     <string name="mid_term">Mid-term (1 week)</string>
     <string name="long_term">Long-term (1 month)</string>
@@ -60,8 +60,7 @@
     <string name="subscription_yearly">Annual Subscription (30% discount)</string>
     <string name="subscription_monthly_price">$10.7/month</string>
     <string name="subscription_yearly_price">$90.00/year ($7.5/month)</string>
-    <string name="subscription_features">• View strategy analysis for all coins\n• Check real-time trading signals\n• View support/resistance level analysis</string>
-    <string name="subscribe_button">Subscribe</string>
+    <string name="subscription_features">• View technical analysis information for all coins\n• View support/resistance level analysis\n• Ad-free experience</string>    <string name="subscribe_button">Subscribe</string>
     <string name="cancel_subscription">Cancel Subscription</string>
     <string name="close">Close</string>
 
@@ -187,8 +186,8 @@
 
     <string name="no_analysis_summary">No analysis summary information available.</string>
     <string name="high_confidence">(High confidence)</string>
-    <string name="buy_label">Buy: </string>
-    <string name="sell_label">Sell: </string>
+    <string name="buy_label">Upward: </string>
+    <string name="sell_label">Downward: </string>
     <string name="no_info">No information</string>
     <string name="info_not_available">No information set</string>
     <string name="golden_cross">Golden Cross (Buy Signal) ⬆️</string>
@@ -220,10 +219,11 @@
     <string name="risk_keyword_severe">급격한|심각한|충격</string>
     <string name="risk_keyword_moderate">가능성</string>
 
-    <string name="recommendation_text_format">%s Recommendation</string>
-    <string name="buy_recommendation">Buy</string>
-    <string name="sell_recommendation">Sell</string>
-    <string name="hold_recommendation">Hold</string>
+    <!-- Recommendation → Possibility -->
+    <string name="recommendation_text_format">%s Possibility</string>
+    <string name="buy_recommendation">Upward</string>
+    <string name="sell_recommendation">Downward</string>
+    <string name="hold_recommendation">Sideways</string>
 
     <string name="date_format">MMMM dd, yyyy HH:00</string>
     <string name="analysis_timestamp_format">Analyzed on %s</string>
@@ -232,24 +232,28 @@
     <string name="cross_signal">Golden / Death Cross Signal</string>
     <string name="long_short_ratio">Long:Short Position Ratio</string>
 
-    <string name="entry_point">Entry Point</string>
+    <string name="entry_point">Interest Zone</string>
     <string name="masked_strategy_content">*** *** ***** (Available with Premium Subscription)</string>
     <string name="see_more_strategies">+ More strategy information available after subscription</string>
 
-    <!-- StrategyFragment 관련 문자열 -->
-    <string name="short_term_strategy_title">Short-term Strategy (24 hours)</string>
-    <string name="mid_term_strategy_title">Mid-term Strategy (1 week)</string>
-    <string name="long_term_strategy_title">Long-term Strategy (1 month)</string>
-    <string name="default_strategy_title">Trading Strategy</string>
-    <string name="no_appropriate_buy_time">It\'s not an appropriate time to buy at the analysis point.\nWait for entry opportunity after correction.</string>
-    <string name="entry_point_format">Entry Point: %s</string>
-    <string name="no_strategy_description">No strategy description</string>
-    <string name="no_target_prices">No target prices set</string>
-    <string name="no_stop_loss">No stop loss level set</string>
+    <!-- StrategyFragment titles modified -->
+    <string name="short_term_strategy_title">Short-term Analysis Information (24 hours)</string>
+    <string name="mid_term_strategy_title">Mid-term Analysis Information (1 week)</string>
+    <string name="long_term_strategy_title">Long-term Analysis Information (1 month)</string>
+    <string name="default_strategy_title">Analysis Information</string>
+    <string name="no_appropriate_buy_time">It\'s not an appropriate time to show interest at the analysis point.\nLook for opportunities after correction.</string>
+    <!-- Entry Point → Interest Zone -->
+    <string name="entry_point_format">Interest Zone: %s</string>
+    <string name="no_strategy_description">No reference information</string>
+    <!-- Target Price → Resistance Levels -->
+    <string name="no_target_prices">No resistance levels set</string>
+    <!-- Stop Loss → Risk Management Zone -->
+    <string name="no_stop_loss">No risk management zone set</string>
     <string name="no_information">No information</string>
-    <string name="target_price_format">Target %d: %s</string>
+    <!-- Target → Resistance -->
+    <string name="target_price_format">Resistance %d: %s</string>
 
-    <string name="entry_strategy">Entry Strategy</string>
+    <string name="entry_strategy">Support Level Analysis</string>
 
     <string name="app_description">AI analyzed cryptocurrency market analysis and investment strategies</string>
     <string name="google_sign_in">Sign in with Google account</string>
@@ -263,9 +267,30 @@
     <string name="confirm">Confirm</string>
     <string name="is_first_run">is_first_run</string>
 
-    <string name="buy_recommendation1">Buy Signal ✓</string>
+    <string name="buy_recommendation1">Upward Signal ✓</string>
 
 
     <!-- 투자 주의사항 영문 -->
     <string name="investment_notice">The information provided in this app is for reference only. Users are solely responsible for their investment decisions. Cryptocurrency markets are highly volatile and capital loss is possible. Please gather diverse information and exercise careful judgment before investing.</string>
+
+    <!-- Disclaimer -->
+    <string name="analysis_disclaimer">⚠️ This information is AI-generated technical analysis reference material and is not investment advice or trading recommendations. All investment decisions and resulting profits/losses are the user\'s responsibility. Cryptocurrency investment may involve high risks and requires careful judgment.</string>
+
+    <!-- Info Dialog Related -->
+    <string name="info_button_description">Analysis Information Help</string>
+    <string name="analysis_info_dialog_title">Technical Analysis Terms Explanation</string>
+
+    <string name="support_explanation_title">📈 Support Level</string>
+    <string name="support_explanation_content">A price zone where the asset is likely to find buying interest and bounce higher. Based on historical chart patterns and psychological resistance levels. This is reference information only and does not guarantee a bounce.</string>
+
+    <string name="resistance_explanation_title">📉 Resistance Level</string>
+    <string name="resistance_explanation_content">A price zone where the asset may face selling pressure and decline. Based on historical chart patterns and psychological resistance levels. This is reference information only and does not guarantee a decline.</string>
+
+    <string name="risk_management_explanation_title">⚠️ Risk Management Zone</string>
+    <string name="risk_management_explanation_content">From a technical analysis perspective, a zone where trend changes become more likely. If price moves beyond this level, the current analysis may become invalidated. This is reference information for technical interpretation, not investment advice.</string>
+
+    <string name="detailed_disclaimer_title">⚠️ Important Notice</string>
+    <string name="detailed_disclaimer_content">• This analysis is AI-generated technical interpretation for reference only\n• Not investment advice, trading recommendations, or profit guarantees\n• All investment decisions and profits/losses are user\'s responsibility\n• Cryptocurrencies are highly volatile and risky assets\n• Thorough learning and careful judgment required before investing\n• Only invest within your financial capacity</string>
+
+    <string name="confirm_info">Confirm</string>
 </resources>

@@ -10,13 +10,13 @@
     <string name="tab_chart">차트</string>
     <string name="tab_analysis">분석</string>
     <string name="analysis_title">분석 요약</string>
-    <string name="recommendation_title">매수/매도 추천</string>
+    <string name="recommendation_title">상승/하락 가능성</string>
     <string name="strategy_title">매매 전략</string>
-    <string name="entry_strategy">진입 전략</string>
-    <string name="target_price">수익실현 목표가</string>
-    <string name="stop_loss">손절매 라인</string>
+    <string name="entry_strategy">지지선 분석</string>
+    <string name="target_price">주요 저항선</string>
+    <string name="stop_loss">위험 관리 구간</string>
     <string name="risk_reward">리스크 대비 보상 비율</string>
-    <string name="strategy_explanation">전략 설명</string>
+    <string name="strategy_explanation">참고 정보</string>
     <string name="short_term">단기 (24시간)</string>
     <string name="mid_term">중기 (1주일)</string>
     <string name="long_term">장기 (1개월)</string>
@@ -60,15 +60,16 @@
 
     <!-- 구독 관련 -->
     <string name="subscription_title">프리미엄 구독</string>
-    <string name="subscription_description">프리미엄 구독자만 암호화폐 AI 매매 전략을 확인할 수 있습니다.</string>
+    <string name="subscription_description">⚠️ 본 서비스는 AI 기반 기술적 분석 정보 제공 목적이며, 투자 권유나 수익 보장이 아닙니다. 모든 투자 결정은 사용자 본인의 책임입니다.</string>
     <string name="subscription_monthly">월간 구독</string>
     <string name="subscription_yearly">연간 구독 (30% 할인)</string>
     <string name="subscription_monthly_price">월 15,000원</string>
     <string name="subscription_yearly_price">연 125,000원 (월 10,400원)</string>
-    <string name="subscription_features">• 모든 코인의 전략 분석 확인 가능\n• 실시간 매매 신호 확인\n• 지지선/저항선 분석 확인</string>
+    <string name="subscription_features">• 모든 코인의 기술적 분석 정보 확인 가능\n• 지지선/저항선 분석 확인\n• 광고 없이 이용 가능</string>
     <string name="subscribe_button">구독하기</string>
     <string name="cancel_subscription">구독 취소하기</string>
     <string name="close">닫기</string>
+
 
     <!-- strings.xml (기본 한국어) 파일을 수정하여 새로운 문자열 추가 -->
     <string name="theme_settings">테마 설정</string>
@@ -191,8 +192,9 @@
 
     <string name="no_analysis_summary">분석 요약 정보가 없습니다.</string>
     <string name="high_confidence">(높은 신뢰도)</string>
-    <string name="buy_label">매수: </string>
-    <string name="sell_label">매도: </string>
+    <!-- 매수/매도 → 상승/하락으로 변경 -->
+    <string name="buy_label">상승: </string>
+    <string name="sell_label">하락: </string>
     <string name="no_info">정보 없음</string>
     <string name="info_not_available">설정된 정보 없음</string>
     <string name="golden_cross">골든 크로스 (매수 신호) ⬆️</string>
@@ -224,10 +226,11 @@
     <string name="risk_keyword_severe">급격한|심각한|충격</string>
     <string name="risk_keyword_moderate">가능성</string>
 
-    <string name="recommendation_text_format">%s 추천</string>
-    <string name="buy_recommendation">매수</string>
-    <string name="sell_recommendation">매도</string>
-    <string name="hold_recommendation">관망</string>
+    <!-- 추천 → 가능성으로 변경 -->
+    <string name="recommendation_text_format">%s 가능성</string>
+    <string name="buy_recommendation">상승</string>
+    <string name="sell_recommendation">하락</string>
+    <string name="hold_recommendation">보합</string>
 
     <string name="date_format">yyyy년 MM월 dd일 HH시</string>
     <string name="analysis_timestamp_format">%s에 분석됨</string>
@@ -236,24 +239,29 @@
     <string name="cross_signal">골든 / 데드 크로스 신호</string>
     <string name="long_short_ratio">롱:숏 포지션 비율</string>
 
-    <string name="entry_point">진입점</string>
+    <!-- 진입점 → 관심 구간으로 변경 -->
+    <string name="entry_point">관심 구간</string>
     <string name="masked_strategy_content">*** *** ***** (프리미엄 구독 시 확인 가능)</string>
-    <string name="see_more_strategies">+ 더 많은 전략 정보는 구독 후 확인 가능</string>
+    <string name="see_more_strategies">+ 더 많은 분석 정보는 구독 후 확인 가능</string>
 
-    <!-- StrategyFragment 관련 문자열 -->
-    <string name="short_term_strategy_title">단기 매매 전략 (24시간)</string>
-    <string name="mid_term_strategy_title">중기 매매 전략 (1주일)</string>
-    <string name="long_term_strategy_title">장기 매매 전략 (1개월)</string>
-    <string name="default_strategy_title">매매 전략</string>
-    <string name="no_appropriate_buy_time">분석 시점에는 매수할 적절한 시점이 아닙니다.\n조정 후 진입 기회를 대기하세요.</string>
-    <string name="entry_point_format">진입점: %s</string>
-    <string name="no_strategy_description">전략 설명 없음</string>
-    <string name="no_target_prices">설정된 목표가 없음</string>
-    <string name="no_stop_loss">설정된 손절매 라인 없음</string>
+    <!-- StrategyFragment 타이틀 수정 -->
+    <string name="short_term_strategy_title">단기 분석 정보 (24시간)</string>
+    <string name="mid_term_strategy_title">중기 분석 정보 (1주일)</string>
+    <string name="long_term_strategy_title">장기 분석 정보 (1개월)</string>
+    <string name="default_strategy_title">분석 정보</string>
+    <string name="no_appropriate_buy_time">분석 시점에는 관심을 둘 적절한 시점이 아닙니다.\n조정 후 기회를 살펴보세요.</string>
+    <!-- 진입점 → 관심 구간으로 변경 -->
+    <string name="entry_point_format">관심 구간: %s</string>
+    <string name="no_strategy_description">참고 정보 없음</string>
+    <!-- 목표가 → 저항선으로 변경 -->
+    <string name="no_target_prices">설정된 저항선 없음</string>
+    <!-- 손절매 → 위험 관리 구간으로 변경 -->
+    <string name="no_stop_loss">설정된 위험 관리 구간 없음</string>
     <string name="no_information">정보 없음</string>
-    <string name="target_price_format">목표 %d: %s</string>
+    <!-- 목표 → 저항선으로 변경 -->
+    <string name="target_price_format">저항선 %d: %s</string>
 
-    <string name="app_description">AI가 분석한 암호화폐 시장 분석 및 투자 전략</string>
+    <string name="app_description">AI가 분석한 암호화폐 시장 분석 및 정보</string>
     <string name="google_sign_in">Google 계정으로 로그인</string>
     <string name="terms_agreement">로그인함으로써 이용약관 및 개인정보처리방침에 동의합니다.</string>
 
@@ -266,10 +274,34 @@
 
     <string name="select_language">언어 선택 / Select Language</string>
     <string name="confirm">확인 / Confirm</string>
+    <string name="confirm_info">확인</string>
     <string name="is_first_run">is_first_run</string>
 
-    <string name="buy_recommendation1">매수 추천 ✓</string>
+    <!-- 매수 추천 → 상승 신호로 변경 -->
+    <string name="buy_recommendation1">상승 신호 ✓</string>
 
     <!-- 투자 주의사항 -->
     <string name="investment_notice">본 앱에서 제공하는 정보는 참고용이며, 투자 결정에 대한 책임은 사용자 본인에게 있습니다. 암호화폐 시장은 변동성이 크므로 투자 시 원금 손실 가능성을 충분히 고려하시기 바랍니다. 투자 전 다양한 정보를 수집하고 신중하게 판단하세요.</string>
+
+    <!-- 면책 조항 -->
+    <string name="analysis_disclaimer">⚠️ 본 정보는 AI에 의한 기술적 분석 참고 자료이며, 투자 권유나 매매 조언이 아닙니다. 모든 투자 결정과 그에 따른 손익은 사용자 본인의 책임입니다. 암호화폐 투자는 높은 위험을 수반할 수 있으므로 신중한 판단이 필요합니다.</string>
+
+
+    <!-- 정보 다이얼로그 관련 -->
+    <string name="info_button_description">분석 정보 도움말</string>
+    <string name="analysis_info_dialog_title">기술적 분석 용어 설명</string>
+
+    <string name="support_explanation_title">📈 지지선 (Support Level)</string>
+    <string name="support_explanation_content">가격이 하락하다가 반등할 가능성이 높은 구간입니다. 과거 차트에서 여러 번 반등했던 가격대나 심리적 저항선을 의미합니다. 단순 참고용 정보이며 반드시 반등을 보장하지는 않습니다.</string>
+
+    <string name="resistance_explanation_title">📉 저항선 (Resistance Level)</string>
+    <string name="resistance_explanation_content">가격이 상승하다가 하락 전환할 가능성이 높은 구간입니다. 과거 차트에서 여러 번 저항받았던 가격대나 심리적 저항선을 의미합니다. 단순 참고용 정보이며 반드시 하락을 의미하지는 않습니다.</string>
+
+    <string name="risk_management_explanation_title">⚠️ 위험 관리 구간</string>
+    <string name="risk_management_explanation_content">기술적 분석 관점에서 추세가 변할 가능성이 높아지는 구간입니다. 해당 가격을 벗어날 경우 기존 분석이 무효화될 수 있는 참고 구간입니다. 투자 조언이 아닌 단순 기술적 해석입니다.</string>
+
+    <string name="detailed_disclaimer_title">⚠️ 주요 주의 사항</string>
+    <string name="detailed_disclaimer_content">• 본 분석은 AI에 의한 기술적 해석으로 참고용입니다\n• 투자 권유, 매매 조언, 수익 보장이 아닙니다\n• 모든 투자 결정과 손익은 사용자 본인 책임입니다\n• 암호화폐는 변동성이 매우 높은 고위험 자산입니다\n• 투자 전 충분한 학습과 신중한 판단이 필요합니다\n• 감당할 수 있는 범위 내에서만 투자하시기 바랍니다</string>
+
+
 </resources>
