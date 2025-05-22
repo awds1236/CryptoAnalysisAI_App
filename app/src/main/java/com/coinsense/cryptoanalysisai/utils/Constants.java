@@ -160,16 +160,34 @@ public class Constants {
         }
 
         public static RecommendationType fromString(String value) {
-            // 이 메서드는 API에서 온 값을 처리하므로
-            // 다음과 같이 값을 하드코딩하거나 더 나은 방법 필요
-            if ("매수".equals(value) || "Buy".equals(value)) {
+            if (value == null) {
+                return HOLD; // 기본값
+            }
+
+            // 값을 소문자로 변환하여 비교 (대소문자 구분 없이)
+            String lowerValue = value.toLowerCase().trim();
+
+            // 한국어와 영어 매수 관련 키워드
+            if (lowerValue.contains("매수") || lowerValue.contains("buy") ||
+                    lowerValue.contains("상승") || lowerValue.contains("upward") ||
+                    lowerValue.contains("bullish") || lowerValue.contains("positive")) {
                 return BUY;
-            } else if ("매도".equals(value) || "Sell".equals(value)) {
+            }
+            // 한국어와 영어 매도 관련 키워드
+            else if (lowerValue.contains("매도") || lowerValue.contains("sell") ||
+                    lowerValue.contains("하락") || lowerValue.contains("downward") ||
+                    lowerValue.contains("bearish") || lowerValue.contains("negative")) {
                 return SELL;
-            } else if ("관망".equals(value) || "Hold".equals(value)) {
+            }
+            // 한국어와 영어 관망/보합 관련 키워드
+            else if (lowerValue.contains("관망") || lowerValue.contains("hold") ||
+                    lowerValue.contains("보합") || lowerValue.contains("sideways") ||
+                    lowerValue.contains("neutral") || lowerValue.contains("wait")) {
                 return HOLD;
             }
-            return HOLD; // 기본값
+
+            // 기본값은 HOLD
+            return HOLD;
         }
     }
 
