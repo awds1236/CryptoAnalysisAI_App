@@ -4,6 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -20,6 +25,7 @@ import com.coinsense.cryptoanalysisai.services.BillingManager;
 import com.coinsense.cryptoanalysisai.services.FirebaseSubscriptionManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 import com.coinsense.cryptoanalysisai.utils.LocaleHelper;
+import com.coinsense.cryptoanalysisai.utils.TermsDialogUtils;
 import com.google.android.gms.auth.api.identity.BeginSignInRequest;
 import com.google.android.gms.auth.api.identity.Identity;
 import com.google.android.gms.auth.api.identity.SignInClient;
@@ -97,6 +103,67 @@ public class LoginActivity extends BaseActivity {
         binding.btnGoogleSignIn.setOnClickListener(v -> {
             signInWithGoogle();
         });
+
+        // 이용약관 및 개인정보처리방침 링크 설정
+        setupTermsLinks();
+    }
+
+    /**
+     * 이용약관 및 개인정보처리방침 링크 설정
+     */
+    private void setupTermsLinks() {
+        String termsText = getString(R.string.terms_agreement_link);
+        SpannableString spannableString = new SpannableString(termsText);
+
+        // 현재 언어 확인
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        String language = prefs.getString("pref_language", "ko");
+
+        // 언어에 따른 키워드 설정
+        String termsKeyword, privacyKeyword;
+        if ("en".equals(language)) {
+            termsKeyword = "Terms of Service";
+            privacyKeyword = "Privacy Policy";
+        } else {
+            termsKeyword = "이용약관";
+            privacyKeyword = "개인정보처리방침";
+        }
+
+        // 이용약관 링크 설정
+        int termsStart = termsText.indexOf(termsKeyword);
+        if (termsStart != -1) {
+            int termsEnd = termsStart + termsKeyword.length();
+
+            ClickableSpan termsClickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    TermsDialogUtils.showTermsOfServiceDialog(LoginActivity.this);
+                }
+            };
+
+            spannableString.setSpan(termsClickableSpan, termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannableString.setSpan(new UnderlineSpan(), termsStart, termsEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        // 개인정보처리방침 링크 설정
+        int privacyStart = termsText.indexOf(privacyKeyword);
+        if (privacyStart != -1) {
+            int privacyEnd = privacyStart + privacyKeyword.length();
+
+            ClickableSpan privacyClickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    TermsDialogUtils.showPrivacyPolicyDialog(LoginActivity.this);
+                }
+            };
+
+            spannableString.setSpan(privacyClickableSpan, privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            spannableString.setSpan(new UnderlineSpan(), privacyStart, privacyEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        // TextView에 설정
+        binding.tvTerms.setText(spannableString);
+        binding.tvTerms.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
     // 기존 One Tap 코드 대신 아래 코드 사용

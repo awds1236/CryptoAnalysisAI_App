@@ -232,7 +232,7 @@
     <string name="cross_signal">Golden / Death Cross Signal</string>
     <string name="long_short_ratio">Long:Short Position Ratio</string>
 
-    <string name="entry_point">Interest Zone</string>
+    <string name="entry_point">Reference Zone</string>
     <string name="masked_strategy_content">*** *** ***** (Available with Premium Subscription)</string>
     <string name="see_more_strategies">+ More strategy information available after subscription</string>
 
@@ -243,7 +243,7 @@
     <string name="default_strategy_title">Analysis Information</string>
     <string name="no_appropriate_buy_time">It\'s not an appropriate time to show interest at the analysis point.\nLook for opportunities after correction.</string>
     <!-- Entry Point → Interest Zone -->
-    <string name="entry_point_format">Interest Zone: %s</string>
+    <string name="entry_point_format">Reference Zone: %s</string>
     <string name="no_strategy_description">No reference information</string>
     <!-- Target Price → Resistance Levels -->
     <string name="no_target_prices">No resistance levels set</string>
@@ -267,7 +267,7 @@
     <string name="confirm">Confirm</string>
     <string name="is_first_run">is_first_run</string>
 
-    <string name="buy_recommendation1">Upward Signal ✓</string>
+    <string name="buy_recommendation1">AI Upward Analysis ✓</string>
 
 
     <!-- 투자 주의사항 영문 -->
@@ -293,4 +293,9 @@
     <string name="detailed_disclaimer_content">• This analysis is AI-generated technical interpretation for reference only\n• Not investment advice, trading recommendations, or profit guarantees\n• All investment decisions and profits/losses are user\'s responsibility\n• Cryptocurrencies are highly volatile and risky assets\n• Thorough learning and careful judgment required before investing\n• Only invest within your financial capacity</string>
 
     <string name="confirm_info">Confirm</string>
+
+    <!-- Terms related strings -->
+    <string name="terms_of_service_title">Terms of Service</string>
+    <string name="privacy_policy_title">Privacy Policy</string>
+    <string name="terms_agreement_link">By signing in, you agree to the <u>Terms of Service</u> and <u>Privacy Policy</u>.</string>
 </resources>
