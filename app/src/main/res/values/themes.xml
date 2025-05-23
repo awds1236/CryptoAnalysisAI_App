@@ -63,5 +63,8 @@
 
         <!-- 스플래시 이후에 전환할 테마 -->
         <item name="postSplashScreenTheme">@style/Theme.CryptoAnalysisAI</item>
+
+        <item name="android:windowFullscreen">true</item>
+        <item name="windowNoTitle">true</item>
     </style>
 </resources>
