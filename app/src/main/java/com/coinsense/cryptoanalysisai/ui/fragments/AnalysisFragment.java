@@ -560,8 +560,10 @@ public class AnalysisFragment extends Fragment {
         AnalysisResult.Recommendation recommendation = analysisResult.getRecommendation();
         if (recommendation != null) {
             // 추천 타입에 따라 색상 변경
-            Constants.RecommendationType recommendType = Constants.RecommendationType.fromString(recommendation.getRecommendation());
-
+            Constants.RecommendationType recommendType = Constants.RecommendationType.fromProbabilities(
+                    recommendation.getBuyProbability(),
+                    recommendation.getSellProbability()
+            );
             // 강조된 추천 메시지 구성
             String recommendationTypeText = getString(recommendType.getDisplayNameResId());
             String recommendText = "<b>" + String.format(getString(R.string.recommendation_text_format), recommendationTypeText) + "</b>";

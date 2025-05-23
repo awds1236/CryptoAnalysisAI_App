@@ -311,4 +311,11 @@
     <!-- app/src/main/res/values/strings.xml -->
     <string name="ai_analysis_footer">⚠️ 본 분석은 인공지능(AI)에 의해 자동 생성되었으며,\n개발자의 개인적 견해나 투자 의견을 포함하지 않습니다.</string>
 
+
+    <!-- 기존 것들 수정/추가 -->
+    <string name="strong_buy_recommendation">상승</string>
+    <string name="weak_buy_recommendation">약한 상승</string>
+    <string name="strong_sell_recommendation">하락</string>
+    <string name="weak_sell_recommendation">약한 하락</string>
+
 </resources>

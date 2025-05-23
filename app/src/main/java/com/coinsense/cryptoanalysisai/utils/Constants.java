@@ -135,9 +135,11 @@ public class Constants {
 
     // 추천 유형
     public enum RecommendationType {
-        BUY(R.string.buy_recommendation, android.graphics.Color.rgb(76, 175, 80)),  // 초록색
-        SELL(R.string.sell_recommendation, android.graphics.Color.rgb(244, 67, 54)), // 빨간색
-        HOLD(R.string.hold_recommendation, android.graphics.Color.rgb(255, 152, 0)); // 주황색
+        STRONG_BUY(R.string.strong_buy_recommendation, android.graphics.Color.rgb(76, 175, 80)),    // 진한 초록색
+        WEAK_BUY(R.string.weak_buy_recommendation, android.graphics.Color.rgb(139, 195, 74)),       // 연한 초록색
+        STRONG_SELL(R.string.strong_sell_recommendation, android.graphics.Color.rgb(244, 67, 54)),  // 빨간색
+        WEAK_SELL(R.string.weak_sell_recommendation, android.graphics.Color.rgb(255, 152, 0)),      // 주황색
+        HOLD(R.string.hold_recommendation, android.graphics.Color.rgb(255, 193, 7));
 
         private final int displayNameResId;
         private final int color;
@@ -167,29 +169,55 @@ public class Constants {
             // 값을 소문자로 변환하여 비교 (대소문자 구분 없이)
             String lowerValue = value.toLowerCase().trim();
 
-            // 한국어와 영어 매수 관련 키워드
-            if (lowerValue.contains("매수") || lowerValue.contains("buy") ||
-                    lowerValue.contains("상승") || lowerValue.contains("upward") ||
-                    lowerValue.contains("bullish") || lowerValue.contains("positive")) {
-                return BUY;
+            // 강한 상승 관련 키워드
+            if (lowerValue.contains("강한 상승") || lowerValue.contains("strong buy") ||
+                    lowerValue.contains("매수") || lowerValue.contains("buy") ||
+                    (lowerValue.contains("상승") && !lowerValue.contains("약한"))) {
+                return STRONG_BUY;
             }
-            // 한국어와 영어 매도 관련 키워드
-            else if (lowerValue.contains("매도") || lowerValue.contains("sell") ||
-                    lowerValue.contains("하락") || lowerValue.contains("downward") ||
-                    lowerValue.contains("bearish") || lowerValue.contains("negative")) {
-                return SELL;
+            // 약한 상승 관련 키워드
+            else if (lowerValue.contains("약한 상승") || lowerValue.contains("mild upward") ||
+                    lowerValue.contains("weak buy") || lowerValue.contains("slight upward")) {
+                return WEAK_BUY;
             }
-            // 한국어와 영어 관망/보합 관련 키워드
-            else if (lowerValue.contains("관망") || lowerValue.contains("hold") ||
-                    lowerValue.contains("보합") || lowerValue.contains("sideways") ||
-                    lowerValue.contains("neutral") || lowerValue.contains("wait")) {
+            // 강한 하락 관련 키워드
+            else if (lowerValue.contains("강한 하락") || lowerValue.contains("strong sell") ||
+                    lowerValue.contains("매도") || lowerValue.contains("sell") ||
+                    (lowerValue.contains("하락") && !lowerValue.contains("약한"))) {
+                return STRONG_SELL;
+            }
+            // 약한 하락 관련 키워드
+            else if (lowerValue.contains("약한 하락") || lowerValue.contains("mild downward") ||
+                    lowerValue.contains("weak sell") || lowerValue.contains("slight downward")) {
+                return WEAK_SELL;
+            }
+            // 보합/중립 관련 키워드
+            else if (lowerValue.contains("보합") || lowerValue.contains("sideways") ||
+                    lowerValue.contains("hold") || lowerValue.contains("neutral") ||
+                    lowerValue.contains("wait") || lowerValue.contains("관망")) {
                 return HOLD;
             }
 
             // 기본값은 HOLD
             return HOLD;
         }
+
+        public static RecommendationType fromProbabilities(double buyProbability, double sellProbability) {
+            if (buyProbability >= 70) {
+                return STRONG_BUY;
+            } else if (buyProbability >= 50) {  // 60%는 여기에 해당해야 함
+                return WEAK_BUY;
+            } else if (sellProbability >= 70) {
+                return STRONG_SELL;
+            } else if (sellProbability >= 50) {
+                return WEAK_SELL;
+            } else {
+                return HOLD;
+            }
+        }
     }
+
+
 
     // 추세 강도
     public enum TrendStrength {

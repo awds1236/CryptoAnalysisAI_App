@@ -28,5 +28,11 @@
 
         <!-- 버튼 스타일 -->
         <item name="materialButtonStyle">@style/Widget.CryptoAnalysis.Button</item>
+
+        <item name="android:windowFullscreen">true</item>
+        <item name="windowNoTitle">true</item>
+
+
+
     </style>
 </resources>
