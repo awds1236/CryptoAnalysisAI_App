@@ -59,6 +59,9 @@ public class AnalysisFragment extends Fragment {
     private static final String ARG_COIN_INFO = "arg_coin_info";
     private static final String ARG_EXCHANGE_TYPE = "arg_exchange_type";
 
+    // ★ 차트 갱신 주기 (1분 = 60,000ms)
+    private static final long CHART_REFRESH_INTERVAL = 60 * 1000;
+
     private FragmentAnalysisBinding binding;
     private CoinInfo coinInfo;
     private ExchangeType exchangeType = ExchangeType.BINANCE;
@@ -88,6 +91,11 @@ public class AnalysisFragment extends Fragment {
     private TextView tvTechnicalAdStatus;
     private Handler adTimerHandler = new Handler(Looper.getMainLooper());
     private Runnable adTimerRunnable;
+
+    // ★ 차트 갱신을 위한 새로운 변수들 추가
+    private Handler chartRefreshHandler = new Handler(Looper.getMainLooper());
+    private Runnable chartRefreshRunnable;
+    private boolean isChartAutoRefreshEnabled = false;
 
     public AnalysisFragment() {
         // 기본 생성자
@@ -209,13 +217,107 @@ public class AnalysisFragment extends Fragment {
 
         // 타이머 시작
         startAdTimer();
+
+        // ★ 차트 자동 갱신 시작
+        startChartAutoRefresh();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // ★ 화면이 다시 보일 때 차트 자동 갱신 시작
+        startChartAutoRefresh();
+        Log.d(TAG, "onResume: 차트 자동 갱신 시작");
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // ★ 화면이 보이지 않을 때 차트 자동 갱신 중지
+        stopChartAutoRefresh();
+        Log.d(TAG, "onPause: 차트 자동 갱신 중지");
     }
 
     @Override
     public void onDestroyView() {
         stopAdTimer();
+        // ★ 뷰가 파괴될 때 차트 자동 갱신 중지
+        stopChartAutoRefresh();
         super.onDestroyView();
         binding = null;
+    }
+
+    // ★ 차트 자동 갱신 시작
+    private void startChartAutoRefresh() {
+        if (isChartAutoRefreshEnabled || coinInfo == null) {
+            return; // 이미 실행 중이거나 코인 정보가 없으면 시작하지 않음
+        }
+
+        isChartAutoRefreshEnabled = true;
+
+        chartRefreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isChartAutoRefreshEnabled && isAdded() && coinInfo != null) {
+                    Log.d(TAG, "차트 자동 갱신 실행: " + coinInfo.getSymbol());
+
+                    // 현재 활성화된 전략 프래그먼트의 차트 갱신
+                    refreshCurrentStrategyChart();
+
+                    // 다음 갱신 예약 (1분 후)
+                    chartRefreshHandler.postDelayed(this, CHART_REFRESH_INTERVAL);
+                }
+            }
+        };
+
+        // 첫 번째 갱신을 1분 후에 시작 (즉시 갱신하지 않음)
+        chartRefreshHandler.postDelayed(chartRefreshRunnable, CHART_REFRESH_INTERVAL);
+
+        Log.d(TAG, "차트 자동 갱신 스케줄링 완료 (1분 간격)");
+    }
+
+    // ★ 차트 자동 갱신 중지
+    private void stopChartAutoRefresh() {
+        isChartAutoRefreshEnabled = false;
+
+        if (chartRefreshHandler != null && chartRefreshRunnable != null) {
+            chartRefreshHandler.removeCallbacks(chartRefreshRunnable);
+            Log.d(TAG, "차트 자동 갱신 중지 완료");
+        }
+    }
+
+    // ★ 현재 활성화된 전략 프래그먼트의 차트 갱신
+    private void refreshCurrentStrategyChart() {
+        try {
+            // 현재 선택된 탭의 인덱스 가져오기
+            int currentTabPosition = binding.viewPagerStrategy.getCurrentItem();
+
+            // 해당 프래그먼트 찾기
+            StrategyFragment currentFragment = getCurrentStrategyFragment(currentTabPosition);
+
+            if (currentFragment != null && currentFragment.isAdded() && currentFragment.getView() != null) {
+                Log.d(TAG, "현재 활성 탭(" + currentTabPosition + ") 차트 갱신 시작");
+
+                // 차트 갱신 실행
+                currentFragment.refreshChartData();
+
+                Log.d(TAG, "차트 갱신 완료: " + getCurrentTabName(currentTabPosition));
+            } else {
+                Log.w(TAG, "활성 프래그먼트를 찾을 수 없음 또는 준비되지 않음");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "차트 갱신 중 오류 발생: " + e.getMessage());
+        }
+    }
+
+    // ★ 현재 탭 이름 반환 (로깅용)
+    private String getCurrentTabName(int position) {
+        switch (position) {
+            case 0: return "단기";
+            case 1: return "중기";
+            case 2: return "장기";
+            default: return "알 수 없음";
+        }
     }
 
     /**
@@ -358,6 +460,12 @@ public class AnalysisFragment extends Fragment {
 
             // 모든 UI를 새로고침하여 권한이 올바르게 적용되도록 함
             refreshAllUIs();
+
+            // ★ 새로운 코인이 선택되면 차트 자동 갱신 재시작
+            stopChartAutoRefresh();
+            startChartAutoRefresh();
+
+            Log.d(TAG, "새로운 코인 선택으로 차트 자동 갱신 재시작: " + coinInfo.getSymbol());
         }
     }
 
@@ -444,7 +552,6 @@ public class AnalysisFragment extends Fragment {
                 pricePrefix, coinInfo.getFormattedPrice(), coinInfo.getFormattedPriceChange());
 
         binding.btnStartAnalysis.setText(priceText);
-
 
         // 분석 결과가 있을 경우 지지선/저항선과 현재가 비교 표시
         if (analysisResult != null && analysisResult.getTechnicalAnalysis() != null) {
@@ -616,9 +723,6 @@ public class AnalysisFragment extends Fragment {
         }
 
         boolean isSubscribed = subscriptionManager != null && subscriptionManager.isSubscribed();
-
-
-
 
         // 분석 시간 표시
         if (analysisResult.getTimestamp() > 0) {
@@ -1128,7 +1232,6 @@ public class AnalysisFragment extends Fragment {
 
         return text;
     }
-
 
     // 모든 UI를 새로 고치는 새 메서드 추가
     public void refreshAllUIs() {

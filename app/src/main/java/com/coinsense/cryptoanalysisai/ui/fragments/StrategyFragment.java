@@ -446,6 +446,72 @@ public class StrategyFragment extends Fragment {
         Log.d("StrategyFragment", "차트 강제 새로고침 완료");
     }
 
+    // ★ 차트 데이터만 갱신 (1분마다 자동 호출용)
+    // UI 변경 없이 백그라운드에서 차트 데이터만 새로고침
+    public void refreshChartData() {
+        if (strategyChart == null || coinInfo == null) {
+            Log.w("StrategyFragment", "refreshChartData: 차트 또는 코인 정보가 없음");
+            return;
+        }
+
+        if (!isAdded() || getView() == null) {
+            Log.w("StrategyFragment", "refreshChartData: 프래그먼트가 준비되지 않음");
+            return;
+        }
+
+        Log.d("StrategyFragment", "차트 데이터 자동 갱신 시작: " + getStrategyTypeName());
+
+        // 조용히 데이터만 갱신 (로딩 인디케이터 없이)
+        getCandleDataAndUpdateChartSilently();
+    }
+
+    // ★ 조용한 차트 데이터 갱신 (로딩 표시 없이)
+    private void getCandleDataAndUpdateChartSilently() {
+        if (coinInfo == null || coinInfo.getMarket() == null) return;
+
+        BinanceApiService apiService = RetrofitClient.getBinanceApiService();
+
+        // 모든 기간에서 동일하게 30일 일봉 사용
+        String interval = "1d"; // 일봉으로 통일
+        int limit = 30; // 30일로 통일
+
+        // 로그는 DEBUG 레벨로만 (자동 갱신이므로 조용히)
+        Log.d("StrategyFragment", String.format("자동 차트 갱신: 기간=%s, 심볼=%s",
+                getStrategyTypeName(), coinInfo.getSymbol()));
+
+        apiService.getKlines(coinInfo.getMarket(), interval, limit).enqueue(new Callback<List<List<Object>>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<List<Object>>> call, @NonNull Response<List<List<Object>>> response) {
+                if (!isAdded() || strategyChart == null) return;
+
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    List<List<Object>> klines = response.body();
+
+                    // UI 스레드에서 차트 업데이트
+                    if (getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            try {
+                                Log.d("StrategyFragment", String.format("자동 차트 데이터 수신: %d개 캔들", klines.size()));
+                                createCombinedChartData(klines);
+                                Log.d("StrategyFragment", "자동 차트 갱신 완료: " + getStrategyTypeName());
+                            } catch (Exception e) {
+                                Log.e("StrategyFragment", "자동 차트 갱신 중 오류: " + e.getMessage());
+                            }
+                        });
+                    }
+                } else {
+                    Log.w("StrategyFragment", "자동 차트 갱신: 응답 데이터가 없음");
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<List<Object>>> call, @NonNull Throwable t) {
+                // 자동 갱신 실패는 조용히 로깅만 (사용자에게 알리지 않음)
+                Log.w("StrategyFragment", "자동 차트 갱신 실패: " + t.getMessage());
+            }
+        });
+    }
+
     /**
      * 캔들 데이터 가져와서 차트 업데이트 - 모든 기간 동일한 30일 일봉
      */
