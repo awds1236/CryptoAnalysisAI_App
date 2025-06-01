@@ -23,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.coinsense.cryptoanalysisai.MainActivity;
 import com.coinsense.cryptoanalysisai.R;
@@ -39,6 +40,7 @@ import com.coinsense.cryptoanalysisai.services.SubscriptionManager;
 import com.coinsense.cryptoanalysisai.ui.activities.SubscriptionActivity;
 import com.coinsense.cryptoanalysisai.ui.dialogs.AdViewDialog;
 import com.coinsense.cryptoanalysisai.utils.Constants;
+import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 import java.text.SimpleDateFormat;
@@ -217,7 +219,7 @@ public class AnalysisFragment extends Fragment {
     }
 
     /**
-     * 전략 탭 설정
+     * 전략 탭 설정 - 탭 전환 시 차트 새로고침 추가
      */
     private void setupStrategyTabs() {
         strategiesAdapter = new StrategiesAdapter(this);
@@ -236,6 +238,99 @@ public class AnalysisFragment extends Fragment {
                     break;
             }
         }).attach();
+
+        // 탭 선택 리스너 추가 - 차트 새로고침
+        binding.tabsStrategy.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                int position = tab.getPosition();
+                Log.d(TAG, "탭 선택됨: " + position);
+
+                // 현재 선택된 프래그먼트의 차트 새로고침
+                refreshStrategyFragmentChart(position);
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+                // 사용하지 않음
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                // 같은 탭 재선택시에도 차트 새로고침
+                int position = tab.getPosition();
+                Log.d(TAG, "탭 재선택됨: " + position);
+                refreshStrategyFragmentChart(position);
+            }
+        });
+
+        // ViewPager 페이지 변경 리스너도 추가
+        binding.viewPagerStrategy.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                Log.d(TAG, "ViewPager 페이지 선택됨: " + position);
+
+                // 페이지가 완전히 표시된 후 차트 새로고침
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    refreshStrategyFragmentChart(position);
+                }, 200);
+            }
+        });
+    }
+
+    /**
+     * 전략 프래그먼트 차트 새로고침
+     */
+    private void refreshStrategyFragmentChart(int position) {
+        try {
+            StrategyFragment currentFragment = getCurrentStrategyFragment(position);
+            if (currentFragment != null) {
+                Log.d(TAG, "프래그먼트 찾음, 차트 새로고침 시작: " + position);
+
+                // 약간의 딜레이 후 차트 업데이트 (프래그먼트가 완전히 표시된 후)
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    if (currentFragment.isAdded() && currentFragment.getView() != null) {
+                        currentFragment.forceUpdateChart();
+                        Log.d(TAG, "차트 새로고침 완료: " + position);
+                    }
+                }, 100);
+            } else {
+                Log.w(TAG, "전략 프래그먼트를 찾을 수 없음: " + position);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "차트 새로고침 오류: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 현재 전략 프래그먼트 가져오기
+     */
+    private StrategyFragment getCurrentStrategyFragment(int position) {
+        try {
+            // ViewPager2의 프래그먼트 태그는 "f" + position 형식
+            String tag = "f" + position;
+            Fragment fragment = getChildFragmentManager().findFragmentByTag(tag);
+
+            if (fragment instanceof StrategyFragment) {
+                return (StrategyFragment) fragment;
+            } else {
+                // 다른 방법으로 프래그먼트 찾기
+                switch (position) {
+                    case 0:
+                        return shortTermFragment;
+                    case 1:
+                        return midTermFragment;
+                    case 2:
+                        return longTermFragment;
+                    default:
+                        return null;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "getCurrentStrategyFragment 오류: " + e.getMessage());
+            return null;
+        }
     }
 
     /**

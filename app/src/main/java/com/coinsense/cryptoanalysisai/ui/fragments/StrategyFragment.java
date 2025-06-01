@@ -39,7 +39,7 @@ import com.coinsense.cryptoanalysisai.ui.dialogs.AdViewDialog;
 import com.coinsense.cryptoanalysisai.services.AdManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 
-// MPAndroidChart 임포트 - CombinedChart 추가
+// MPAndroidChart 임포트
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -89,7 +89,7 @@ public class StrategyFragment extends Fragment {
     private View btnSubscribe;
     private View contentArea;
 
-    // 차트 관련 UI 요소 - CombinedChart로 변경
+    // 차트 관련 UI 요소
     private CombinedChart strategyChart;
 
     private AdManager adManager;
@@ -221,7 +221,7 @@ public class StrategyFragment extends Fragment {
         btnWatchAd = view.findViewById(R.id.btnWatchAd);
         additionalBlurLayer = view.findViewById(R.id.additionalBlurLayer);
 
-        // 차트 초기화 - CombinedChart로 변경
+        // 차트 초기화
         strategyChart = view.findViewById(R.id.strategyChart);
         setupChart();
 
@@ -320,7 +320,7 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 차트 초기 설정 - CombinedChart용 (개선된 X축 라벨)
+     * 차트 초기 설정 - 모든 기간 동일한 30일 일봉 차트 표시
      */
     private void setupChart() {
         if (strategyChart == null) return;
@@ -337,11 +337,11 @@ public class StrategyFragment extends Fragment {
                 CombinedChart.DrawOrder.LINE
         });
 
-        // 차트 여백 설정 (가시성 향상)
+        // 차트 여백 설정
         strategyChart.setExtraOffsets(10f, 10f, 10f, 10f);
         strategyChart.setBackgroundColor(Color.parseColor("#1E1E1E"));
 
-        // X축 설정 (기간별 라벨)
+        // X축 설정 - 모든 기간에서 동일한 30일 라벨
         XAxis xAxis = strategyChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(true);
@@ -349,12 +349,12 @@ public class StrategyFragment extends Fragment {
         xAxis.setGridLineWidth(1f);
         xAxis.setTextColor(Color.parseColor("#CCCCCC"));
         xAxis.setTextSize(10f);
-        xAxis.setLabelCount(5, false);
+        xAxis.setLabelCount(7, false);
         xAxis.setAvoidFirstLastClipping(true);
         xAxis.setSpaceMin(0.5f);
         xAxis.setSpaceMax(0.5f);
 
-        // X축 라벨 포매터 - 기간별 차별화
+        // X축 라벨 포매터 - 30일 일봉으로 통일
         xAxis.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
@@ -362,31 +362,16 @@ public class StrategyFragment extends Fragment {
                 int totalCandles = 30;
 
                 if (index >= 0 && index < totalCandles) {
-                    int periodsAgo = totalCandles - index - 1;
+                    int daysAgo = totalCandles - index - 1;
 
-                    switch (strategyType) {
-                        case STRATEGY_SHORT_TERM:
-                            // 4시간봉 - 시간 단위
-                            if (periodsAgo == 0) return "현재";
-                            if (periodsAgo % 6 == 0) return (periodsAgo * 4) + "시간전";
-                            break;
-                        case STRATEGY_MID_TERM:
-                            // 12시간봉 - 일 단위
-                            if (periodsAgo == 0) return "현재";
-                            if (periodsAgo % 2 == 0) return (periodsAgo / 2) + "일전";
-                            break;
-                        case STRATEGY_LONG_TERM:
-                            // 일봉 - 일 단위
-                            if (periodsAgo == 0) return "오늘";
-                            if (periodsAgo % 7 == 0) return periodsAgo + "일전";
-                            break;
-                    }
+                    if (daysAgo == 0) return "오늘";
+                    if (daysAgo % 5 == 0) return daysAgo + "일전";
                 }
                 return "";
             }
         });
 
-        // Y축 설정 (개선된 가시성)
+        // Y축 설정
         YAxis leftAxis = strategyChart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
         leftAxis.setGridColor(Color.parseColor("#40FFFFFF"));
@@ -424,45 +409,54 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 차트 데이터 업데이트 - 30일 제한으로 가시성 개선
+     * 차트 데이터 업데이트 - 모든 기간에서 동일한 30일 일봉 차트
      */
-    private void updateChart() {
+    public void updateChart() {
         if (strategyChart == null || coinInfo == null) return;
 
-        // 실제 캔들 데이터 가져오기
+        // 모든 기간에서 30일 일봉 데이터 가져오기
         getCandleDataAndUpdateChart();
     }
 
     /**
-     * 캔들 데이터 가져와서 차트 업데이트 (30일 제한)
+     * 차트 강제 새로고침 (탭 전환 시 호출)
+     */
+    public void forceUpdateChart() {
+        Log.d("StrategyFragment", "forceUpdateChart 호출됨 - " + getStrategyTypeName());
+
+        if (strategyChart == null) {
+            Log.w("StrategyFragment", "strategyChart가 null입니다");
+            return;
+        }
+
+        if (coinInfo == null) {
+            Log.w("StrategyFragment", "coinInfo가 null입니다");
+            return;
+        }
+
+        // 기존 차트 데이터 클리어
+        strategyChart.clear();
+
+        // 차트 다시 설정
+        setupChart();
+
+        // 새로운 데이터로 업데이트
+        getCandleDataAndUpdateChart();
+
+        Log.d("StrategyFragment", "차트 강제 새로고침 완료");
+    }
+
+    /**
+     * 캔들 데이터 가져와서 차트 업데이트 - 모든 기간 동일한 30일 일봉
      */
     private void getCandleDataAndUpdateChart() {
         if (coinInfo == null || coinInfo.getMarket() == null) return;
 
         BinanceApiService apiService = RetrofitClient.getBinanceApiService();
 
-        // 기간에 따른 인터벌과 개수 설정
-        String interval;
-        int limit;
-
-        switch (strategyType) {
-            case STRATEGY_SHORT_TERM:
-                interval = "4h"; // 4시간봉 30개 = 5일
-                limit = 30;
-                break;
-            case STRATEGY_MID_TERM:
-                interval = "12h"; // 12시간봉 30개 = 15일
-                limit = 30;
-                break;
-            case STRATEGY_LONG_TERM:
-                interval = "1d"; // 일봉 30개 = 30일
-                limit = 30;
-                break;
-            default:
-                interval = "1d";
-                limit = 30;
-                break;
-        }
+        // 모든 기간에서 동일하게 30일 일봉 사용
+        String interval = "1d"; // 일봉으로 통일
+        int limit = 30; // 30일로 통일
 
         Log.d("StrategyFragment", String.format("차트 데이터 요청: 기간=%s, 인터벌=%s, 개수=%d",
                 getStrategyTypeName(), interval, limit));
@@ -483,14 +477,13 @@ public class StrategyFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<List<List<Object>>> call, @NonNull Throwable t) {
                 Log.e("StrategyFragment", "캔들 데이터 로드 실패: " + t.getMessage());
-                // 실패시 빈 차트 표시
                 createEmptyChart();
             }
         });
     }
 
     /**
-     * 기간 타입 이름 반환 (디버깅용)
+     * 기간 타입 이름 반환
      */
     private String getStrategyTypeName() {
         switch (strategyType) {
@@ -501,9 +494,8 @@ public class StrategyFragment extends Fragment {
         }
     }
 
-
     /**
-     * 캔들스틱 + 지지선/저항선 결합 차트 생성 (개선된 버전)
+     * 캔들스틱 + 지지선/저항선 결합 차트 생성
      */
     private void createCombinedChartData(List<List<Object>> klines) {
         if (strategyChart == null || klines.isEmpty()) {
@@ -560,12 +552,12 @@ public class StrategyFragment extends Fragment {
         Log.d("StrategyFragment", String.format("캔들 엔트리 생성 완료: %d개, 가격 범위: %.2f ~ %.2f",
                 candleEntries.size(), minPrice, maxPrice));
 
-        // 캔들스틱 데이터셋 설정 (가시성 최대화)
+        // 캔들스틱 데이터셋 설정
         CandleDataSet candleDataSet = new CandleDataSet(candleEntries, "Price");
 
-        // 캔들 색상 설정
+        // 캔들 색상과 스타일 설정 (더 명확한 캔들스틱 표시)
         candleDataSet.setShadowColor(Color.parseColor("#CCCCCC"));
-        candleDataSet.setShadowWidth(2f);
+        candleDataSet.setShadowWidth(1f); // 캔들 심지 두께
         candleDataSet.setDecreasingColor(Color.parseColor("#FF4B6C")); // 하락 - 빨간색
         candleDataSet.setDecreasingPaintStyle(Paint.Style.FILL);
         candleDataSet.setIncreasingColor(Color.parseColor("#00C087")); // 상승 - 녹색
@@ -573,21 +565,24 @@ public class StrategyFragment extends Fragment {
         candleDataSet.setNeutralColor(Color.parseColor("#FFC107")); // 동일가 - 노란색
         candleDataSet.setDrawValues(false);
 
-        // 캔들 간격과 크기 최적화
-        candleDataSet.setBarSpace(0.2f); // 캔들 간격 조정
+        // 캔들 간격과 크기 최적화 (더 넓은 캔들)
+        candleDataSet.setBarSpace(0.1f); // 캔들 간격 줄임
         candleDataSet.setHighlightEnabled(true);
         candleDataSet.setHighLightColor(Color.WHITE);
 
         CandleData candleData = new CandleData(candleDataSet);
         combinedData.setData(candleData);
 
-        // 2. 라인 데이터 (지지선/저항선) 생성
+        // 2. 라인 데이터 (지지선/저항선) 생성 - 기간별로 다른 라인 표시
         if (strategy != null) {
             ArrayList<ILineDataSet> lineDataSets = new ArrayList<>();
 
-            // 지지선들 (녹색)
+            // 지지선들 (녹색) - 기간별로 다르게 표시
             if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
-                for (int stepIndex = 0; stepIndex < Math.min(strategy.getBuySteps().size(), 3); stepIndex++) {
+                // 기간에 따라 표시할 지지선 개수 조정
+                int maxSupportLines = getMaxSupportLinesForStrategy();
+
+                for (int stepIndex = 0; stepIndex < Math.min(strategy.getBuySteps().size(), maxSupportLines); stepIndex++) {
                     AnalysisResult.Strategy.TradingStep step = strategy.getBuySteps().get(stepIndex);
                     ArrayList<Entry> supportEntries = new ArrayList<>();
 
@@ -597,8 +592,8 @@ public class StrategyFragment extends Fragment {
                     }
 
                     LineDataSet supportDataSet = new LineDataSet(supportEntries, "지지선 " + (stepIndex + 1));
-                    supportDataSet.setColor(Color.parseColor("#4CAF50"));
-                    supportDataSet.setLineWidth(3f);
+                    supportDataSet.setColor(getSupportLineColor(stepIndex));
+                    supportDataSet.setLineWidth(1.5f); // 지지선 두께
                     supportDataSet.setDrawCircles(false);
                     supportDataSet.setDrawValues(false);
                     supportDataSet.enableDashedLine(15f, 8f, 0f);
@@ -613,9 +608,11 @@ public class StrategyFragment extends Fragment {
                 }
             }
 
-            // 저항선들 (빨간색)
+            // 저항선들 (빨간색) - 기간별로 다르게 표시
             if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
-                for (int targetIndex = 0; targetIndex < Math.min(strategy.getTargetPrices().size(), 3); targetIndex++) {
+                int maxResistanceLines = getMaxResistanceLinesForStrategy();
+
+                for (int targetIndex = 0; targetIndex < Math.min(strategy.getTargetPrices().size(), maxResistanceLines); targetIndex++) {
                     double targetPrice = strategy.getTargetPrices().get(targetIndex);
                     ArrayList<Entry> resistanceEntries = new ArrayList<>();
 
@@ -625,8 +622,8 @@ public class StrategyFragment extends Fragment {
                     }
 
                     LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, "저항선 " + (targetIndex + 1));
-                    resistanceDataSet.setColor(Color.parseColor("#F44336"));
-                    resistanceDataSet.setLineWidth(3f);
+                    resistanceDataSet.setColor(getResistanceLineColor(targetIndex));
+                    resistanceDataSet.setLineWidth(1.5f); // 저항선 두께
                     resistanceDataSet.setDrawCircles(false);
                     resistanceDataSet.setDrawValues(false);
                     resistanceDataSet.enableDashedLine(15f, 8f, 0f);
@@ -641,7 +638,7 @@ public class StrategyFragment extends Fragment {
                 }
             }
 
-            // 손절매 라인 (주황색)
+            // 손절매 라인 (주황색) - 모든 기간에서 표시
             if (strategy.getStopLoss() > 0) {
                 ArrayList<Entry> stopLossEntries = new ArrayList<>();
                 float stopLossPrice = (float) strategy.getStopLoss();
@@ -652,7 +649,7 @@ public class StrategyFragment extends Fragment {
 
                 LineDataSet stopLossDataSet = new LineDataSet(stopLossEntries, "손절매");
                 stopLossDataSet.setColor(Color.parseColor("#FF9800"));
-                stopLossDataSet.setLineWidth(4f);
+                stopLossDataSet.setLineWidth(2f); // 손절매 라인 두께
                 stopLossDataSet.setDrawCircles(false);
                 stopLossDataSet.setDrawValues(false);
                 stopLossDataSet.enableDashedLine(20f, 10f, 0f);
@@ -673,13 +670,10 @@ public class StrategyFragment extends Fragment {
             }
         }
 
-        // Y축 범위 설정 (적절한 여백)
+        // Y축 범위 설정
         float padding = (maxPrice - minPrice) * 0.08f;
         strategyChart.getAxisLeft().setAxisMinimum(minPrice - padding);
         strategyChart.getAxisLeft().setAxisMaximum(maxPrice + padding);
-
-        Log.d("StrategyFragment", String.format("Y축 범위 설정: %.2f ~ %.2f (패딩: %.2f)",
-                minPrice - padding, maxPrice + padding, padding));
 
         // X축 범위 설정
         strategyChart.setVisibleXRangeMaximum(klines.size());
@@ -694,7 +688,57 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 빈 차트 생성 (데이터 로드 실패시) - 기간별 더미 데이터
+     * 기간별 최대 지지선 개수
+     */
+    private int getMaxSupportLinesForStrategy() {
+        switch (strategyType) {
+            case STRATEGY_SHORT_TERM: return 2; // 단기: 2개
+            case STRATEGY_MID_TERM: return 3;   // 중기: 3개
+            case STRATEGY_LONG_TERM: return 4;  // 장기: 4개
+            default: return 2;
+        }
+    }
+
+    /**
+     * 기간별 최대 저항선 개수
+     */
+    private int getMaxResistanceLinesForStrategy() {
+        switch (strategyType) {
+            case STRATEGY_SHORT_TERM: return 2; // 단기: 2개
+            case STRATEGY_MID_TERM: return 3;   // 중기: 3개
+            case STRATEGY_LONG_TERM: return 4;  // 장기: 4개
+            default: return 2;
+        }
+    }
+
+    /**
+     * 지지선 색상
+     */
+    private int getSupportLineColor(int index) {
+        switch (index) {
+            case 0: return Color.parseColor("#4CAF50"); // 첫 번째 지지선 - 진한 녹색
+            case 1: return Color.parseColor("#8BC34A"); // 두 번째 지지선 - 연한 녹색
+            case 2: return Color.parseColor("#CDDC39"); // 세 번째 지지선 - 라임
+            case 3: return Color.parseColor("#9CCC65"); // 네 번째 지지선 - 연두
+            default: return Color.parseColor("#4CAF50");
+        }
+    }
+
+    /**
+     * 저항선 색상
+     */
+    private int getResistanceLineColor(int index) {
+        switch (index) {
+            case 0: return Color.parseColor("#F44336"); // 첫 번째 저항선 - 진한 빨간색
+            case 1: return Color.parseColor("#FF5722"); // 두 번째 저항선 - 주황빨강
+            case 2: return Color.parseColor("#FF9800"); // 세 번째 저항선 - 주황
+            case 3: return Color.parseColor("#FFC107"); // 네 번째 저항선 - 노랑
+            default: return Color.parseColor("#F44336");
+        }
+    }
+
+    /**
+     * 빈 차트 생성 (데이터 로드 실패시)
      */
     private void createEmptyChart() {
         if (strategyChart == null) return;
@@ -721,12 +765,12 @@ public class StrategyFragment extends Fragment {
         CandleDataSet emptyDataSet = new CandleDataSet(emptyEntries, "데이터 로드 중...");
         emptyDataSet.setColor(Color.GRAY);
         emptyDataSet.setShadowColor(Color.DKGRAY);
-        emptyDataSet.setShadowWidth(1f);
+        emptyDataSet.setShadowWidth(1f); // 빈 차트 캔들 심지 두께
         emptyDataSet.setDecreasingColor(Color.parseColor("#66FF4B6C"));
         emptyDataSet.setIncreasingColor(Color.parseColor("#6600C087"));
         emptyDataSet.setNeutralColor(Color.parseColor("#66FFC107"));
         emptyDataSet.setDrawValues(false);
-        emptyDataSet.setBarSpace(0.3f);
+        emptyDataSet.setBarSpace(0.1f);
 
         CandleData emptyData = new CandleData(emptyDataSet);
         CombinedData combinedData = new CombinedData();
@@ -738,7 +782,7 @@ public class StrategyFragment extends Fragment {
         Log.d("StrategyFragment", "빈 차트 생성 완료");
     }
 
-    // 나머지 메서드들은 기존과 동일...
+    // 나머지 메서드들...
     private void setupBlurredView() {
         blurOverlay.setVisibility(View.VISIBLE);
         pixelatedOverlay.setVisibility(View.VISIBLE);

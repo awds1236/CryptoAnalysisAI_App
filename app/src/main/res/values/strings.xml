@@ -324,7 +324,7 @@
     <string name="current_price_line">현재가</string>
     <string name="support_line">지지선</string>
     <string name="resistance_line">저항선</string>
-    <string name="stop_loss_line">손절매</string>
+    <string name="stop_loss_line">위험 관리 구간</string>
     <string name="support_level_format">지지선 %d</string>
     <string name="resistance_level_format">저항선 %d</string>
     <string name="price_chart_loading">가격 차트 로딩 중</string>
