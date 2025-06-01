@@ -313,7 +313,7 @@
     <string name="current_price_line">Current Price</string>
     <string name="support_line">Support Line</string>
     <string name="resistance_line">Resistance Line</string>
-    <string name="stop_loss_line">Stop Loss</string>
+    <string name="stop_loss_line">Risk Management Zone</string>
     <string name="support_level_format">Support %d</string>
     <string name="resistance_level_format">Resistance %d</string>
     <string name="price_chart_loading">Loading price chart</string>
