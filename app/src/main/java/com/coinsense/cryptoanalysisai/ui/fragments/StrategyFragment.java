@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
@@ -38,17 +39,23 @@ import com.coinsense.cryptoanalysisai.ui.dialogs.AdViewDialog;
 import com.coinsense.cryptoanalysisai.services.AdManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 
-// MPAndroidChart 임포트
-import com.github.mikephil.charting.charts.LineChart;
+// MPAndroidChart 임포트 - CombinedChart 추가
+import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.data.CandleData;
+import com.github.mikephil.charting.data.CandleDataSet;
+import com.github.mikephil.charting.data.CandleEntry;
+import com.github.mikephil.charting.data.CombinedData;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -82,8 +89,8 @@ public class StrategyFragment extends Fragment {
     private View btnSubscribe;
     private View contentArea;
 
-    // 차트 관련 UI 요소 추가
-    private LineChart strategyChart;
+    // 차트 관련 UI 요소 - CombinedChart로 변경
+    private CombinedChart strategyChart;
 
     private AdManager adManager;
     private TextView tvAdStatus;
@@ -214,7 +221,7 @@ public class StrategyFragment extends Fragment {
         btnWatchAd = view.findViewById(R.id.btnWatchAd);
         additionalBlurLayer = view.findViewById(R.id.additionalBlurLayer);
 
-        // 차트 초기화
+        // 차트 초기화 - CombinedChart로 변경
         strategyChart = view.findViewById(R.id.strategyChart);
         setupChart();
 
@@ -313,7 +320,7 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 차트 초기 설정
+     * 차트 초기 설정 - CombinedChart용 (개선된 X축 라벨)
      */
     private void setupChart() {
         if (strategyChart == null) return;
@@ -325,18 +332,89 @@ public class StrategyFragment extends Fragment {
         strategyChart.setScaleEnabled(true);
         strategyChart.setDrawGridBackground(false);
         strategyChart.setPinchZoom(true);
+        strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
+                CombinedChart.DrawOrder.CANDLE,
+                CombinedChart.DrawOrder.LINE
+        });
 
-        // X축 설정
+        // 차트 여백 설정 (가시성 향상)
+        strategyChart.setExtraOffsets(10f, 10f, 10f, 10f);
+        strategyChart.setBackgroundColor(Color.parseColor("#1E1E1E"));
+
+        // X축 설정 (기간별 라벨)
         XAxis xAxis = strategyChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setDrawGridLines(false);
-        xAxis.setGranularity(1f);
-        xAxis.setLabelCount(5);
+        xAxis.setDrawGridLines(true);
+        xAxis.setGridColor(Color.parseColor("#40FFFFFF"));
+        xAxis.setGridLineWidth(1f);
+        xAxis.setTextColor(Color.parseColor("#CCCCCC"));
+        xAxis.setTextSize(10f);
+        xAxis.setLabelCount(5, false);
+        xAxis.setAvoidFirstLastClipping(true);
+        xAxis.setSpaceMin(0.5f);
+        xAxis.setSpaceMax(0.5f);
 
-        // Y축 설정
+        // X축 라벨 포매터 - 기간별 차별화
+        xAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                int index = (int) value;
+                int totalCandles = 30;
+
+                if (index >= 0 && index < totalCandles) {
+                    int periodsAgo = totalCandles - index - 1;
+
+                    switch (strategyType) {
+                        case STRATEGY_SHORT_TERM:
+                            // 4시간봉 - 시간 단위
+                            if (periodsAgo == 0) return "현재";
+                            if (periodsAgo % 6 == 0) return (periodsAgo * 4) + "시간전";
+                            break;
+                        case STRATEGY_MID_TERM:
+                            // 12시간봉 - 일 단위
+                            if (periodsAgo == 0) return "현재";
+                            if (periodsAgo % 2 == 0) return (periodsAgo / 2) + "일전";
+                            break;
+                        case STRATEGY_LONG_TERM:
+                            // 일봉 - 일 단위
+                            if (periodsAgo == 0) return "오늘";
+                            if (periodsAgo % 7 == 0) return periodsAgo + "일전";
+                            break;
+                    }
+                }
+                return "";
+            }
+        });
+
+        // Y축 설정 (개선된 가시성)
         YAxis leftAxis = strategyChart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
-        leftAxis.setAxisMinimum(0f);
+        leftAxis.setGridColor(Color.parseColor("#40FFFFFF"));
+        leftAxis.setGridLineWidth(1f);
+        leftAxis.setTextColor(Color.parseColor("#CCCCCC"));
+        leftAxis.setTextSize(10f);
+        leftAxis.setLabelCount(6, false);
+        leftAxis.setSpaceTop(10f);
+        leftAxis.setSpaceBottom(10f);
+
+        leftAxis.setValueFormatter(new ValueFormatter() {
+            @Override
+            public String getFormattedValue(float value) {
+                if ("$".equals(currencySymbol)) {
+                    if (value >= 10000) {
+                        return String.format("$%.0fK", value / 1000);
+                    } else if (value >= 1000) {
+                        return String.format("$%.1fK", value / 1000);
+                    } else if (value >= 1) {
+                        return String.format("$%.0f", value);
+                    } else {
+                        return String.format("$%.3f", value);
+                    }
+                } else {
+                    return String.format("₩%,.0f", value);
+                }
+            }
+        });
 
         YAxis rightAxis = strategyChart.getAxisRight();
         rightAxis.setEnabled(false);
@@ -346,173 +424,321 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 차트 데이터 업데이트
+     * 차트 데이터 업데이트 - 30일 제한으로 가시성 개선
      */
     private void updateChart() {
         if (strategyChart == null || coinInfo == null) return;
 
-        // 현재가 가져오기
-        getCurrentPriceAndUpdateChart();
+        // 실제 캔들 데이터 가져오기
+        getCandleDataAndUpdateChart();
     }
 
     /**
-     * 현재가를 가져와서 차트 업데이트
+     * 캔들 데이터 가져와서 차트 업데이트 (30일 제한)
      */
-    private void getCurrentPriceAndUpdateChart() {
+    private void getCandleDataAndUpdateChart() {
         if (coinInfo == null || coinInfo.getMarket() == null) return;
 
         BinanceApiService apiService = RetrofitClient.getBinanceApiService();
-        apiService.getTicker(coinInfo.getMarket()).enqueue(new Callback<BinanceTicker>() {
-            @Override
-            public void onResponse(@NonNull Call<BinanceTicker> call, @NonNull Response<BinanceTicker> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    BinanceTicker ticker = response.body();
-                    double currentPrice = ticker.getPrice();
-                    coinInfo.setCurrentPrice(currentPrice);
 
-                    // 차트 데이터 생성
-                    createChartData(currentPrice);
+        // 기간에 따른 인터벌과 개수 설정
+        String interval;
+        int limit;
+
+        switch (strategyType) {
+            case STRATEGY_SHORT_TERM:
+                interval = "4h"; // 4시간봉 30개 = 5일
+                limit = 30;
+                break;
+            case STRATEGY_MID_TERM:
+                interval = "12h"; // 12시간봉 30개 = 15일
+                limit = 30;
+                break;
+            case STRATEGY_LONG_TERM:
+                interval = "1d"; // 일봉 30개 = 30일
+                limit = 30;
+                break;
+            default:
+                interval = "1d";
+                limit = 30;
+                break;
+        }
+
+        Log.d("StrategyFragment", String.format("차트 데이터 요청: 기간=%s, 인터벌=%s, 개수=%d",
+                getStrategyTypeName(), interval, limit));
+
+        apiService.getKlines(coinInfo.getMarket(), interval, limit).enqueue(new Callback<List<List<Object>>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<List<Object>>> call, @NonNull Response<List<List<Object>>> response) {
+                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
+                    List<List<Object>> klines = response.body();
+                    Log.d("StrategyFragment", String.format("캔들 데이터 수신: %d개", klines.size()));
+                    createCombinedChartData(klines);
+                } else {
+                    Log.e("StrategyFragment", "캔들 데이터 응답 실패 또는 빈 데이터");
+                    createEmptyChart();
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<BinanceTicker> call, @NonNull Throwable t) {
-                Log.e("StrategyFragment", "가격 정보 로드 실패: " + t.getMessage());
-                // 실패해도 저장된 가격으로 차트 생성 시도
-                if (coinInfo.getCurrentPrice() > 0) {
-                    createChartData(coinInfo.getCurrentPrice());
-                }
+            public void onFailure(@NonNull Call<List<List<Object>>> call, @NonNull Throwable t) {
+                Log.e("StrategyFragment", "캔들 데이터 로드 실패: " + t.getMessage());
+                // 실패시 빈 차트 표시
+                createEmptyChart();
             }
         });
     }
 
     /**
-     * 차트 데이터 생성 및 설정
+     * 기간 타입 이름 반환 (디버깅용)
      */
-    private void createChartData(double currentPrice) {
-        if (strategyChart == null || strategy == null) return;
+    private String getStrategyTypeName() {
+        switch (strategyType) {
+            case STRATEGY_SHORT_TERM: return "단기";
+            case STRATEGY_MID_TERM: return "중기";
+            case STRATEGY_LONG_TERM: return "장기";
+            default: return "알 수 없음";
+        }
+    }
 
-        ArrayList<ILineDataSet> dataSets = new ArrayList<>();
 
-        // 1. 현재가 라인 (파란색)
-        ArrayList<Entry> currentPriceEntries = new ArrayList<>();
-        for (int i = 0; i <= 10; i++) {
-            currentPriceEntries.add(new Entry(i, (float) currentPrice));
+    /**
+     * 캔들스틱 + 지지선/저항선 결합 차트 생성 (개선된 버전)
+     */
+    private void createCombinedChartData(List<List<Object>> klines) {
+        if (strategyChart == null || klines.isEmpty()) {
+            Log.e("StrategyFragment", "차트가 null이거나 캔들 데이터가 비어있음");
+            createEmptyChart();
+            return;
         }
 
-        LineDataSet currentPriceDataSet = new LineDataSet(currentPriceEntries, getString(R.string.current_price_line));
-        currentPriceDataSet.setColor(Color.parseColor("#2196F3"));
-        currentPriceDataSet.setLineWidth(3f);
-        currentPriceDataSet.setDrawCircles(false);
-        currentPriceDataSet.setDrawValues(false);
-        dataSets.add(currentPriceDataSet);
+        Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들", klines.size()));
 
-        // 2. 지지선들 (녹색)
-        if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
-            for (int stepIndex = 0; stepIndex < strategy.getBuySteps().size(); stepIndex++) {
-                AnalysisResult.Strategy.TradingStep step = strategy.getBuySteps().get(stepIndex);
-                ArrayList<Entry> supportEntries = new ArrayList<>();
+        CombinedData combinedData = new CombinedData();
 
-                for (int i = 0; i <= 10; i++) {
-                    supportEntries.add(new Entry(i, (float) step.getPrice()));
+        // 1. 캔들스틱 데이터 생성
+        ArrayList<CandleEntry> candleEntries = new ArrayList<>();
+        float minPrice = Float.MAX_VALUE;
+        float maxPrice = Float.MIN_VALUE;
+
+        for (int i = 0; i < klines.size(); i++) {
+            List<Object> kline = klines.get(i);
+            try {
+                // 바이낸스 API 응답 구조: [timestamp, open, high, low, close, volume, ...]
+                double open = Double.parseDouble(kline.get(1).toString());
+                double high = Double.parseDouble(kline.get(2).toString());
+                double low = Double.parseDouble(kline.get(3).toString());
+                double close = Double.parseDouble(kline.get(4).toString());
+
+                // float로 변환
+                float openF = (float) open;
+                float highF = (float) high;
+                float lowF = (float) low;
+                float closeF = (float) close;
+
+                candleEntries.add(new CandleEntry(i, highF, lowF, openF, closeF));
+
+                minPrice = Math.min(minPrice, lowF);
+                maxPrice = Math.max(maxPrice, highF);
+
+                if (i < 3) { // 처음 3개만 로깅
+                    Log.d("StrategyFragment", String.format("캔들 %d: O=%.2f H=%.2f L=%.2f C=%.2f",
+                            i, openF, highF, lowF, closeF));
+                }
+            } catch (Exception e) {
+                Log.e("StrategyFragment", "캔들 데이터 파싱 오류 (인덱스 " + i + "): " + e.getMessage());
+                continue;
+            }
+        }
+
+        if (candleEntries.isEmpty()) {
+            Log.e("StrategyFragment", "파싱된 캔들 데이터가 없음");
+            createEmptyChart();
+            return;
+        }
+
+        Log.d("StrategyFragment", String.format("캔들 엔트리 생성 완료: %d개, 가격 범위: %.2f ~ %.2f",
+                candleEntries.size(), minPrice, maxPrice));
+
+        // 캔들스틱 데이터셋 설정 (가시성 최대화)
+        CandleDataSet candleDataSet = new CandleDataSet(candleEntries, "Price");
+
+        // 캔들 색상 설정
+        candleDataSet.setShadowColor(Color.parseColor("#CCCCCC"));
+        candleDataSet.setShadowWidth(2f);
+        candleDataSet.setDecreasingColor(Color.parseColor("#FF4B6C")); // 하락 - 빨간색
+        candleDataSet.setDecreasingPaintStyle(Paint.Style.FILL);
+        candleDataSet.setIncreasingColor(Color.parseColor("#00C087")); // 상승 - 녹색
+        candleDataSet.setIncreasingPaintStyle(Paint.Style.FILL);
+        candleDataSet.setNeutralColor(Color.parseColor("#FFC107")); // 동일가 - 노란색
+        candleDataSet.setDrawValues(false);
+
+        // 캔들 간격과 크기 최적화
+        candleDataSet.setBarSpace(0.2f); // 캔들 간격 조정
+        candleDataSet.setHighlightEnabled(true);
+        candleDataSet.setHighLightColor(Color.WHITE);
+
+        CandleData candleData = new CandleData(candleDataSet);
+        combinedData.setData(candleData);
+
+        // 2. 라인 데이터 (지지선/저항선) 생성
+        if (strategy != null) {
+            ArrayList<ILineDataSet> lineDataSets = new ArrayList<>();
+
+            // 지지선들 (녹색)
+            if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
+                for (int stepIndex = 0; stepIndex < Math.min(strategy.getBuySteps().size(), 3); stepIndex++) {
+                    AnalysisResult.Strategy.TradingStep step = strategy.getBuySteps().get(stepIndex);
+                    ArrayList<Entry> supportEntries = new ArrayList<>();
+
+                    float supportPrice = (float) step.getPrice();
+                    for (int i = 0; i < klines.size(); i++) {
+                        supportEntries.add(new Entry(i, supportPrice));
+                    }
+
+                    LineDataSet supportDataSet = new LineDataSet(supportEntries, "지지선 " + (stepIndex + 1));
+                    supportDataSet.setColor(Color.parseColor("#4CAF50"));
+                    supportDataSet.setLineWidth(3f);
+                    supportDataSet.setDrawCircles(false);
+                    supportDataSet.setDrawValues(false);
+                    supportDataSet.enableDashedLine(15f, 8f, 0f);
+                    supportDataSet.setDrawFilled(false);
+                    supportDataSet.setHighlightEnabled(false);
+                    lineDataSets.add(supportDataSet);
+
+                    minPrice = Math.min(minPrice, supportPrice);
+                    maxPrice = Math.max(maxPrice, supportPrice);
+
+                    Log.d("StrategyFragment", String.format("지지선 %d 추가: %.2f", stepIndex + 1, supportPrice));
+                }
+            }
+
+            // 저항선들 (빨간색)
+            if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
+                for (int targetIndex = 0; targetIndex < Math.min(strategy.getTargetPrices().size(), 3); targetIndex++) {
+                    double targetPrice = strategy.getTargetPrices().get(targetIndex);
+                    ArrayList<Entry> resistanceEntries = new ArrayList<>();
+
+                    float resistancePrice = (float) targetPrice;
+                    for (int i = 0; i < klines.size(); i++) {
+                        resistanceEntries.add(new Entry(i, resistancePrice));
+                    }
+
+                    LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, "저항선 " + (targetIndex + 1));
+                    resistanceDataSet.setColor(Color.parseColor("#F44336"));
+                    resistanceDataSet.setLineWidth(3f);
+                    resistanceDataSet.setDrawCircles(false);
+                    resistanceDataSet.setDrawValues(false);
+                    resistanceDataSet.enableDashedLine(15f, 8f, 0f);
+                    resistanceDataSet.setDrawFilled(false);
+                    resistanceDataSet.setHighlightEnabled(false);
+                    lineDataSets.add(resistanceDataSet);
+
+                    minPrice = Math.min(minPrice, resistancePrice);
+                    maxPrice = Math.max(maxPrice, resistancePrice);
+
+                    Log.d("StrategyFragment", String.format("저항선 %d 추가: %.2f", targetIndex + 1, resistancePrice));
+                }
+            }
+
+            // 손절매 라인 (주황색)
+            if (strategy.getStopLoss() > 0) {
+                ArrayList<Entry> stopLossEntries = new ArrayList<>();
+                float stopLossPrice = (float) strategy.getStopLoss();
+
+                for (int i = 0; i < klines.size(); i++) {
+                    stopLossEntries.add(new Entry(i, stopLossPrice));
                 }
 
-                LineDataSet supportDataSet = new LineDataSet(supportEntries, String.format(getString(R.string.support_level_format), stepIndex + 1));
-                supportDataSet.setColor(Color.parseColor("#4CAF50"));
-                supportDataSet.setLineWidth(2f);
-                supportDataSet.setDrawCircles(false);
-                supportDataSet.setDrawValues(false);
-                supportDataSet.enableDashedLine(10f, 5f, 0f);
-                dataSets.add(supportDataSet);
+                LineDataSet stopLossDataSet = new LineDataSet(stopLossEntries, "손절매");
+                stopLossDataSet.setColor(Color.parseColor("#FF9800"));
+                stopLossDataSet.setLineWidth(4f);
+                stopLossDataSet.setDrawCircles(false);
+                stopLossDataSet.setDrawValues(false);
+                stopLossDataSet.enableDashedLine(20f, 10f, 0f);
+                stopLossDataSet.setDrawFilled(false);
+                stopLossDataSet.setHighlightEnabled(false);
+                lineDataSets.add(stopLossDataSet);
+
+                minPrice = Math.min(minPrice, stopLossPrice);
+                maxPrice = Math.max(maxPrice, stopLossPrice);
+
+                Log.d("StrategyFragment", String.format("손절매 라인 추가: %.2f", stopLossPrice));
+            }
+
+            if (!lineDataSets.isEmpty()) {
+                LineData lineData = new LineData(lineDataSets);
+                combinedData.setData(lineData);
+                Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개", lineDataSets.size()));
             }
         }
 
-        // 3. 저항선들 (빨간색)
-        if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
-            for (int targetIndex = 0; targetIndex < strategy.getTargetPrices().size(); targetIndex++) {
-                double targetPrice = strategy.getTargetPrices().get(targetIndex);
-                ArrayList<Entry> resistanceEntries = new ArrayList<>();
-
-                for (int i = 0; i <= 10; i++) {
-                    resistanceEntries.add(new Entry(i, (float) targetPrice));
-                }
-
-                LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, String.format(getString(R.string.resistance_level_format), targetIndex + 1));
-                resistanceDataSet.setColor(Color.parseColor("#F44336"));
-                resistanceDataSet.setLineWidth(2f);
-                resistanceDataSet.setDrawCircles(false);
-                resistanceDataSet.setDrawValues(false);
-                resistanceDataSet.enableDashedLine(10f, 5f, 0f);
-                dataSets.add(resistanceDataSet);
-            }
-        }
-
-        // 4. 손절매 라인 (주황색)
-        if (strategy.getStopLoss() > 0) {
-            ArrayList<Entry> stopLossEntries = new ArrayList<>();
-            for (int i = 0; i <= 10; i++) {
-                stopLossEntries.add(new Entry(i, (float) strategy.getStopLoss()));
-            }
-
-            LineDataSet stopLossDataSet = new LineDataSet(stopLossEntries, getString(R.string.stop_loss_line));
-            stopLossDataSet.setColor(Color.parseColor("#FF9800"));
-            stopLossDataSet.setLineWidth(2f);
-            stopLossDataSet.setDrawCircles(false);
-            stopLossDataSet.setDrawValues(false);
-            stopLossDataSet.enableDashedLine(15f, 10f, 0f);
-            dataSets.add(stopLossDataSet);
-        }
-
-        // 차트에 데이터 설정
-        LineData lineData = new LineData(dataSets);
-        strategyChart.setData(lineData);
-
-        // Y축 범위 설정 (모든 가격의 최소/최대값 기준으로 여유있게)
-        float minPrice = (float) currentPrice;
-        float maxPrice = (float) currentPrice;
-
-        // 모든 가격 중 최소/최대 찾기
-        if (strategy.getBuySteps() != null) {
-            for (AnalysisResult.Strategy.TradingStep step : strategy.getBuySteps()) {
-                minPrice = Math.min(minPrice, (float) step.getPrice());
-                maxPrice = Math.max(maxPrice, (float) step.getPrice());
-            }
-        }
-        if (strategy.getTargetPrices() != null) {
-            for (double target : strategy.getTargetPrices()) {
-                minPrice = Math.min(minPrice, (float) target);
-                maxPrice = Math.max(maxPrice, (float) target);
-            }
-        }
-        if (strategy.getStopLoss() > 0) {
-            minPrice = Math.min(minPrice, (float) strategy.getStopLoss());
-            maxPrice = Math.max(maxPrice, (float) strategy.getStopLoss());
-        }
-
-        // 10% 여유 추가
-        float padding = (maxPrice - minPrice) * 0.1f;
+        // Y축 범위 설정 (적절한 여백)
+        float padding = (maxPrice - minPrice) * 0.08f;
         strategyChart.getAxisLeft().setAxisMinimum(minPrice - padding);
         strategyChart.getAxisLeft().setAxisMaximum(maxPrice + padding);
 
-        // 가격 포맷터 설정
-        strategyChart.getAxisLeft().setValueFormatter(new ValueFormatter() {
-            @Override
-            public String getFormattedValue(float value) {
-                if ("$".equals(currencySymbol)) {
-                    return String.format("$%.2f", value);
-                } else {
-                    return String.format("₩%,.0f", value);
-                }
-            }
-        });
+        Log.d("StrategyFragment", String.format("Y축 범위 설정: %.2f ~ %.2f (패딩: %.2f)",
+                minPrice - padding, maxPrice + padding, padding));
 
-        // X축 라벨 숨기기 (시간 정보가 없으므로)
-        strategyChart.getXAxis().setDrawLabels(false);
+        // X축 범위 설정
+        strategyChart.setVisibleXRangeMaximum(klines.size());
+        strategyChart.setVisibleXRangeMinimum(klines.size());
 
-        // 차트 새로고침
+        // 차트에 데이터 설정
+        strategyChart.setData(combinedData);
+        strategyChart.fitScreen();
         strategyChart.invalidate();
+
+        Log.d("StrategyFragment", "차트 업데이트 완료");
     }
 
+    /**
+     * 빈 차트 생성 (데이터 로드 실패시) - 기간별 더미 데이터
+     */
+    private void createEmptyChart() {
+        if (strategyChart == null) return;
+
+        Log.d("StrategyFragment", "빈 차트 생성");
+
+        // 30개의 더미 캔들 데이터 생성
+        ArrayList<CandleEntry> emptyEntries = new ArrayList<>();
+        float basePrice = 50000f; // 기본 가격
+
+        for (int i = 0; i < 30; i++) {
+            // 약간의 변동성을 가진 더미 데이터
+            float priceVariation = (float)(Math.random() * 2000 - 1000); // ±1000
+            float dayPrice = basePrice + priceVariation;
+
+            float high = dayPrice + (float)(Math.random() * 1000);
+            float low = dayPrice - (float)(Math.random() * 1000);
+            float open = dayPrice + (float)(Math.random() * 500 - 250);
+            float close = dayPrice + (float)(Math.random() * 500 - 250);
+
+            emptyEntries.add(new CandleEntry(i, high, low, open, close));
+        }
+
+        CandleDataSet emptyDataSet = new CandleDataSet(emptyEntries, "데이터 로드 중...");
+        emptyDataSet.setColor(Color.GRAY);
+        emptyDataSet.setShadowColor(Color.DKGRAY);
+        emptyDataSet.setShadowWidth(1f);
+        emptyDataSet.setDecreasingColor(Color.parseColor("#66FF4B6C"));
+        emptyDataSet.setIncreasingColor(Color.parseColor("#6600C087"));
+        emptyDataSet.setNeutralColor(Color.parseColor("#66FFC107"));
+        emptyDataSet.setDrawValues(false);
+        emptyDataSet.setBarSpace(0.3f);
+
+        CandleData emptyData = new CandleData(emptyDataSet);
+        CombinedData combinedData = new CombinedData();
+        combinedData.setData(emptyData);
+
+        strategyChart.setData(combinedData);
+        strategyChart.invalidate();
+
+        Log.d("StrategyFragment", "빈 차트 생성 완료");
+    }
+
+    // 나머지 메서드들은 기존과 동일...
     private void setupBlurredView() {
         blurOverlay.setVisibility(View.VISIBLE);
         pixelatedOverlay.setVisibility(View.VISIBLE);
