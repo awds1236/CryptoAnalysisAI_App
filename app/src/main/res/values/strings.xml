@@ -318,4 +318,25 @@
     <string name="strong_sell_recommendation">하락</string>
     <string name="weak_sell_recommendation">약한 하락</string>
 
+
+    <!-- 차트 관련 문자열 -->
+    <string name="strategy_chart_title">차트</string>
+    <string name="current_price_line">현재가</string>
+    <string name="support_line">지지선</string>
+    <string name="resistance_line">저항선</string>
+    <string name="stop_loss_line">손절매</string>
+    <string name="support_level_format">지지선 %d</string>
+    <string name="resistance_level_format">저항선 %d</string>
+    <string name="price_chart_loading">가격 차트 로딩 중</string>
+    <string name="chart_no_data">차트 데이터가 없습니다</string>
+
+    <!-- 차트 범례 -->
+    <string name="chart_legend_current">현재가</string>
+    <string name="chart_legend_support">지지선</string>
+    <string name="chart_legend_resistance">저항선</string>
+    <string name="chart_legend_stop_loss">손절매</string>
+
+    <!-- 차트 설명 -->
+    <string name="chart_description">이 차트는 현재 가격과 주요 지지선, 저항선을 보여줍니다. 실제 시장 데이터가 아닌 분석 기반 참고 정보입니다.</string>
+    <string name="chart_disclaimer">※ 차트는 AI 분석 기반 참고 자료이며, 실제 거래를 위한 정확한 지표가 아닙니다.</string>
 </resources>

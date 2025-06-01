@@ -307,4 +307,25 @@
     <string name="weak_buy_recommendation">Mild Upward</string>
     <string name="strong_sell_recommendation">Downward</string>
     <string name="weak_sell_recommendation">Mild Downward</string>
+
+    <!-- Chart related strings -->
+    <string name="strategy_chart_title">Chart</string>
+    <string name="current_price_line">Current Price</string>
+    <string name="support_line">Support Line</string>
+    <string name="resistance_line">Resistance Line</string>
+    <string name="stop_loss_line">Stop Loss</string>
+    <string name="support_level_format">Support %d</string>
+    <string name="resistance_level_format">Resistance %d</string>
+    <string name="price_chart_loading">Loading price chart</string>
+    <string name="chart_no_data">No chart data available</string>
+
+    <!-- Chart legend -->
+    <string name="chart_legend_current">Current Price</string>
+    <string name="chart_legend_support">Support</string>
+    <string name="chart_legend_resistance">Resistance</string>
+    <string name="chart_legend_stop_loss">Stop Loss</string>
+
+    <!-- Chart description -->
+    <string name="chart_description">This chart shows current price and key support/resistance levels. This is reference information based on analysis, not actual market data.</string>
+    <string name="chart_disclaimer">※ The chart is AI analysis-based reference material and not an accurate indicator for actual trading.</string>
 </resources>
