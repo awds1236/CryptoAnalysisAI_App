@@ -320,7 +320,7 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 차트 초기 설정 - 골든/데드 크로스 표시 포함
+     * 차트 초기 설정
      */
     private void setupChart() {
         if (strategyChart == null) return;
@@ -406,7 +406,7 @@ public class StrategyFragment extends Fragment {
         YAxis rightAxis = strategyChart.getAxisRight();
         rightAxis.setEnabled(false);
 
-        // 범례 설정 - 골든/데드 크로스 포함
+        // 범례 설정
         strategyChart.getLegend().setEnabled(true);
         strategyChart.getLegend().setTextColor(Color.parseColor("#CCCCCC"));
         strategyChart.getLegend().setTextSize(10f);
@@ -566,7 +566,7 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 캔들스틱 + 지지선/저항선 + 골든/데드 크로스 결합 차트 생성
+     * 캔들스틱 + 지지선/저항선 결합 차트 생성 (MA5/MA20 제거, 범례 통일)
      */
     private void createCombinedChartData(List<List<Object>> klines) {
         if (strategyChart == null || klines.isEmpty()) {
@@ -581,7 +581,6 @@ public class StrategyFragment extends Fragment {
 
         // 1. 캔들스틱 데이터 생성
         ArrayList<CandleEntry> candleEntries = new ArrayList<>();
-        ArrayList<Double> closePrices = new ArrayList<>(); // 종가 저장 (이동평균 계산용)
         float minPrice = Float.MAX_VALUE;
         float maxPrice = Float.MIN_VALUE;
 
@@ -601,7 +600,6 @@ public class StrategyFragment extends Fragment {
                 float closeF = (float) close;
 
                 candleEntries.add(new CandleEntry(i, highF, lowF, openF, closeF));
-                closePrices.add(close); // 종가를 따로 저장
 
                 minPrice = Math.min(minPrice, lowF);
                 maxPrice = Math.max(maxPrice, highF);
@@ -646,103 +644,19 @@ public class StrategyFragment extends Fragment {
         CandleData candleData = new CandleData(candleDataSet);
         combinedData.setData(candleData);
 
-        // 2. 이동평균선 계산 및 골든/데드 크로스 찾기
-        ArrayList<Entry> ma5Entries = new ArrayList<>();
-        ArrayList<Entry> ma20Entries = new ArrayList<>();
-        ArrayList<Entry> goldenCrossEntries = new ArrayList<>();
-        ArrayList<Entry> deathCrossEntries = new ArrayList<>();
-
-        // 이동평균선 계산
-        for (int i = 0; i < closePrices.size(); i++) {
-            // 5일 이동평균
-            if (i >= 4) {
-                double ma5Sum = 0;
-                for (int j = i - 4; j <= i; j++) {
-                    ma5Sum += closePrices.get(j);
-                }
-                double ma5 = ma5Sum / 5;
-                ma5Entries.add(new Entry(i, (float) ma5));
-
-                minPrice = Math.min(minPrice, (float) ma5);
-                maxPrice = Math.max(maxPrice, (float) ma5);
-            }
-
-            // 20일 이동평균
-            if (i >= 19) {
-                double ma20Sum = 0;
-                for (int j = i - 19; j <= i; j++) {
-                    ma20Sum += closePrices.get(j);
-                }
-                double ma20 = ma20Sum / 20;
-                ma20Entries.add(new Entry(i, (float) ma20));
-
-                minPrice = Math.min(minPrice, (float) ma20);
-                maxPrice = Math.max(maxPrice, (float) ma20);
-            }
-        }
-
-        // 골든 크로스 & 데드 크로스 지점 찾기
-        for (int i = 1; i < Math.min(ma5Entries.size(), ma20Entries.size()); i++) {
-            float prevMa5 = ma5Entries.get(i - 1).getY();
-            float currMa5 = ma5Entries.get(i).getY();
-            float prevMa20 = ma20Entries.get(i - 1).getY();
-            float currMa20 = ma20Entries.get(i).getY();
-
-            // 골든 크로스: MA5가 MA20을 아래에서 위로 돌파
-            if (prevMa5 <= prevMa20 && currMa5 > currMa20) {
-                float crossPrice = (currMa5 + currMa20) / 2; // 교차점 가격
-                // 골든 크로스는 캔들 위쪽에 표시 (가격 범위의 3% 위)
-                float offset = (maxPrice - minPrice) * 0.05f;
-                goldenCrossEntries.add(new Entry(ma5Entries.get(i).getX(), crossPrice + offset));
-                Log.d("StrategyFragment", String.format("골든 크로스 발견: 인덱스 %d, 가격 %.2f",
-                        (int)ma5Entries.get(i).getX(), crossPrice));
-            }
-
-            // 데드 크로스: MA5가 MA20을 위에서 아래로 돌파
-            if (prevMa5 >= prevMa20 && currMa5 < currMa20) {
-                float crossPrice = (currMa5 + currMa20) / 2; // 교차점 가격
-                // 데드 크로스는 캔들 아래쪽에 표시 (가격 범위의 3% 아래)
-                float offset = (maxPrice - minPrice) * 0.05f;
-                deathCrossEntries.add(new Entry(ma5Entries.get(i).getX(), crossPrice - offset));
-                Log.d("StrategyFragment", String.format("데드 크로스 발견: 인덱스 %d, 가격 %.2f",
-                        (int)ma5Entries.get(i).getX(), crossPrice));
-            }
-        }
-
-        // 3. 라인 데이터 (지지선/저항선 + 이동평균선) 생성
+        // 2. 라인 데이터 (지지선/저항선만) 생성
         ArrayList<ILineDataSet> lineDataSets = new ArrayList<>();
 
-        // 이동평균선 추가 (투명도를 낮춰서 보조적으로 표시)
-        if (!ma5Entries.isEmpty()) {
-            LineDataSet ma5DataSet = new LineDataSet(ma5Entries, "MA5");
-            ma5DataSet.setColor(Color.parseColor("#80FFC107")); // 반투명 노란색
-            ma5DataSet.setLineWidth(1f);
-            ma5DataSet.setDrawCircles(false);
-            ma5DataSet.setDrawValues(false);
-            ma5DataSet.setHighlightEnabled(false);
-            ma5DataSet.enableDashedLine(5f, 3f, 0f);
-            lineDataSets.add(ma5DataSet);
-        }
+        // MA5, MA20 제거 - 더 이상 추가하지 않음
 
-        if (!ma20Entries.isEmpty()) {
-            LineDataSet ma20DataSet = new LineDataSet(ma20Entries, "MA20");
-            ma20DataSet.setColor(Color.parseColor("#8000BCD4")); // 반투명 시안색
-            ma20DataSet.setLineWidth(1f);
-            ma20DataSet.setDrawCircles(false);
-            ma20DataSet.setDrawValues(false);
-            ma20DataSet.setHighlightEnabled(false);
-            ma20DataSet.enableDashedLine(8f, 4f, 0f);
-            lineDataSets.add(ma20DataSet);
-        }
-
-        // 기존 지지선/저항선 코드는 그대로 유지
+        // 전략이 있는 경우 지지선/저항선 추가
         if (strategy != null) {
-            // 지지선들 (녹색) - 기간별로 다르게 표시
+            // 지지선들 (녹색 통일) - 실제 buySteps 개수만큼 모두 표시
             if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
-                // 기간에 따라 표시할 지지선 개수 조정
-                int maxSupportLines = getMaxSupportLinesForStrategy();
+                boolean supportLegendAdded = false; // 범례는 한 번만 추가
 
-                for (int stepIndex = 0; stepIndex < Math.min(strategy.getBuySteps().size(), maxSupportLines); stepIndex++) {
+                // 개수 제한 제거 - 실제 buySteps 개수만큼 모두 표시
+                for (int stepIndex = 0; stepIndex < strategy.getBuySteps().size(); stepIndex++) {
                     AnalysisResult.Strategy.TradingStep step = strategy.getBuySteps().get(stepIndex);
                     ArrayList<Entry> supportEntries = new ArrayList<>();
 
@@ -751,9 +665,13 @@ public class StrategyFragment extends Fragment {
                         supportEntries.add(new Entry(i, supportPrice));
                     }
 
-                    LineDataSet supportDataSet = new LineDataSet(supportEntries, "지지선 " + (stepIndex + 1));
-                    supportDataSet.setColor(getSupportLineColor(stepIndex));
-                    supportDataSet.setLineWidth(1.5f); // 지지선 두께
+                    // 첫 번째 지지선만 범례에 표시하고, 나머지는 숨김
+                    String legendLabel = !supportLegendAdded ? "지지선" : "";
+                    LineDataSet supportDataSet = new LineDataSet(supportEntries, legendLabel);
+
+                    // 모든 지지선을 동일한 녹색으로 통일
+                    supportDataSet.setColor(Color.parseColor("#4CAF50")); // 통일된 녹색
+                    supportDataSet.setLineWidth(2f); // 지지선 두께 증가
                     supportDataSet.setDrawCircles(false);
                     supportDataSet.setDrawValues(false);
                     supportDataSet.enableDashedLine(15f, 8f, 0f);
@@ -764,15 +682,17 @@ public class StrategyFragment extends Fragment {
                     minPrice = Math.min(minPrice, supportPrice);
                     maxPrice = Math.max(maxPrice, supportPrice);
 
+                    supportLegendAdded = true; // 범례는 한 번만 추가
                     Log.d("StrategyFragment", String.format("지지선 %d 추가: %.2f", stepIndex + 1, supportPrice));
                 }
             }
 
-            // 저항선들 (빨간색) - 기간별로 다르게 표시
+            // 저항선들 (빨간색 통일) - 실제 targetPrices 개수만큼 모두 표시
             if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
-                int maxResistanceLines = getMaxResistanceLinesForStrategy();
+                boolean resistanceLegendAdded = false; // 범례는 한 번만 추가
 
-                for (int targetIndex = 0; targetIndex < Math.min(strategy.getTargetPrices().size(), maxResistanceLines); targetIndex++) {
+                // 개수 제한 제거 - 실제 targetPrices 개수만큼 모두 표시
+                for (int targetIndex = 0; targetIndex < strategy.getTargetPrices().size(); targetIndex++) {
                     double targetPrice = strategy.getTargetPrices().get(targetIndex);
                     ArrayList<Entry> resistanceEntries = new ArrayList<>();
 
@@ -781,9 +701,13 @@ public class StrategyFragment extends Fragment {
                         resistanceEntries.add(new Entry(i, resistancePrice));
                     }
 
-                    LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, "저항선 " + (targetIndex + 1));
-                    resistanceDataSet.setColor(getResistanceLineColor(targetIndex));
-                    resistanceDataSet.setLineWidth(1.5f); // 저항선 두께
+                    // 첫 번째 저항선만 범례에 표시하고, 나머지는 숨김
+                    String legendLabel = !resistanceLegendAdded ? "저항선" : "";
+                    LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, legendLabel);
+
+                    // 모든 저항선을 동일한 빨간색으로 통일
+                    resistanceDataSet.setColor(Color.parseColor("#F44336")); // 통일된 빨간색
+                    resistanceDataSet.setLineWidth(2f); // 저항선 두께 증가
                     resistanceDataSet.setDrawCircles(false);
                     resistanceDataSet.setDrawValues(false);
                     resistanceDataSet.enableDashedLine(15f, 8f, 0f);
@@ -794,6 +718,7 @@ public class StrategyFragment extends Fragment {
                     minPrice = Math.min(minPrice, resistancePrice);
                     maxPrice = Math.max(maxPrice, resistancePrice);
 
+                    resistanceLegendAdded = true; // 범례는 한 번만 추가
                     Log.d("StrategyFragment", String.format("저항선 %d 추가: %.2f", targetIndex + 1, resistancePrice));
                 }
             }
@@ -809,7 +734,7 @@ public class StrategyFragment extends Fragment {
 
                 LineDataSet stopLossDataSet = new LineDataSet(stopLossEntries, "손절매");
                 stopLossDataSet.setColor(Color.parseColor("#FF9800"));
-                stopLossDataSet.setLineWidth(2f); // 손절매 라인 두께
+                stopLossDataSet.setLineWidth(2f); // 손절매 라인 두께 증가
                 stopLossDataSet.setDrawCircles(false);
                 stopLossDataSet.setDrawValues(false);
                 stopLossDataSet.enableDashedLine(20f, 10f, 0f);
@@ -830,42 +755,6 @@ public class StrategyFragment extends Fragment {
             Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개", lineDataSets.size()));
         }
 
-        // 4. 골든/데드 크로스 마커를 LineDataSet으로 표시
-
-        // 골든 크로스 마커 (녹색 원형 마커)
-        if (!goldenCrossEntries.isEmpty()) {
-            LineDataSet goldenCrossDataSet = new LineDataSet(goldenCrossEntries, "골든 크로스");
-            goldenCrossDataSet.setColor(Color.TRANSPARENT); // 라인은 투명
-            goldenCrossDataSet.setLineWidth(0f);
-            goldenCrossDataSet.setDrawCircles(true); // 원형 마커 표시
-            goldenCrossDataSet.setCircleColor(Color.parseColor("#4CAF50")); // 녹색 원형
-            goldenCrossDataSet.setCircleRadius(6f); // 원형 크기
-            goldenCrossDataSet.setCircleHoleColor(Color.WHITE); // 중앙 흰색
-            goldenCrossDataSet.setCircleHoleRadius(3f); // 중앙 홀 크기
-            goldenCrossDataSet.setDrawValues(false);
-            goldenCrossDataSet.setHighlightEnabled(false);
-            lineDataSets.add(goldenCrossDataSet);
-
-            Log.d("StrategyFragment", String.format("골든 크로스 마커 추가: %d개", goldenCrossEntries.size()));
-        }
-
-        // 데드 크로스 마커 (빨간색 원형 마커)
-        if (!deathCrossEntries.isEmpty()) {
-            LineDataSet deathCrossDataSet = new LineDataSet(deathCrossEntries, "데드 크로스");
-            deathCrossDataSet.setColor(Color.TRANSPARENT); // 라인은 투명
-            deathCrossDataSet.setLineWidth(0f);
-            deathCrossDataSet.setDrawCircles(true); // 원형 마커 표시
-            deathCrossDataSet.setCircleColor(Color.parseColor("#F44336")); // 빨간색 원형
-            deathCrossDataSet.setCircleRadius(6f); // 원형 크기
-            deathCrossDataSet.setCircleHoleColor(Color.WHITE); // 중앙 흰색
-            deathCrossDataSet.setCircleHoleRadius(3f); // 중앙 홀 크기
-            deathCrossDataSet.setDrawValues(false);
-            deathCrossDataSet.setHighlightEnabled(false);
-            lineDataSets.add(deathCrossDataSet);
-
-            Log.d("StrategyFragment", String.format("데드 크로스 마커 추가: %d개", deathCrossEntries.size()));
-        }
-
         // Y축 범위 설정
         float padding = (maxPrice - minPrice) * 0.08f;
         strategyChart.getAxisLeft().setAxisMinimum(minPrice - padding);
@@ -875,7 +764,7 @@ public class StrategyFragment extends Fragment {
         strategyChart.setVisibleXRangeMaximum(klines.size());
         strategyChart.setVisibleXRangeMinimum(klines.size());
 
-        // 차트 그리기 순서 설정 (라인 데이터만 사용)
+        // 차트 그리기 순서 설정
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
                 CombinedChart.DrawOrder.LINE
@@ -886,58 +775,10 @@ public class StrategyFragment extends Fragment {
         strategyChart.fitScreen();
         strategyChart.invalidate();
 
-        Log.d("StrategyFragment", "골든/데드 크로스 포함 차트 업데이트 완료");
+        Log.d("StrategyFragment", "지지선/저항선 통일 차트 업데이트 완료");
     }
 
-    /**
-     * 기간별 최대 지지선 개수
-     */
-    private int getMaxSupportLinesForStrategy() {
-        switch (strategyType) {
-            case STRATEGY_SHORT_TERM: return 2; // 단기: 2개
-            case STRATEGY_MID_TERM: return 3;   // 중기: 3개
-            case STRATEGY_LONG_TERM: return 4;  // 장기: 4개
-            default: return 2;
-        }
-    }
 
-    /**
-     * 기간별 최대 저항선 개수
-     */
-    private int getMaxResistanceLinesForStrategy() {
-        switch (strategyType) {
-            case STRATEGY_SHORT_TERM: return 2; // 단기: 2개
-            case STRATEGY_MID_TERM: return 3;   // 중기: 3개
-            case STRATEGY_LONG_TERM: return 4;  // 장기: 4개
-            default: return 2;
-        }
-    }
-
-    /**
-     * 지지선 색상
-     */
-    private int getSupportLineColor(int index) {
-        switch (index) {
-            case 0: return Color.parseColor("#4CAF50"); // 첫 번째 지지선 - 진한 녹색
-            case 1: return Color.parseColor("#8BC34A"); // 두 번째 지지선 - 연한 녹색
-            case 2: return Color.parseColor("#CDDC39"); // 세 번째 지지선 - 라임
-            case 3: return Color.parseColor("#9CCC65"); // 네 번째 지지선 - 연두
-            default: return Color.parseColor("#4CAF50");
-        }
-    }
-
-    /**
-     * 저항선 색상
-     */
-    private int getResistanceLineColor(int index) {
-        switch (index) {
-            case 0: return Color.parseColor("#F44336"); // 첫 번째 저항선 - 진한 빨간색
-            case 1: return Color.parseColor("#FF5722"); // 두 번째 저항선 - 주황빨강
-            case 2: return Color.parseColor("#FF9800"); // 세 번째 저항선 - 주황
-            case 3: return Color.parseColor("#FFC107"); // 네 번째 저항선 - 노랑
-            default: return Color.parseColor("#F44336");
-        }
-    }
 
     /**
      * 빈 차트 생성 (데이터 로드 실패시)
