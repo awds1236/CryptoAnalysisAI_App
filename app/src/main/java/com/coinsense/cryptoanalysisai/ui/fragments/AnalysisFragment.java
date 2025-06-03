@@ -79,7 +79,7 @@ public class AnalysisFragment extends Fragment {
     private TextView tvLongShortRatioText;
 
     // 새로 추가한 UI 요소 참조
-    private TextView tvCrossSignal;
+    // private TextView tvCrossSignal;
     private TextView tvBuySellRatio;
 
     // 최근 가격 변동 추적을 위한 변수
@@ -178,7 +178,7 @@ public class AnalysisFragment extends Fragment {
         }
 
         // 새로 추가한 TextView 초기화
-        tvCrossSignal = view.findViewById(R.id.tvCrossSignal);
+        //tvCrossSignal = view.findViewById(R.id.tvCrossSignal);
         tvBuySellRatio = view.findViewById(R.id.tvBuySellRatio);
 
         // onViewCreated 메서드에서 다음 코드를 찾아서
@@ -1139,32 +1139,6 @@ public class AnalysisFragment extends Fragment {
                     binding.tvPattern.setText(getString(R.string.no_info));
                 }
 
-                // 이동평균선 신호 표시 - 새로 추가 (있는 경우에만)
-                if (binding.tvCrossSignal != null) {
-                    String crossSignal = technicalAnalysis.getCrossSignal();
-                    if (crossSignal != null && !crossSignal.isEmpty()) {
-                        String displayText;
-                        String colorCode;
-
-                        switch (crossSignal) {
-                            case "GOLDEN_CROSS":
-                                displayText = getString(R.string.golden_cross);
-                                colorCode = "#4CAF50"; // 녹색
-                                break;
-                            case "DEATH_CROSS":
-                                displayText = getString(R.string.death_cross);
-                                colorCode = "#F44336"; // 빨간색
-                                break;
-                            default:
-                                displayText = getString(R.string.no_cross);
-                                colorCode = "#FFC107"; // 노란색
-                                break;
-                        }
-
-                        binding.tvCrossSignal.setText(Html.fromHtml("<font color='" + colorCode + "'><b>" +
-                                displayText + "</b></font>", Html.FROM_HTML_MODE_LEGACY));
-                    }
-                }
 
                 // 롱:숏 비율 표시 - 새로 추가
                 // 롱:숏 비율 시각화
@@ -1260,7 +1234,7 @@ public class AnalysisFragment extends Fragment {
             binding.tvResistance.setText(getString(R.string.masked_content));
             binding.tvTrendStrength.setText(getString(R.string.masked_content_short));
             binding.tvPattern.setText(getString(R.string.masked_content));
-            binding.tvCrossSignal.setText(getString(R.string.masked_content_short));
+            //binding.tvCrossSignal.setText(getString(R.string.masked_content_short));
 
             // 롱:숏 비율 마스킹
             if (binding.progressLongShortRatio != null) {

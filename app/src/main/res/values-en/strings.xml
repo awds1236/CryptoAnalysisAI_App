@@ -55,9 +55,10 @@
     <string name="login_with_google">Sign in with Google</string>
     <string name="login_terms">By signing in, you agree to the Terms of Service and Privacy Policy.</string>
     <string name="subscription_title">Premium Subscription</string>
-    <string name="subscription_description">Only premium subscribers can access AI cryptocurrency trading strategies.</string>
+    <string name="subscription_description">⚠️ This service is for the purpose of providing AI-based technical analysis information and is not investment advice or profit guarantee. All investment decisions are the user\'s own responsibility.</string>
     <string name="subscription_monthly">Monthly Subscription</string>
     <string name="subscription_yearly">Annual Subscription (30% discount)</string>
+    <string name="subscription_yearly_event">Annual Subscription</string>
     <string name="subscription_monthly_price">$10.7/month</string>
     <string name="subscription_yearly_price">$90.00/year ($7.5/month)</string>
     <string name="subscription_features">• View technical analysis information for all coins\n• View support/resistance level analysis\n• Ad-free experience</string>    <string name="subscribe_button">Subscribe</string>
@@ -287,7 +288,7 @@
     <string name="resistance_explanation_content">A price zone where the asset may face selling pressure and decline. Based on historical chart patterns and psychological resistance levels. This is reference information only and does not guarantee a decline.</string>
 
     <string name="risk_management_explanation_title">⚠️ Risk Management Zone</string>
-    <string name="risk_management_explanation_content">From a technical analysis perspective, a zone where trend changes become more likely. If price moves beyond this level, the current analysis may become invalidated. This is reference information for technical interpretation, not investment advice.</string>
+    <string name="risk_management_explanation_content">From a technical analysis perspective, a zone where trend changes become more likely. If price moves beyond this level, the current analysis may become invalidated.</string>
 
     <string name="detailed_disclaimer_title">⚠️ Important Notice</string>
     <string name="detailed_disclaimer_content">• This analysis is AI-generated technical interpretation for reference only\n• Not investment advice, trading recommendations, or profit guarantees\n• All investment decisions and profits/losses are user\'s responsibility\n• Cryptocurrencies are highly volatile and risky assets\n• Thorough learning and careful judgment required before investing\n• Only invest within your financial capacity</string>
@@ -339,4 +340,24 @@
     <string name="recent_cross_format">Recent Cross: %s %s (%s)</string>
     <string name="masked_content_cross">Recent Cross: ******</string>
 
+    <!-- 🎉 Open Event Discount Strings -->
+    <string name="open_event_discount_notice">🎉 Open Event Special Price. Subscribe at discounted rates until July 31, 2025!\n\n• Monthly: $10.7 → $6.99 (35% off)\n• Annual: $90.00 → $79.90 (monthly $6.66, 11% off)</string>
+    <string name="subscription_monthly_price_discount">$6.99/month (regular $10.7)</string>
+    <string name="subscription_yearly_price_discount">$79.90/year (monthly $6.66, regular $90.00)</string>
+    <string name="discount_until_date">🎉 Special price until July 31</string>
+
+
+    <!-- Subscription button texts -->
+    <string name="subscribe_monthly">Subscribe Monthly</string>
+    <string name="subscribe_yearly">Subscribe Yearly</string>
+    <string name="subscribed_monthly">Monthly Subscribed</string>
+    <string name="subscribed_yearly">Yearly Subscribed</string>
+    <string name="subscribe_yearly_upgrade">Subscribe Yearly (Upgrade)</string>
+
+    <!-- Golden/Death Cross explanations -->
+    <string name="golden_cross_explanation_title">📈 Golden Cross</string>
+    <string name="golden_cross_explanation_content">A technical signal where the short-term moving average crosses above the long-term moving average. Generally interpreted as a signal of upward trend reversal, but this is reference information only and does not guarantee an upward movement.</string>
+
+    <string name="death_cross_explanation_title">📉 Death Cross</string>
+    <string name="death_cross_explanation_content">A technical signal where the short-term moving average crosses below the long-term moving average. Generally interpreted as a signal of downward trend reversal, but this is reference information only and does not guarantee a downward movement.</string>
 </resources>
