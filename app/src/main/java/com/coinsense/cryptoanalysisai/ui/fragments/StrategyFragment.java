@@ -3,8 +3,10 @@ package com.coinsense.cryptoanalysisai.ui.fragments;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
@@ -48,6 +50,7 @@ import com.github.mikephil.charting.data.CandleData;
 import com.github.mikephil.charting.data.CandleDataSet;
 import com.github.mikephil.charting.data.CandleEntry;
 import com.github.mikephil.charting.data.CombinedData;
+import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -56,6 +59,8 @@ import com.github.mikephil.charting.data.ScatterDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet;
+import com.github.mikephil.charting.renderer.scatter.IShapeRenderer;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -66,6 +71,13 @@ import java.util.Locale;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import com.github.mikephil.charting.renderer.scatter.IShapeRenderer;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+
+
 
 public class StrategyFragment extends Fragment {
 
@@ -105,6 +117,45 @@ public class StrategyFragment extends Fragment {
 
     private View additionalBlurLayer;
     private ExchangeRateManager exchangeRateManager;
+
+    // StrategyFragment 클래스 안에 추가
+    public static class RotatedTriangleRenderer implements IShapeRenderer {
+        private final boolean inverted;
+
+        public RotatedTriangleRenderer(boolean inverted) {
+            this.inverted = inverted;
+        }
+
+        @Override
+        public void renderShape(Canvas c, IScatterDataSet dataSet, ViewPortHandler viewPortHandler,
+                                float posX, float posY, Paint renderPaint) {
+
+            // IScatterDataSet에서 크기 가져오기
+            final float shapeSize = dataSet.getScatterShapeSize();
+
+            // 캔버스 저장
+            c.save();
+
+            if (inverted) {
+                // 180도 회전 (데드크로스용)
+                c.rotate(180f, posX, posY);
+            }
+
+            // 기본 삼각형 그리기
+            final float shapeHalf = shapeSize / 2f;
+
+            Path triangle = new Path();
+            triangle.moveTo(posX, posY - shapeHalf); // 위쪽 꼭짓점
+            triangle.lineTo(posX - shapeHalf, posY + shapeHalf); // 왼쪽 아래
+            triangle.lineTo(posX + shapeHalf, posY + shapeHalf); // 오른쪽 아래
+            triangle.close();
+
+            c.drawPath(triangle, renderPaint);
+
+            // 캔버스 복원
+            c.restore();
+        }
+    }
 
     public void setCoinInfo(CoinInfo coinInfo) {
         if (coinInfo == null) {
@@ -647,6 +698,10 @@ public class StrategyFragment extends Fragment {
         return smaEntries;
     }
 
+
+
+
+
     /**
      * 전략별 골든크로스/데드크로스 차트 생성
      */
@@ -905,7 +960,7 @@ public class StrategyFragment extends Fragment {
 
                             // 캔들에서 더 멀리 떨어뜨리기
                             float candleSize = candleHigh - candleLow;
-                            float offset = Math.max(candleSize * 0.8f, candleLow * 0.02f);
+                            float offset = Math.max(candleSize * 0.7f, candleLow * 0.02f);
                             float goldenCrossY = candleLow - offset;
 
                             goldenCrossEntries.add(new Entry(chartIndex, goldenCrossY));
@@ -937,7 +992,7 @@ public class StrategyFragment extends Fragment {
 
                             // 캔들에서 더 멀리 떨어뜨리기
                             float candleSize = candleHigh - candleLow;
-                            float offset = Math.max(candleSize * 0.8f, candleHigh * 0.02f);
+                            float offset = Math.max(candleSize * 1.2f, candleHigh * 0.025f);
                             float deathCrossY = candleHigh + offset;
 
                             deathCrossEntries.add(new Entry(chartIndex, deathCrossY));
@@ -961,11 +1016,11 @@ public class StrategyFragment extends Fragment {
             // 골든크로스 삼각형 마커 (위쪽 삼각형)
             if (!goldenCrossEntries.isEmpty()) {
                 ScatterDataSet goldenCrossDataSet = new ScatterDataSet(goldenCrossEntries, "Golden Cross");
-                goldenCrossDataSet.setScatterShape(ScatterChart.ScatterShape.TRIANGLE); // 삼각형 모양
-                goldenCrossDataSet.setColor(Color.parseColor("#4CAF50")); // 녹색
-                goldenCrossDataSet.setScatterShapeSize(20f); // 마커 크기
-                goldenCrossDataSet.setDrawValues(false); // 값 표시 안함
-                goldenCrossDataSet.setHighlightEnabled(false); // 하이라이트 비활성화
+                goldenCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(false)); // 회전 안함
+                goldenCrossDataSet.setColor(Color.parseColor("#4CAF50"));
+                goldenCrossDataSet.setScatterShapeSize(30f);
+                goldenCrossDataSet.setDrawValues(false);
+                goldenCrossDataSet.setHighlightEnabled(false);
                 scatterDataSets.add(goldenCrossDataSet);
 
                 Log.d("StrategyFragment", String.format("✅ 골든크로스 삼각형 마커 %d개 추가됨", goldenCrossEntries.size()));
@@ -974,11 +1029,11 @@ public class StrategyFragment extends Fragment {
             // 데드크로스 삼각형 마커 (아래쪽 삼각형)
             if (!deathCrossEntries.isEmpty()) {
                 ScatterDataSet deathCrossDataSet = new ScatterDataSet(deathCrossEntries, "Death Cross");
-                deathCrossDataSet.setScatterShape(ScatterChart.ScatterShape.TRIANGLE); // 삼각형 모양
-                deathCrossDataSet.setColor(Color.parseColor("#F44336")); // 빨간색
-                deathCrossDataSet.setScatterShapeSize(20f); // 마커 크기
-                deathCrossDataSet.setDrawValues(false); // 값 표시 안함
-                deathCrossDataSet.setHighlightEnabled(false); // 하이라이트 비활성화
+                deathCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(true)); // 180도 회전
+                deathCrossDataSet.setColor(Color.parseColor("#F44336"));
+                deathCrossDataSet.setScatterShapeSize(30f);
+                deathCrossDataSet.setDrawValues(false);
+                deathCrossDataSet.setHighlightEnabled(false);
                 scatterDataSets.add(deathCrossDataSet);
 
                 Log.d("StrategyFragment", String.format("✅ 데드크로스 삼각형 마커 %d개 추가됨", deathCrossEntries.size()));
