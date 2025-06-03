@@ -41,6 +41,7 @@ import com.coinsense.cryptoanalysisai.utils.Constants;
 
 // MPAndroidChart 임포트
 import com.github.mikephil.charting.charts.CombinedChart;
+import com.github.mikephil.charting.charts.ScatterChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.CandleData;
@@ -50,8 +51,11 @@ import com.github.mikephil.charting.data.CombinedData;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.data.ScatterData;
+import com.github.mikephil.charting.data.ScatterDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
+import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -333,10 +337,11 @@ public class StrategyFragment extends Fragment {
         strategyChart.setDrawGridBackground(false);
         strategyChart.setPinchZoom(true);
 
-        // 차트 그리기 순서 설정 (캔들스틱과 라인만 사용)
+        // 차트 그리기 순서 설정 (캔들스틱, 라인, 스캐터 순서)
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
-                CombinedChart.DrawOrder.LINE
+                CombinedChart.DrawOrder.LINE,
+                CombinedChart.DrawOrder.SCATTER  // 스캐터 추가
         });
 
         // 차트 여백 설정
@@ -672,7 +677,7 @@ public class StrategyFragment extends Fragment {
 
         // 2. 전체 60일 캔들스틱 데이터 생성 (스크롤 가능)
         int totalDisplayDays = 100; // 전체 표시할 일수
-        int visibleDays = 25; // 한 번에 보이는 일수
+        int visibleDays = 30; // 한 번에 보이는 일수
         int startIndex = Math.max(0, klines.size() - totalDisplayDays);
 
         ArrayList<CandleEntry> candleEntries = new ArrayList<>();
@@ -831,7 +836,7 @@ public class StrategyFragment extends Fragment {
             Log.d("StrategyFragment", String.format("%s 라인 추가: %d개 포인트", slowMAName, displaySlowMA.size()));
         }
 
-        // 5. 골든크로스/데드크로스 시그널 포인트 계산
+        // 5. 골든크로스/데드크로스 시그널 포인트 계산 (삼각형 마커 사용)
         if (fastMA.size() > 1 && slowMA.size() > 1) {
             ArrayList<Entry> goldenCrossEntries = new ArrayList<>();
             ArrayList<Entry> deathCrossEntries = new ArrayList<>();
@@ -898,8 +903,9 @@ public class StrategyFragment extends Fragment {
                             float candleHigh = (float) high;
                             float candleLow = (float) low;
 
+                            // 캔들에서 더 멀리 떨어뜨리기
                             float candleSize = candleHigh - candleLow;
-                            float offset = Math.max(candleSize * 0.3f, candleLow * 0.005f);
+                            float offset = Math.max(candleSize * 0.8f, candleLow * 0.02f);
                             float goldenCrossY = candleLow - offset;
 
                             goldenCrossEntries.add(new Entry(chartIndex, goldenCrossY));
@@ -929,8 +935,9 @@ public class StrategyFragment extends Fragment {
                             float candleHigh = (float) high;
                             float candleLow = (float) low;
 
+                            // 캔들에서 더 멀리 떨어뜨리기
                             float candleSize = candleHigh - candleLow;
-                            float offset = Math.max(candleSize * 0.3f, candleHigh * 0.005f);
+                            float offset = Math.max(candleSize * 0.8f, candleHigh * 0.02f);
                             float deathCrossY = candleHigh + offset;
 
                             deathCrossEntries.add(new Entry(chartIndex, deathCrossY));
@@ -948,38 +955,39 @@ public class StrategyFragment extends Fragment {
             Log.d("StrategyFragment", String.format("🔍 %s 크로스 감지 완료: 총 %d개 크로스 발견",
                     getStrategyTypeName(), crossCount));
 
-            // 골든크로스 포인트 추가
-            if (!goldenCrossEntries.isEmpty()) {
-                LineDataSet goldenCrossDataSet = new LineDataSet(goldenCrossEntries, "Golden Cross");
-                goldenCrossDataSet.setColor(Color.TRANSPARENT);
-                goldenCrossDataSet.setDrawCircles(true);
-                goldenCrossDataSet.setCircleColor(Color.parseColor("#4CAF50"));
-                goldenCrossDataSet.setCircleRadius(8f);
-                goldenCrossDataSet.setCircleHoleRadius(4f);
-                goldenCrossDataSet.setCircleHoleColor(Color.parseColor("#4CAF50"));
-                goldenCrossDataSet.setDrawValues(false);
-                goldenCrossDataSet.setHighlightEnabled(false);
-                goldenCrossDataSet.setLineWidth(0f);
-                lineDataSets.add(goldenCrossDataSet);
+            // ScatterData로 삼각형 마커 추가
+            ArrayList<IScatterDataSet> scatterDataSets = new ArrayList<>();
 
-                Log.d("StrategyFragment", String.format("✅ 골든크로스 포인트 %d개 추가됨", goldenCrossEntries.size()));
+            // 골든크로스 삼각형 마커 (위쪽 삼각형)
+            if (!goldenCrossEntries.isEmpty()) {
+                ScatterDataSet goldenCrossDataSet = new ScatterDataSet(goldenCrossEntries, "Golden Cross");
+                goldenCrossDataSet.setScatterShape(ScatterChart.ScatterShape.TRIANGLE); // 삼각형 모양
+                goldenCrossDataSet.setColor(Color.parseColor("#4CAF50")); // 녹색
+                goldenCrossDataSet.setScatterShapeSize(20f); // 마커 크기
+                goldenCrossDataSet.setDrawValues(false); // 값 표시 안함
+                goldenCrossDataSet.setHighlightEnabled(false); // 하이라이트 비활성화
+                scatterDataSets.add(goldenCrossDataSet);
+
+                Log.d("StrategyFragment", String.format("✅ 골든크로스 삼각형 마커 %d개 추가됨", goldenCrossEntries.size()));
             }
 
-            // 데드크로스 포인트 추가
+            // 데드크로스 삼각형 마커 (아래쪽 삼각형)
             if (!deathCrossEntries.isEmpty()) {
-                LineDataSet deathCrossDataSet = new LineDataSet(deathCrossEntries, "Death Cross");
-                deathCrossDataSet.setColor(Color.TRANSPARENT);
-                deathCrossDataSet.setDrawCircles(true);
-                deathCrossDataSet.setCircleColor(Color.parseColor("#F44336"));
-                deathCrossDataSet.setCircleRadius(8f);
-                deathCrossDataSet.setCircleHoleRadius(4f);
-                deathCrossDataSet.setCircleHoleColor(Color.parseColor("#F44336"));
-                deathCrossDataSet.setDrawValues(false);
-                deathCrossDataSet.setHighlightEnabled(false);
-                deathCrossDataSet.setLineWidth(0f);
-                lineDataSets.add(deathCrossDataSet);
+                ScatterDataSet deathCrossDataSet = new ScatterDataSet(deathCrossEntries, "Death Cross");
+                deathCrossDataSet.setScatterShape(ScatterChart.ScatterShape.TRIANGLE); // 삼각형 모양
+                deathCrossDataSet.setColor(Color.parseColor("#F44336")); // 빨간색
+                deathCrossDataSet.setScatterShapeSize(20f); // 마커 크기
+                deathCrossDataSet.setDrawValues(false); // 값 표시 안함
+                deathCrossDataSet.setHighlightEnabled(false); // 하이라이트 비활성화
+                scatterDataSets.add(deathCrossDataSet);
 
-                Log.d("StrategyFragment", String.format("✅ 데드크로스 포인트 %d개 추가됨", deathCrossEntries.size()));
+                Log.d("StrategyFragment", String.format("✅ 데드크로스 삼각형 마커 %d개 추가됨", deathCrossEntries.size()));
+            }
+
+            // ScatterData를 CombinedData에 추가
+            if (!scatterDataSets.isEmpty()) {
+                ScatterData scatterData = new ScatterData(scatterDataSets);
+                combinedData.setData(scatterData);
             }
         }
 
@@ -998,7 +1006,7 @@ public class StrategyFragment extends Fragment {
 
                     LineDataSet supportDataSet = new LineDataSet(supportEntries, "Support " + (stepIndex + 1));
                     supportDataSet.setColor(Color.parseColor("#4CAF50"));
-                    supportDataSet.setLineWidth(2f);
+                    supportDataSet.setLineWidth(1f);
                     supportDataSet.setDrawCircles(false);
                     supportDataSet.setDrawValues(false);
                     supportDataSet.enableDashedLine(15f, 8f, 0f);
@@ -1024,7 +1032,7 @@ public class StrategyFragment extends Fragment {
 
                     LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, "Resistance " + (targetIndex + 1));
                     resistanceDataSet.setColor(Color.parseColor("#F44336"));
-                    resistanceDataSet.setLineWidth(2f);
+                    resistanceDataSet.setLineWidth(1f);
                     resistanceDataSet.setDrawCircles(false);
                     resistanceDataSet.setDrawValues(false);
                     resistanceDataSet.enableDashedLine(15f, 8f, 0f);
@@ -1048,7 +1056,7 @@ public class StrategyFragment extends Fragment {
 
                 LineDataSet stopLossDataSet = new LineDataSet(stopLossEntries, "Stop Loss");
                 stopLossDataSet.setColor(Color.parseColor("#FF9800"));
-                stopLossDataSet.setLineWidth(2f);
+                stopLossDataSet.setLineWidth(1f);
                 stopLossDataSet.setDrawCircles(false);
                 stopLossDataSet.setDrawValues(false);
                 stopLossDataSet.enableDashedLine(20f, 10f, 0f);
@@ -1077,7 +1085,8 @@ public class StrategyFragment extends Fragment {
         // 9. 차트 그리기 순서 설정
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
-                CombinedChart.DrawOrder.LINE
+                CombinedChart.DrawOrder.LINE,
+                CombinedChart.DrawOrder.SCATTER  // 스캐터 데이터가 맨 위에 그려지도록
         });
 
         // 10. 차트에 데이터 설정
