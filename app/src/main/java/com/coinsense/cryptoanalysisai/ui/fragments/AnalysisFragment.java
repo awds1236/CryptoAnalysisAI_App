@@ -200,6 +200,12 @@ public class AnalysisFragment extends Fragment {
             startActivity(intent);
         });
 
+        // ★ 시간별 전망 구독 버튼 설정 추가 (View Binding 사용)
+        binding.btnOutlookSubscribe.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), SubscriptionActivity.class);
+            startActivity(intent);
+        });
+
         progressLongShortRatio = view.findViewById(R.id.progressLongShortRatio);
         tvLongShortRatioText = view.findViewById(R.id.tvLongShortRatioText);
 
@@ -212,14 +218,95 @@ public class AnalysisFragment extends Fragment {
             showAdDialog();
         });
 
+        // ★ 시간별 전망 광고 버튼 클릭 이벤트 추가 (View Binding 사용)
+        binding.btnOutlookWatchAd.setOnClickListener(v -> {
+            showAdDialog();
+        });
+
         // 초기 UI 업데이트
         updateTechnicalAccessUI();
+        updateOutlookAccessUI(); // ★ 추가
+
 
         // 타이머 시작
         startAdTimer();
 
         // ★ 차트 자동 갱신 시작
         startChartAutoRefresh();
+    }
+
+    /**
+     * ★ 시간별 전망 접근 UI 업데이트 (새로 추가) - View Binding 사용
+     */
+    private void updateOutlookAccessUI() {
+        if (coinInfo == null || coinInfo.getSymbol() == null || analysisResult == null) return;
+
+        boolean isSubscribed = subscriptionManager.isSubscribed();
+        boolean hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+        boolean isPremiumCoin = coinInfo.isPremium();
+
+        AnalysisResult.Outlook outlook = analysisResult.getOutlook();
+
+        if (isSubscribed || hasAdPermission) {
+            // 구독자이거나 광고 시청한 경우 콘텐츠 표시
+            binding.outlookBlurOverlay.setVisibility(View.GONE);
+            binding.outlookPixelatedOverlay.setVisibility(View.GONE);
+            binding.btnOutlookSubscribe.setVisibility(View.GONE);
+            binding.btnOutlookWatchAd.setVisibility(View.GONE);
+            binding.cardOutlook.setAlpha(1.0f);
+
+            // 구독자가 아니고 광고 시청한 경우 남은 시간 표시
+            if (!isSubscribed && hasAdPermission) {
+                int remainingMinutes = adManager.getRemainingMinutes(coinInfo.getSymbol());
+                binding.tvOutlookAdStatus.setVisibility(View.VISIBLE);
+                binding.tvOutlookAdStatus.setText(getString(R.string.ad_remaining_minutes_format, remainingMinutes));
+            } else {
+                binding.tvOutlookAdStatus.setVisibility(View.GONE);
+            }
+
+            // 실제 시간별 전망 내용 표시
+            if (outlook != null) {
+                // 단기 전망 - 키워드 강조
+                String shortTerm = outlook.getShortTerm();
+                if (shortTerm != null && !shortTerm.isEmpty()) {
+                    shortTerm = highlightKeywords(shortTerm);
+                    binding.tvShortTerm.setText(Html.fromHtml(shortTerm, Html.FROM_HTML_MODE_LEGACY));
+                } else {
+                    binding.tvShortTerm.setText(getString(R.string.no_info));
+                }
+
+                // 중기 전망 - 키워드 강조
+                String midTerm = outlook.getMidTerm();
+                if (midTerm != null && !midTerm.isEmpty()) {
+                    midTerm = highlightKeywords(midTerm);
+                    binding.tvMidTerm.setText(Html.fromHtml(midTerm, Html.FROM_HTML_MODE_LEGACY));
+                } else {
+                    binding.tvMidTerm.setText(getString(R.string.no_info));
+                }
+
+                // 장기 전망 - 키워드 강조
+                String longTerm = outlook.getLongTerm();
+                if (longTerm != null && !longTerm.isEmpty()) {
+                    longTerm = highlightKeywords(longTerm);
+                    binding.tvLongTerm.setText(Html.fromHtml(longTerm, Html.FROM_HTML_MODE_LEGACY));
+                } else {
+                    binding.tvLongTerm.setText(getString(R.string.no_info));
+                }
+            }
+        } else {
+            // 구독자도 아니고 광고도 안 본 경우 콘텐츠 가림
+            binding.outlookBlurOverlay.setVisibility(View.VISIBLE);
+            binding.outlookPixelatedOverlay.setVisibility(View.VISIBLE);
+            binding.btnOutlookSubscribe.setVisibility(View.VISIBLE);
+            binding.btnOutlookWatchAd.setVisibility(isPremiumCoin ? View.GONE : View.VISIBLE);
+            binding.cardOutlook.setAlpha(0.5f);
+            binding.tvOutlookAdStatus.setVisibility(View.GONE);
+
+            // 콘텐츠 마스킹 처리
+            binding.tvShortTerm.setText(getString(R.string.masked_content));
+            binding.tvMidTerm.setText(getString(R.string.masked_content));
+            binding.tvLongTerm.setText(getString(R.string.masked_content));
+        }
     }
 
     @Override
@@ -722,7 +809,7 @@ public class AnalysisFragment extends Fragment {
             Log.d("AnalysisFragment", "updateAnalysisUI: coinInfo symbol = " + coinInfo.getSymbol());
         }
 
-        boolean isSubscribed = subscriptionManager != null && subscriptionManager.isSubscribed();
+        boolean isSubscribed = subscriptionManager.isSubscribed();
 
         // 분석 시간 표시
         if (analysisResult.getTimestamp() > 0) {
@@ -840,6 +927,8 @@ public class AnalysisFragment extends Fragment {
             }
         }
 
+
+        updateOutlookAccessUI();  // 새로 추가
         // 기술적 분석 접근 권한 UI 업데이트
         updateTechnicalAccessUI();
 
@@ -1235,6 +1324,7 @@ public class AnalysisFragment extends Fragment {
 
     // 모든 UI를 새로 고치는 새 메서드 추가
     public void refreshAllUIs() {
+        updateOutlookAccessUI();    // 새로 추가
         // 자신의 UI 업데이트
         updateTechnicalAccessUI();
 
