@@ -538,11 +538,64 @@ public class StrategyFragment extends Fragment {
         getCandleDataAndUpdateChart();
     }
 
+    /**
+     * 현재 사용자가 콘텐츠에 접근할 권한이 있는지 확인
+     * @return true: 구독자이거나 광고 시청함, false: 권한 없음
+     */
+    private boolean hasContentAccess() {
+        if (coinInfo == null || coinInfo.getSymbol() == null) {
+            return false;
+        }
+
+        boolean isSubscribed = subscriptionManager != null && subscriptionManager.isSubscribed();
+        boolean hasAdPermission = adManager != null && adManager.hasActiveAdPermission(coinInfo.getSymbol());
+
+        return isSubscribed || hasAdPermission;
+    }
+
+    /**
+     * 최근 크로스 정보를 안전하게 마스킹 처리
+     */
+    private void maskRecentCrossInfo() {
+        if (tvRecentCross == null) return;
+
+        tvRecentCross.setText(getString(R.string.masked_content_cross));
+        tvRecentCross.setAlpha(0.3f);
+        tvRecentCross.setTextColor(Color.parseColor("#80CCCCCC"));
+        tvRecentCross.setVisibility(View.VISIBLE);
+
+        Log.d("StrategyFragment", "최근 크로스 정보 마스킹 적용");
+    }
+
+    /**
+     * 최근 크로스 정보 블러 효과 제거
+     */
+    private void unmaskRecentCrossInfo() {
+        if (tvRecentCross == null) return;
+
+        tvRecentCross.setAlpha(1.0f);
+        tvRecentCross.setTextColor(Color.parseColor("#FFFFFF"));
+
+        Log.d("StrategyFragment", "최근 크로스 정보 블러 제거");
+    }
+
     private void updateRecentCrossUI() {
         if (tvRecentCross == null) {
             return;
         }
 
+        // ★ 권한 체크 추가 - 권한이 없으면 마스킹 상태 유지
+        if (coinInfo == null || !hasContentAccess()) {
+            // 권한이 없는 경우 마스킹 처리
+            tvRecentCross.setText(getString(R.string.masked_content_cross));
+            tvRecentCross.setAlpha(0.3f);
+            tvRecentCross.setTextColor(Color.parseColor("#80CCCCCC"));
+            tvRecentCross.setVisibility(View.VISIBLE);
+            Log.d("StrategyFragment", "최근 크로스 정보 마스킹 처리 (권한 없음)");
+            return;
+        }
+
+        // 권한이 있는 경우에만 실제 크로스 정보 표시
         if (recentCrossType == null || recentCrossDaysAgo < 0) {
             // 최근 크로스가 없는 경우
             tvRecentCross.setVisibility(View.GONE);
@@ -582,10 +635,12 @@ public class StrategyFragment extends Fragment {
         String recentCrossText = String.format(getString(R.string.recent_cross_format),
                 emoji, crossTypeText, timeAgoText);
 
-        // UI 업데이트
+        // ★ 권한이 있는 경우에만 실제 UI 업데이트
         tvRecentCross.setText(Html.fromHtml(String.format("<font color='%s'><b>%s</b></font>",
                         String.format("#%06X", (0xFFFFFF & textColor)), recentCrossText),
                 Html.FROM_HTML_MODE_LEGACY));
+        tvRecentCross.setAlpha(1.0f); // 투명도 완전 복원
+        tvRecentCross.setTextColor(Color.parseColor("#FFFFFF")); // 텍스트 색상 복원
         tvRecentCross.setVisibility(View.VISIBLE);
 
         Log.d("StrategyFragment", String.format("최근 크로스 UI 업데이트: %s %s (%s)",
@@ -1306,7 +1361,13 @@ public class StrategyFragment extends Fragment {
             tvStopLoss.setText(getString(R.string.masked_content));
             tvRiskReward.setText(getString(R.string.masked_content_short));
             tvStrategyDetail.setText(getString(R.string.masked_content));
-            tvRecentCross.setText(getString(R.string.masked_content_cross));
+
+            // ★ 최근 크로스 정보 블러 처리 강화
+            if (tvRecentCross != null) {
+                tvRecentCross.setText(getString(R.string.masked_content_cross));
+                tvRecentCross.setAlpha(0.3f);
+                tvRecentCross.setTextColor(Color.parseColor("#80CCCCCC"));
+            }
 
             if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
                 displayFirstBuyStepWithBlur(layoutBuySteps, strategy.getBuySteps().get(0));
@@ -1328,6 +1389,12 @@ public class StrategyFragment extends Fragment {
         additionalBlurLayer.setVisibility(View.GONE);
         contentArea.setAlpha(1.0f);
         btnSubscribe.setVisibility(View.GONE);
+
+        // ★ 최근 크로스 정보 블러 효과 제거
+        if (tvRecentCross != null) {
+            tvRecentCross.setAlpha(1.0f);
+            tvRecentCross.setTextColor(Color.parseColor("#FFFFFF"));
+        }
     }
 
     @Override
@@ -1418,6 +1485,7 @@ public class StrategyFragment extends Fragment {
                 Log.w("StrategyFragment", "updateContentAccessUI: coinInfo is null");
             }
 
+            // coinInfo가 없을 때 모든 콘텐츠 블러 처리
             blurOverlay.setVisibility(View.VISIBLE);
             pixelatedOverlay.setVisibility(View.VISIBLE);
             additionalBlurLayer.setVisibility(View.VISIBLE);
@@ -1425,6 +1493,12 @@ public class StrategyFragment extends Fragment {
             btnSubscribe.setVisibility(View.VISIBLE);
             btnWatchAd.setVisibility(View.VISIBLE);
             tvAdStatus.setVisibility(View.GONE);
+
+            // 최근 크로스 정보도 마스킹
+            if (tvRecentCross != null) {
+                tvRecentCross.setText(getString(R.string.masked_content_cross));
+                tvRecentCross.setVisibility(View.VISIBLE);
+            }
             return;
         }
 
@@ -1437,19 +1511,9 @@ public class StrategyFragment extends Fragment {
             isPremiumCoin = coinInfo.isPremium();
         }
 
-        if (!isSubscribed && !hasAdPermission) {
-            tvTargetPrice.setText(getString(R.string.masked_content));
-            tvStopLoss.setText(getString(R.string.masked_content));
-            tvRiskReward.setText(getString(R.string.masked_content_short));
-            tvStrategyDetail.setText(getString(R.string.masked_strategy_content));
-            tvRecentCross.setText(getString(R.string.masked_content_cross));
-
-            if (strategy != null && strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
-                displayFirstBuyStepWithBlur(layoutBuySteps, strategy.getBuySteps().get(0));
-            }
-        }
-
+        // 권한이 있는 경우 (구독자이거나 광고 시청함)
         if (isSubscribed || hasAdPermission) {
+            // 블러 효과 제거
             blurOverlay.setVisibility(View.GONE);
             pixelatedOverlay.setVisibility(View.GONE);
             additionalBlurLayer.setVisibility(View.GONE);
@@ -1457,6 +1521,7 @@ public class StrategyFragment extends Fragment {
             btnSubscribe.setVisibility(View.GONE);
             btnWatchAd.setVisibility(View.GONE);
 
+            // 광고 시청자의 경우 남은 시간 표시
             if (!isSubscribed && hasAdPermission) {
                 int remainingMinutes = adManager.getRemainingMinutes(coinInfo.getSymbol());
                 tvAdStatus.setVisibility(View.VISIBLE);
@@ -1465,6 +1530,7 @@ public class StrategyFragment extends Fragment {
                 tvAdStatus.setVisibility(View.GONE);
             }
 
+            // 실제 콘텐츠 표시
             if (strategy != null) {
                 if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty() && layoutBuySteps != null) {
                     displayBuySteps(layoutBuySteps, strategy.getBuySteps());
@@ -1473,10 +1539,17 @@ public class StrategyFragment extends Fragment {
                 updateStopLoss();
                 updateRiskReward();
                 updateStrategyDetail();
+
+                // ★ 최근 크로스 정보 실제 표시
+                updateRecentCrossUI();
+
                 // 차트도 업데이트
                 updateChart();
             }
-        } else {
+        }
+        // 권한이 없는 경우 (구독자도 아니고 광고도 안 봄)
+        else {
+            // 블러 효과 적용
             blurOverlay.setVisibility(View.VISIBLE);
             pixelatedOverlay.setVisibility(View.VISIBLE);
             additionalBlurLayer.setVisibility(View.VISIBLE);
@@ -1485,18 +1558,31 @@ public class StrategyFragment extends Fragment {
             btnWatchAd.setVisibility(isPremiumCoin ? View.GONE : View.VISIBLE);
             tvAdStatus.setVisibility(View.GONE);
 
-
+            // 광고 시청 버튼 위치 조정
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) btnWatchAd.getLayoutParams();
             if (params != null) {
                 params.topMargin = (int) (80 * getResources().getDisplayMetrics().density);
                 btnWatchAd.setLayoutParams(params);
             }
 
+            // 모든 콘텐츠 마스킹 처리
             tvTargetPrice.setText(getString(R.string.masked_content));
             tvStopLoss.setText(getString(R.string.masked_content));
             tvRiskReward.setText(getString(R.string.masked_content_short));
-            tvStrategyDetail.setText(getString(R.string.masked_content));
-            tvRecentCross.setText(getString(R.string.masked_content_cross));
+            tvStrategyDetail.setText(getString(R.string.masked_strategy_content));
+
+            // ★ 최근 크로스 정보 마스킹 처리
+            if (tvRecentCross != null) {
+                tvRecentCross.setText(getString(R.string.masked_content_cross));
+                tvRecentCross.setVisibility(View.VISIBLE);
+                // 추가 블러 효과를 위해 투명도 조정
+                tvRecentCross.setAlpha(0.3f);
+            }
+
+            // 첫 번째 매수 단계만 마스킹해서 표시
+            if (strategy != null && strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
+                displayFirstBuyStepWithBlur(layoutBuySteps, strategy.getBuySteps().get(0));
+            }
         }
     }
 
