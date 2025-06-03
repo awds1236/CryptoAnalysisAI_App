@@ -277,6 +277,9 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
         ViewPagerAdapter viewPagerAdapter = new ViewPagerAdapter(this);
         binding.viewPager.setAdapter(viewPagerAdapter);
 
+        // 좌우 드래그로 페이지 이동 비활성화
+        binding.viewPager.setUserInputEnabled(false);
+
         // 탭 레이아웃과 뷰페이저 연결
         new TabLayoutMediator(binding.tabs, binding.viewPager, (tab, position) -> {
             tab.setText(tabTitles[position]);
@@ -291,7 +294,6 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
             }
         });
     }
-
     /**
      * 코인 선택 이벤트 처리
      */
