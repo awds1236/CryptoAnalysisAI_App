@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
@@ -27,16 +28,17 @@
             android:text="@string/subscription_description"
             app:layout_constraintTop_toBottomOf="@id/tvTitle" />
 
+        <!-- 결제 정보 섹션 -->
         <TextView
             android:id="@+id/tvSubscriptionStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="60dp"
             android:text="무료 사용자"
             android:textStyle="bold"
-            app:layout_constraintTop_toBottomOf="@id/tvDescription" />
+            app:layout_constraintTop_toBottomOf="@id/tvDescription"
+            tools:layout_editor_absoluteX="16dp" />
 
-        <!-- 결제 정보 섹션 -->
         <TextView
             android:id="@+id/tvBillingInfo"
             android:layout_width="match_parent"
