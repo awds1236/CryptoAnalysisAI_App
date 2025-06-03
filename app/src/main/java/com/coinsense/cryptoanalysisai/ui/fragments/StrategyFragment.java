@@ -374,8 +374,10 @@ public class StrategyFragment extends Fragment {
         startAdTimer();
     }
 
+    // StrategyFragment.java의 Y축 포매터 - 동적 소수점 표시
+
     /**
-     * 차트 초기 설정
+     * setupChart()에서 X축 범위 확장
      */
     private void setupChart() {
         if (strategyChart == null) return;
@@ -388,48 +390,64 @@ public class StrategyFragment extends Fragment {
         strategyChart.setDrawGridBackground(false);
         strategyChart.setPinchZoom(true);
 
-        // 차트 그리기 순서 설정 (캔들스틱, 라인, 스캐터 순서)
+        // 차트 그리기 순서 설정
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
                 CombinedChart.DrawOrder.LINE,
-                CombinedChart.DrawOrder.SCATTER  // 스캐터 추가
+                CombinedChart.DrawOrder.SCATTER
         });
 
-        // 차트 여백 설정
-        strategyChart.setExtraOffsets(10f, 10f, 10f, 10f);
+        // 차트 여백 설정 - 원래대로
+        strategyChart.setExtraOffsets(8f, 5f, 8f, 5f);
         strategyChart.setBackgroundColor(Color.parseColor("#1E1E1E"));
 
-        // X축 설정 - 모든 기간에서 동일한 30일 라벨
+        // X축 설정 - 차트 데이터 범위 확장
         XAxis xAxis = strategyChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(true);
         xAxis.setGridColor(Color.parseColor("#40FFFFFF"));
         xAxis.setGridLineWidth(1f);
         xAxis.setTextColor(Color.parseColor("#CCCCCC"));
-        xAxis.setTextSize(10f);
-        xAxis.setLabelCount(7, false);
-        xAxis.setAvoidFirstLastClipping(true);
-        xAxis.setSpaceMin(0.5f);
-        xAxis.setSpaceMax(0.5f);
+        xAxis.setTextSize(9f);
 
-        // X축 라벨 포매터 - 30일 일봉으로 통일
+        // X축 범위 확장: "오늘" 이후에도 빈 공간 생성
+        xAxis.setAxisMinimum(0f);
+        xAxis.setAxisMaximum(100f); // 🔧 99f → 105f (6일치 빈 공간 추가)
+
+        xAxis.setGranularity(5f);
+        xAxis.setGranularityEnabled(true);
+        xAxis.setLabelCount(20, false);
+        xAxis.setAvoidFirstLastClipping(false);
+        xAxis.setSpaceMin(0.5f);
+        xAxis.setSpaceMax(0.5f); // 원래대로
+
+        // X축 라벨 포매터 - 확장된 범위 대응
         xAxis.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
-                int index = (int) value;
-                int totalCandles = 30;
+                int chartIndex = (int) Math.round(value);
 
-                if (index >= 0 && index < totalCandles) {
-                    int daysAgo = totalCandles - index - 1;
-
-                    if (daysAgo == 0) return "오늘";
-                    if (daysAgo % 5 == 0) return daysAgo + "일전";
+                if (chartIndex % 5 != 0) {
+                    return "";
                 }
-                return "";
+
+                int totalDisplayDays = 100; // 실제 데이터는 100일
+                int daysAgo = totalDisplayDays - chartIndex - 1;
+
+                // 실제 데이터 범위 (0~99)
+                if (daysAgo < 0 || daysAgo >= totalDisplayDays) {
+                    return ""; // 100~105 인덱스는 라벨 없음 (빈 공간)
+                }
+
+                if (daysAgo == 0) {
+                    return getString(R.string.today);
+                }
+
+                return daysAgo + getString(R.string.days_ago);
             }
         });
 
-        // Y축 설정
+        // Y축 설정 (기존과 동일)
         YAxis leftAxis = strategyChart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
         leftAxis.setGridColor(Color.parseColor("#40FFFFFF"));
@@ -437,34 +455,61 @@ public class StrategyFragment extends Fragment {
         leftAxis.setTextColor(Color.parseColor("#CCCCCC"));
         leftAxis.setTextSize(10f);
         leftAxis.setLabelCount(6, false);
-        leftAxis.setSpaceTop(10f);
-        leftAxis.setSpaceBottom(10f);
+        leftAxis.setSpaceTop(2f);
+        leftAxis.setSpaceBottom(2f);
 
         leftAxis.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
                 if ("$".equals(currencySymbol)) {
-                    if (value >= 10000) {
+                    if (value >= 100000) {
                         return String.format("$%.0fK", value / 1000);
-                    } else if (value >= 1000) {
+                    } else if (value >= 10000) {
                         return String.format("$%.1fK", value / 1000);
-                    } else if (value >= 1) {
+                    } else if (value >= 1000) {
+                        return String.format("$%.2fK", value / 1000);
+                    } else if (value >= 100) {
                         return String.format("$%.0f", value);
+                    } else if (value >= 10) {
+                        return String.format("$%.1f", value);
+                    } else if (value >= 1) {
+                        return String.format("$%.2f", value);
                     } else {
                         return String.format("$%.3f", value);
                     }
                 } else {
-                    return String.format("₩%,.0f", value);
+                    if (value >= 100000000) {
+                        return String.format("₩%.0f억", value / 100000000);
+                    } else if (value >= 10000000) {
+                        return String.format("₩%.1f천만", value / 10000000);
+                    } else if (value >= 1000000) {
+                        return String.format("₩%.1f백만", value / 1000000);
+                    } else if (value >= 100000) {
+                        return String.format("₩%.0f만", value / 10000);
+                    } else if (value >= 10000) {
+                        return String.format("₩%.1f만", value / 10000);
+                    } else if (value >= 1000) {
+                        return String.format("₩%.1f천", value / 1000);
+                    } else if (value >= 100) {
+                        return String.format("₩%.0f", value);
+                    } else if (value >= 10) {
+                        return String.format("₩%.1f", value);
+                    } else if (value >= 1) {
+                        return String.format("₩%.2f", value);
+                    } else {
+                        return String.format("₩%.3f", value);
+                    }
                 }
             }
         });
 
         YAxis rightAxis = strategyChart.getAxisRight();
         rightAxis.setEnabled(false);
-
-        // 범례 비활성화 - 차트 아래에 별도 표시되므로 차트 내 범례 제거
         strategyChart.getLegend().setEnabled(false);
+
+        Log.d("StrategyFragment", "차트 설정 완료 - X축 범위 확장 (0~105)");
     }
+
 
     /**
      * 차트 데이터 업데이트 - 모든 기간에서 동일한 30일 일봉 차트
@@ -712,7 +757,7 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
-        Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들 (%s 전략, 60일 표시)",
+        Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들 (%s 전략, MA라인 제외)",
                 klines.size(), getStrategyTypeName()));
 
         CombinedData combinedData = new CombinedData();
@@ -730,9 +775,9 @@ public class StrategyFragment extends Fragment {
             }
         }
 
-        // 2. 전체 60일 캔들스틱 데이터 생성 (스크롤 가능)
-        int totalDisplayDays = 100; // 전체 표시할 일수
-        int visibleDays = 30; // 한 번에 보이는 일수
+        // 2. 100일 캔들스틱 데이터 생성
+        int totalDisplayDays = 100;
+        int visibleDays = 28;
         int startIndex = Math.max(0, klines.size() - totalDisplayDays);
 
         ArrayList<CandleEntry> candleEntries = new ArrayList<>();
@@ -787,14 +832,12 @@ public class StrategyFragment extends Fragment {
         CandleData candleData = new CandleData(candleDataSet);
         combinedData.setData(candleData);
 
-        // 3. 전략별 이동평균선 계산
+        // 3. 전략별 이동평균선 계산 (크로스 포인트 계산용으로만 사용, 차트에는 표시하지 않음)
         ArrayList<ILineDataSet> lineDataSets = new ArrayList<>();
         ArrayList<Entry> fastMA = new ArrayList<>();
         ArrayList<Entry> slowMA = new ArrayList<>();
         String fastMAName = "";
         String slowMAName = "";
-        String fastMAColor = "";
-        String slowMAColor = "";
 
         switch (strategyType) {
             case STRATEGY_SHORT_TERM:
@@ -803,8 +846,6 @@ public class StrategyFragment extends Fragment {
                 slowMA = calculateEMA(allClosePrices, 20);
                 fastMAName = "EMA5";
                 slowMAName = "EMA20";
-                fastMAColor = "#4CAF50"; // 녹색
-                slowMAColor = "#2196F3"; // 파란색
                 break;
 
             case STRATEGY_MID_TERM:
@@ -813,8 +854,6 @@ public class StrategyFragment extends Fragment {
                 slowMA = calculateSMA(allClosePrices, 60);
                 fastMAName = "EMA20";
                 slowMAName = "SMA60";
-                fastMAColor = "#2196F3"; // 파란색
-                slowMAColor = "#FF9800"; // 주황색
                 break;
 
             case STRATEGY_LONG_TERM:
@@ -823,75 +862,16 @@ public class StrategyFragment extends Fragment {
                 slowMA = calculateSMA(allClosePrices, 200);
                 fastMAName = "SMA50";
                 slowMAName = "SMA200";
-                fastMAColor = "#2196F3"; // 파란색
-                slowMAColor = "#FF9800"; // 주황색
                 break;
         }
 
-        Log.d("StrategyFragment", String.format("MA 계산 완료 - %s: %d개, %s: %d개",
+        Log.d("StrategyFragment", String.format("MA 계산 완료 - %s: %d개, %s: %d개 (차트에는 표시하지 않음)",
                 fastMAName, fastMA.size(), slowMAName, slowMA.size()));
 
-        // 4. 최근 60일 범위의 MA 라인 생성
-        ArrayList<Entry> displayFastMA = new ArrayList<>();
-        ArrayList<Entry> displaySlowMA = new ArrayList<>();
+        // *** MA 라인을 차트에 추가하는 부분 제거 ***
+        // 기존에 여기서 displayFastMA, displaySlowMA를 lineDataSets에 추가했지만 제거
 
-        // FastMA 표시용 데이터 (60일 전체)
-        for (int i = startIndex; i < klines.size(); i++) {
-            // fastMA에서 해당 인덱스 찾기
-            for (Entry entry : fastMA) {
-                if ((int)entry.getX() == i) {
-                    int chartIndex = i - startIndex;
-                    float maValue = entry.getY();
-                    displayFastMA.add(new Entry(chartIndex, maValue));
-                    minPrice = Math.min(minPrice, maValue);
-                    maxPrice = Math.max(maxPrice, maValue);
-                    break;
-                }
-            }
-        }
-
-        // SlowMA 표시용 데이터 (60일 전체)
-        for (int i = startIndex; i < klines.size(); i++) {
-            // slowMA에서 해당 인덱스 찾기
-            for (Entry entry : slowMA) {
-                if ((int)entry.getX() == i) {
-                    int chartIndex = i - startIndex;
-                    float maValue = entry.getY();
-                    displaySlowMA.add(new Entry(chartIndex, maValue));
-                    minPrice = Math.min(minPrice, maValue);
-                    maxPrice = Math.max(maxPrice, maValue);
-                    break;
-                }
-            }
-        }
-
-        // FastMA 라인 추가
-        if (!displayFastMA.isEmpty()) {
-            LineDataSet fastDataSet = new LineDataSet(displayFastMA, fastMAName);
-            fastDataSet.setColor(Color.parseColor(fastMAColor));
-            fastDataSet.setLineWidth(2f);
-            fastDataSet.setDrawCircles(false);
-            fastDataSet.setDrawValues(false);
-            fastDataSet.setHighlightEnabled(false);
-            lineDataSets.add(fastDataSet);
-
-            Log.d("StrategyFragment", String.format("%s 라인 추가: %d개 포인트", fastMAName, displayFastMA.size()));
-        }
-
-        // SlowMA 라인 추가
-        if (!displaySlowMA.isEmpty()) {
-            LineDataSet slowDataSet = new LineDataSet(displaySlowMA, slowMAName);
-            slowDataSet.setColor(Color.parseColor(slowMAColor));
-            slowDataSet.setLineWidth(2f);
-            slowDataSet.setDrawCircles(false);
-            slowDataSet.setDrawValues(false);
-            slowDataSet.setHighlightEnabled(false);
-            lineDataSets.add(slowDataSet);
-
-            Log.d("StrategyFragment", String.format("%s 라인 추가: %d개 포인트", slowMAName, displaySlowMA.size()));
-        }
-
-        // 5. 골든크로스/데드크로스 시그널 포인트 계산 (삼각형 마커 사용)
+        // 4. 골든크로스/데드크로스 시그널 포인트 계산 (삼각형 마커는 유지)
         if (fastMA.size() > 1 && slowMA.size() > 1) {
             ArrayList<Entry> goldenCrossEntries = new ArrayList<>();
             ArrayList<Entry> deathCrossEntries = new ArrayList<>();
@@ -947,7 +927,7 @@ public class StrategyFragment extends Fragment {
                     Log.d("StrategyFragment", String.format("🟡 골든크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
                             dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
 
-                    // 최근 60일 범위 내의 크로스만 차트에 표시
+                    // 최근 100일 범위 내의 크로스만 차트에 표시
                     if (dataIndex + 1 >= startIndex) {
                         int chartIndex = (dataIndex + 1) - startIndex;
 
@@ -958,7 +938,6 @@ public class StrategyFragment extends Fragment {
                             float candleHigh = (float) high;
                             float candleLow = (float) low;
 
-                            // 캔들에서 더 멀리 떨어뜨리기
                             float candleSize = candleHigh - candleLow;
                             float offset = Math.max(candleSize * 0.7f, candleLow * 0.02f);
                             float goldenCrossY = candleLow - offset;
@@ -979,7 +958,7 @@ public class StrategyFragment extends Fragment {
                     Log.d("StrategyFragment", String.format("🔴 데드크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
                             dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
 
-                    // 최근 30일 범위 내의 크로스만 차트에 표시
+                    // 최근 100일 범위 내의 크로스만 차트에 표시
                     if (dataIndex + 1 >= startIndex) {
                         int chartIndex = (dataIndex + 1) - startIndex;
 
@@ -990,7 +969,6 @@ public class StrategyFragment extends Fragment {
                             float candleHigh = (float) high;
                             float candleLow = (float) low;
 
-                            // 캔들에서 더 멀리 떨어뜨리기
                             float candleSize = candleHigh - candleLow;
                             float offset = Math.max(candleSize * 1.2f, candleHigh * 0.025f);
                             float deathCrossY = candleHigh + offset;
@@ -1010,13 +988,13 @@ public class StrategyFragment extends Fragment {
             Log.d("StrategyFragment", String.format("🔍 %s 크로스 감지 완료: 총 %d개 크로스 발견",
                     getStrategyTypeName(), crossCount));
 
-            // ScatterData로 삼각형 마커 추가
+            // ScatterData로 삼각형 마커 추가 (크로스 포인트는 유지)
             ArrayList<IScatterDataSet> scatterDataSets = new ArrayList<>();
 
             // 골든크로스 삼각형 마커 (위쪽 삼각형)
             if (!goldenCrossEntries.isEmpty()) {
                 ScatterDataSet goldenCrossDataSet = new ScatterDataSet(goldenCrossEntries, "Golden Cross");
-                goldenCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(false)); // 회전 안함
+                goldenCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(false));
                 goldenCrossDataSet.setColor(Color.parseColor("#4CAF50"));
                 goldenCrossDataSet.setScatterShapeSize(30f);
                 goldenCrossDataSet.setDrawValues(false);
@@ -1029,7 +1007,7 @@ public class StrategyFragment extends Fragment {
             // 데드크로스 삼각형 마커 (아래쪽 삼각형)
             if (!deathCrossEntries.isEmpty()) {
                 ScatterDataSet deathCrossDataSet = new ScatterDataSet(deathCrossEntries, "Death Cross");
-                deathCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(true)); // 180도 회전
+                deathCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(true));
                 deathCrossDataSet.setColor(Color.parseColor("#F44336"));
                 deathCrossDataSet.setScatterShapeSize(30f);
                 deathCrossDataSet.setDrawValues(false);
@@ -1046,7 +1024,7 @@ public class StrategyFragment extends Fragment {
             }
         }
 
-        // 6. 전략이 있는 경우 지지선/저항선 추가
+        // 5. 전략이 있는 경우 지지선/저항선 추가 (이 부분은 유지)
         if (strategy != null) {
             // 지지선들 (녹색, 점선)
             if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
@@ -1124,43 +1102,55 @@ public class StrategyFragment extends Fragment {
             }
         }
 
-        // 7. 라인 데이터 추가
+        // 6. 라인 데이터 추가 (지지/저항선만 포함, MA 라인 제외)
         if (!lineDataSets.isEmpty()) {
             LineData lineData = new LineData(lineDataSets);
             combinedData.setData(lineData);
-            Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개 (%s + 크로스 포인트 + 지지/저항선)",
-                    lineDataSets.size(), getStrategyTypeName()));
+            Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개 (지지/저항선만, MA라인 제외)",
+                    lineDataSets.size()));
         }
 
-        // 8. Y축 범위 설정
-        float padding = (maxPrice - minPrice) * 0.08f;
+        // 7. Y축 범위 설정
+        float priceRange = maxPrice - minPrice;
+        float padding = priceRange * 0.02f;
+        float minPadding = priceRange * 0.01f;
+        padding = Math.max(padding, minPadding);
+
         strategyChart.getAxisLeft().setAxisMinimum(minPrice - padding);
         strategyChart.getAxisLeft().setAxisMaximum(maxPrice + padding);
 
-        // 9. 차트 그리기 순서 설정
+        // 8. 차트 그리기 순서 설정
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
-                CombinedChart.DrawOrder.LINE,
-                CombinedChart.DrawOrder.SCATTER  // 스캐터 데이터가 맨 위에 그려지도록
+                CombinedChart.DrawOrder.LINE,      // 지지/저항선만
+                CombinedChart.DrawOrder.SCATTER    // 크로스 마커
         });
 
-        // 10. 차트에 데이터 설정
+        // 9. 차트에 데이터 설정
         strategyChart.setData(combinedData);
 
-        // 11. X축 뷰포트 설정 (30일치 크기 유지, 스크롤 가능)
-        strategyChart.setVisibleXRangeMaximum(visibleDays); // 최대 30일만 표시
-        strategyChart.setVisibleXRangeMinimum(visibleDays); // 최소 30일 표시
-        strategyChart.setScaleXEnabled(true); // X축 스케일 가능
-        strategyChart.setDragEnabled(true); // 드래그 가능
+        // X축 범위 다시 강제 설정 (데이터 설정 후)
+        XAxis xAxis = strategyChart.getXAxis();
+        xAxis.setAxisMinimum(0f);
+        xAxis.setAxisMaximum(100f); // 🔧 99f → 105f로 변경
+        xAxis.setGranularity(5f);
+        xAxis.setGranularityEnabled(true);
+        xAxis.setSpaceMax(0.5f); // 🔧 1.5f → 0.5f로 원래대로
 
-        // 초기 위치를 최신 30일로 설정 (fitScreen 대신 수동 설정)
-        strategyChart.moveViewToX(totalDisplayDays - visibleDays);
+        // X축 뷰포트 설정
+        strategyChart.setVisibleXRangeMaximum(visibleDays);
+        strategyChart.setVisibleXRangeMinimum(visibleDays);
+        strategyChart.setScaleXEnabled(true);
+        strategyChart.setDragEnabled(true);
 
-        // fitScreen() 제거 - 이게 전체 데이터를 압축해서 보여주는 원인
+        // 초기 위치 조정 - "오늘"이 화면 중간쯤 오도록
+        float initialPosition = 105 - visibleDays; // 🔧 105 - 30 = 75 (확장된 범위 기준)
+        strategyChart.moveViewToX(initialPosition);
+
         strategyChart.invalidate();
 
-        Log.d("StrategyFragment", String.format("✅ %s 전략 차트 완료: %s vs %s (60일 데이터, 30일씩 표시)",
-                getStrategyTypeName(), fastMAName, slowMAName));
+        Log.d("StrategyFragment", String.format("✅ %s 전략 차트 완료: 차트 영역 확장, 32일 표시",
+                getStrategyTypeName()));
     }
 
 
