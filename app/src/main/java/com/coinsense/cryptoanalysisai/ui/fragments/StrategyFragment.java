@@ -671,8 +671,8 @@ public class StrategyFragment extends Fragment {
         }
 
         // 2. 전체 60일 캔들스틱 데이터 생성 (스크롤 가능)
-        int totalDisplayDays = 200; // 전체 표시할 일수
-        int visibleDays = 30; // 한 번에 보이는 일수
+        int totalDisplayDays = 100; // 전체 표시할 일수
+        int visibleDays = 25; // 한 번에 보이는 일수
         int startIndex = Math.max(0, klines.size() - totalDisplayDays);
 
         ArrayList<CandleEntry> candleEntries = new ArrayList<>();
@@ -953,9 +953,9 @@ public class StrategyFragment extends Fragment {
                 LineDataSet goldenCrossDataSet = new LineDataSet(goldenCrossEntries, "Golden Cross");
                 goldenCrossDataSet.setColor(Color.TRANSPARENT);
                 goldenCrossDataSet.setDrawCircles(true);
-                goldenCrossDataSet.setCircleColor(Color.parseColor("#FFD700"));
-                goldenCrossDataSet.setCircleRadius(12f);
-                goldenCrossDataSet.setCircleHoleRadius(8f);
+                goldenCrossDataSet.setCircleColor(Color.parseColor("#4CAF50"));
+                goldenCrossDataSet.setCircleRadius(8f);
+                goldenCrossDataSet.setCircleHoleRadius(4f);
                 goldenCrossDataSet.setCircleHoleColor(Color.parseColor("#4CAF50"));
                 goldenCrossDataSet.setDrawValues(false);
                 goldenCrossDataSet.setHighlightEnabled(false);
@@ -970,9 +970,9 @@ public class StrategyFragment extends Fragment {
                 LineDataSet deathCrossDataSet = new LineDataSet(deathCrossEntries, "Death Cross");
                 deathCrossDataSet.setColor(Color.TRANSPARENT);
                 deathCrossDataSet.setDrawCircles(true);
-                deathCrossDataSet.setCircleColor(Color.parseColor("#424242"));
-                deathCrossDataSet.setCircleRadius(12f);
-                deathCrossDataSet.setCircleHoleRadius(8f);
+                deathCrossDataSet.setCircleColor(Color.parseColor("#F44336"));
+                deathCrossDataSet.setCircleRadius(8f);
+                deathCrossDataSet.setCircleHoleRadius(4f);
                 deathCrossDataSet.setCircleHoleColor(Color.parseColor("#F44336"));
                 deathCrossDataSet.setDrawValues(false);
                 deathCrossDataSet.setHighlightEnabled(false);
