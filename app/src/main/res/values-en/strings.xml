@@ -322,7 +322,7 @@
 
     <!-- Chart legend -->
     <string name="chart_legend_current">Current Price</string>
-    <string name="chart_legend_support">Support</string>
+    <string name="chart_legend_support">Reference Zone</string>
     <string name="chart_legend_resistance">Resistance</string>
     <string name="chart_legend_stop_loss">Stop Loss</string>
 
@@ -341,10 +341,10 @@
     <string name="masked_content_cross">Recent Cross: ******</string>
 
     <!-- 🎉 Open Event Discount Strings -->
-    <string name="open_event_discount_notice">🎉 Open Event Special Price. Subscribe at discounted rates until July 31, 2025!\n\n• Monthly: $10.7 → $6.99 (35% off)\n• Annual: $90.00 → $79.90 (monthly $6.66, 11% off)</string>
+    <string name="open_event_discount_notice">Subscribe at discounted rates until July 31, 2025!\n\n• Monthly: $10.7 → $6.99 (35% off)\n• Annual: $90.00 → $79.90 (monthly $6.66, 11% off)</string>
     <string name="subscription_monthly_price_discount">$6.99/month (regular $10.7)</string>
     <string name="subscription_yearly_price_discount">$79.90/year (monthly $6.66, regular $90.00)</string>
-    <string name="discount_until_date">🎉 Special price until July 31</string>
+    <string name="discount_until_date">Open Event</string>
 
 
     <!-- Subscription button texts -->

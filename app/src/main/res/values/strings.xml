@@ -334,7 +334,7 @@
 
     <!-- 차트 범례 -->
     <string name="chart_legend_current">현재가</string>
-    <string name="chart_legend_support">지지선</string>
+    <string name="chart_legend_support">참고 구간</string>
     <string name="chart_legend_resistance">저항선</string>
     <string name="chart_legend_stop_loss">손절매</string>
 
@@ -352,10 +352,10 @@
     <string name="recent_cross_format">최근 크로스: %s %s (%s)</string>
 
     <!-- 🎉 오픈 이벤트 할인 관련 문자열 추가 -->
-    <string name="open_event_discount_notice">🎉 오픈 이벤트 할인 2025년 7월 31일까지 할인된 가격으로 구독하세요!\n\n• 월간 구독: 15,000원 → 9,900원 (34% 할인)\n• 연간 구독: 125,000원 → 108,000원 (월 9,000원, 14% 할인)</string>
+    <string name="open_event_discount_notice">2025년 7월 31일까지 할인된 가격으로 구독하세요!\n\n• 월간 구독: 15,000원 → 9,900원 (34% 할인)\n• 연간 구독: 125,000원 → 108,000원 (월 9,000원, 14% 할인)</string>
     <string name="subscription_monthly_price_discount">월 9,900원 (정가 15,000원)</string>
     <string name="subscription_yearly_price_discount">연 108,000원 (월 9,000원, 정가 125,000원)</string>
-    <string name="discount_until_date">🎉 7월 31일까지 할인</string>
+    <string name="discount_until_date">오픈 이벤트</string>
 
     <!-- 구독 버튼 텍스트 -->
     <string name="subscribe_monthly">월간 구독하기</string>
