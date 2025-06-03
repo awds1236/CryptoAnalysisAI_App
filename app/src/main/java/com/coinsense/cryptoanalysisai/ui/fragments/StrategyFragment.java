@@ -118,6 +118,12 @@ public class StrategyFragment extends Fragment {
     private View additionalBlurLayer;
     private ExchangeRateManager exchangeRateManager;
 
+    private TextView tvRecentCross; // 📍 최근 크로스 정보 표시용 TextView 추가
+
+    // 최근 크로스 정보 저장용 변수들
+    private String recentCrossType = null; // "GOLDEN" 또는 "DEATH"
+    private int recentCrossDaysAgo = -1;   // 며칠 전인지
+
     // StrategyFragment 클래스 안에 추가
     public static class RotatedTriangleRenderer implements IShapeRenderer {
         private final boolean inverted;
@@ -275,6 +281,17 @@ public class StrategyFragment extends Fragment {
         contentArea = view.findViewById(R.id.contentArea);
         btnWatchAd = view.findViewById(R.id.btnWatchAd);
         additionalBlurLayer = view.findViewById(R.id.additionalBlurLayer);
+
+        // 기존 UI 요소 초기화...
+        tvStrategyTitle = view.findViewById(R.id.tvStrategyTitle);
+        layoutBuySteps = view.findViewById(R.id.layoutBuySteps);
+        tvTargetPrice = view.findViewById(R.id.tvTargetPrice);
+        tvStopLoss = view.findViewById(R.id.tvStopLoss);
+        tvRiskReward = view.findViewById(R.id.tvRiskReward);
+        tvStrategyDetail = view.findViewById(R.id.tvStrategyDetail);
+
+        // 📍 최근 크로스 TextView 초기화 추가
+        tvRecentCross = view.findViewById(R.id.tvRecentCross);
 
         // 차트 초기화
         strategyChart = view.findViewById(R.id.strategyChart);
@@ -521,6 +538,60 @@ public class StrategyFragment extends Fragment {
         getCandleDataAndUpdateChart();
     }
 
+    private void updateRecentCrossUI() {
+        if (tvRecentCross == null) {
+            return;
+        }
+
+        if (recentCrossType == null || recentCrossDaysAgo < 0) {
+            // 최근 크로스가 없는 경우
+            tvRecentCross.setVisibility(View.GONE);
+            Log.d("StrategyFragment", "최근 크로스 없음 - UI 숨김");
+            return;
+        }
+
+        // 크로스 타입에 따른 텍스트 및 색상 설정
+        String crossTypeText;
+        int textColor;
+        String emoji;
+
+        if ("GOLDEN".equals(recentCrossType)) {
+            crossTypeText = getString(R.string.golden_cross_legend);
+            textColor = Color.parseColor("#4CAF50"); // 녹색
+            emoji = "▲";
+        } else if ("DEATH".equals(recentCrossType)) {
+            crossTypeText = getString(R.string.death_cross_legend);
+            textColor = Color.parseColor("#F44336"); // 빨간색
+            emoji = "▼";
+        } else {
+            tvRecentCross.setVisibility(View.GONE);
+            return;
+        }
+
+        // 일자 표시 처리
+        String timeAgoText;
+        if (recentCrossDaysAgo == 0) {
+            timeAgoText = getString(R.string.today);
+        } else if (recentCrossDaysAgo == 1) {
+            timeAgoText = "1" + getString(R.string.days_ago);
+        } else {
+            timeAgoText = recentCrossDaysAgo + getString(R.string.days_ago);
+        }
+
+        // 최종 텍스트 구성
+        String recentCrossText = String.format(getString(R.string.recent_cross_format),
+                emoji, crossTypeText, timeAgoText);
+
+        // UI 업데이트
+        tvRecentCross.setText(Html.fromHtml(String.format("<font color='%s'><b>%s</b></font>",
+                        String.format("#%06X", (0xFFFFFF & textColor)), recentCrossText),
+                Html.FROM_HTML_MODE_LEGACY));
+        tvRecentCross.setVisibility(View.VISIBLE);
+
+        Log.d("StrategyFragment", String.format("최근 크로스 UI 업데이트: %s %s (%s)",
+                emoji, crossTypeText, timeAgoText));
+    }
+
     /**
      * 차트 강제 새로고침 (탭 전환 시 호출)
      */
@@ -757,6 +828,10 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
+        // 📍 최근 크로스 정보 초기화
+        recentCrossType = null;
+        recentCrossDaysAgo = -1;
+
         Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들 (%s 전략, MA라인 제외)",
                 klines.size(), getStrategyTypeName()));
 
@@ -777,7 +852,8 @@ public class StrategyFragment extends Fragment {
 
         // 2. 100일 캔들스틱 데이터 생성
         int totalDisplayDays = 100;
-        int visibleDays = 28;
+        int extendedDays = 105;
+        int visibleDays = 30;
         int startIndex = Math.max(0, klines.size() - totalDisplayDays);
 
         ArrayList<CandleEntry> candleEntries = new ArrayList<>();
@@ -818,14 +894,14 @@ public class StrategyFragment extends Fragment {
         // 캔들스틱 데이터셋 설정
         CandleDataSet candleDataSet = new CandleDataSet(candleEntries, "Price");
         candleDataSet.setShadowColor(Color.parseColor("#CCCCCC"));
-        candleDataSet.setShadowWidth(1f);
+        candleDataSet.setShadowWidth(0.8f);
         candleDataSet.setDecreasingColor(Color.parseColor("#FF4B6C"));
         candleDataSet.setDecreasingPaintStyle(Paint.Style.FILL);
         candleDataSet.setIncreasingColor(Color.parseColor("#00C087"));
         candleDataSet.setIncreasingPaintStyle(Paint.Style.FILL);
         candleDataSet.setNeutralColor(Color.parseColor("#FFC107"));
         candleDataSet.setDrawValues(false);
-        candleDataSet.setBarSpace(0.1f);
+        candleDataSet.setBarSpace(0.2f);
         candleDataSet.setHighlightEnabled(true);
         candleDataSet.setHighLightColor(Color.WHITE);
 
@@ -871,21 +947,24 @@ public class StrategyFragment extends Fragment {
         // *** MA 라인을 차트에 추가하는 부분 제거 ***
         // 기존에 여기서 displayFastMA, displaySlowMA를 lineDataSets에 추가했지만 제거
 
-        // 4. 골든크로스/데드크로스 시그널 포인트 계산 (삼각형 마커는 유지)
+        // 4. 골든크로스/데드크로스 시그널 포인트 계산
         if (fastMA.size() > 1 && slowMA.size() > 1) {
             ArrayList<Entry> goldenCrossEntries = new ArrayList<>();
             ArrayList<Entry> deathCrossEntries = new ArrayList<>();
 
             int stabilizationStart = getStabilizationStartIndex();
 
+            // 📍 최근 크로스 찾기를 위한 변수
+            int mostRecentCrossDate = -1;
+            String mostRecentCrossType = null;
+
             Log.d("StrategyFragment", String.format("🔍 %s 크로스 감지 시작 - 안정화 시점: %d일째부터",
                     getStrategyTypeName(), stabilizationStart));
 
             // 크로스 포인트 찾기
-            int crossCount = 0;
             for (int dataIndex = stabilizationStart; dataIndex < klines.size() - 1; dataIndex++) {
 
-                // 해당 데이터 인덱스의 MA 값 찾기
+                // 해당 데이터 인덱스의 MA 값 찾기 (기존 로직과 동일)
                 float fastCurrent = 0, fastNext = 0, slowCurrent = 0, slowNext = 0;
                 boolean foundCurrent = false, foundNext = false;
 
@@ -923,14 +1002,18 @@ public class StrategyFragment extends Fragment {
 
                 // 골든크로스 검사 (Fast MA가 Slow MA를 상향 돌파)
                 if (fastCurrent <= slowCurrent && fastNext > slowNext) {
-                    crossCount++;
                     Log.d("StrategyFragment", String.format("🟡 골든크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
                             dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
 
-                    // 최근 100일 범위 내의 크로스만 차트에 표시
+                    // 📍 최근 크로스 정보 업데이트
+                    if (dataIndex + 1 > mostRecentCrossDate) {
+                        mostRecentCrossDate = dataIndex + 1;
+                        mostRecentCrossType = "GOLDEN";
+                    }
+
+                    // 최근 100일 범위 내의 크로스만 차트에 표시 (기존 로직)
                     if (dataIndex + 1 >= startIndex) {
                         int chartIndex = (dataIndex + 1) - startIndex;
-
                         try {
                             List<Object> crossKline = klines.get(dataIndex + 1);
                             double high = Double.parseDouble(crossKline.get(2).toString());
@@ -944,9 +1027,6 @@ public class StrategyFragment extends Fragment {
 
                             goldenCrossEntries.add(new Entry(chartIndex, goldenCrossY));
                             minPrice = Math.min(minPrice, goldenCrossY);
-
-                            Log.d("StrategyFragment", String.format("✅ 골든크로스 차트 추가: 차트인덱스=%d, 표시위치=%.2f",
-                                    chartIndex, goldenCrossY));
                         } catch (Exception e) {
                             Log.e("StrategyFragment", "골든크로스 캔들 데이터 파싱 오류: " + e.getMessage());
                         }
@@ -954,14 +1034,18 @@ public class StrategyFragment extends Fragment {
                 }
                 // 데드크로스 검사 (Fast MA가 Slow MA를 하향 돌파)
                 else if (fastCurrent >= slowCurrent && fastNext < slowNext) {
-                    crossCount++;
                     Log.d("StrategyFragment", String.format("🔴 데드크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
                             dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
 
-                    // 최근 100일 범위 내의 크로스만 차트에 표시
+                    // 📍 최근 크로스 정보 업데이트
+                    if (dataIndex + 1 > mostRecentCrossDate) {
+                        mostRecentCrossDate = dataIndex + 1;
+                        mostRecentCrossType = "DEATH";
+                    }
+
+                    // 최근 100일 범위 내의 크로스만 차트에 표시 (기존 로직)
                     if (dataIndex + 1 >= startIndex) {
                         int chartIndex = (dataIndex + 1) - startIndex;
-
                         try {
                             List<Object> crossKline = klines.get(dataIndex + 1);
                             double high = Double.parseDouble(crossKline.get(2).toString());
@@ -975,9 +1059,6 @@ public class StrategyFragment extends Fragment {
 
                             deathCrossEntries.add(new Entry(chartIndex, deathCrossY));
                             maxPrice = Math.max(maxPrice, deathCrossY);
-
-                            Log.d("StrategyFragment", String.format("✅ 데드크로스 차트 추가: 차트인덱스=%d, 표시위치=%.2f",
-                                    chartIndex, deathCrossY));
                         } catch (Exception e) {
                             Log.e("StrategyFragment", "데드크로스 캔들 데이터 파싱 오류: " + e.getMessage());
                         }
@@ -985,8 +1066,16 @@ public class StrategyFragment extends Fragment {
                 }
             }
 
-            Log.d("StrategyFragment", String.format("🔍 %s 크로스 감지 완료: 총 %d개 크로스 발견",
-                    getStrategyTypeName(), crossCount));
+            // 📍 최근 크로스 정보 저장
+            if (mostRecentCrossDate >= 0 && mostRecentCrossType != null) {
+                recentCrossType = mostRecentCrossType;
+                // 며칠 전인지 계산 (전체 데이터 기준에서 마지막 날이 0일 전)
+                recentCrossDaysAgo = klines.size() - 1 - mostRecentCrossDate;
+
+                Log.d("StrategyFragment", String.format("📍 최근 크로스: %s (%d일 전)",
+                        recentCrossType, recentCrossDaysAgo));
+            }
+
 
             // ScatterData로 삼각형 마커 추가 (크로스 포인트는 유지)
             ArrayList<IScatterDataSet> scatterDataSets = new ArrayList<>();
@@ -1033,7 +1122,7 @@ public class StrategyFragment extends Fragment {
                     ArrayList<Entry> supportEntries = new ArrayList<>();
 
                     float supportPrice = (float) step.getPrice();
-                    for (int i = 0; i < totalDisplayDays; i++) {
+                    for (int i = 0; i < extendedDays; i++) {
                         supportEntries.add(new Entry(i, supportPrice));
                     }
 
@@ -1059,7 +1148,7 @@ public class StrategyFragment extends Fragment {
                     ArrayList<Entry> resistanceEntries = new ArrayList<>();
 
                     float resistancePrice = (float) targetPrice;
-                    for (int i = 0; i < totalDisplayDays; i++) {
+                    for (int i = 0; i < extendedDays; i++) {
                         resistanceEntries.add(new Entry(i, resistancePrice));
                     }
 
@@ -1083,7 +1172,7 @@ public class StrategyFragment extends Fragment {
                 ArrayList<Entry> stopLossEntries = new ArrayList<>();
                 float stopLossPrice = (float) strategy.getStopLoss();
 
-                for (int i = 0; i < totalDisplayDays; i++) {
+                for (int i = 0; i < extendedDays; i++) {
                     stopLossEntries.add(new Entry(i, stopLossPrice));
                 }
 
@@ -1119,6 +1208,8 @@ public class StrategyFragment extends Fragment {
         strategyChart.getAxisLeft().setAxisMinimum(minPrice - padding);
         strategyChart.getAxisLeft().setAxisMaximum(maxPrice + padding);
 
+
+
         // 8. 차트 그리기 순서 설정
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
@@ -1146,6 +1237,8 @@ public class StrategyFragment extends Fragment {
         // 초기 위치 조정 - "오늘"이 화면 중간쯤 오도록
         float initialPosition = 105 - visibleDays; // 🔧 105 - 30 = 75 (확장된 범위 기준)
         strategyChart.moveViewToX(initialPosition);
+
+        updateRecentCrossUI();
 
         strategyChart.invalidate();
 
@@ -1213,6 +1306,7 @@ public class StrategyFragment extends Fragment {
             tvStopLoss.setText(getString(R.string.masked_content));
             tvRiskReward.setText(getString(R.string.masked_content_short));
             tvStrategyDetail.setText(getString(R.string.masked_content));
+            tvRecentCross.setText(getString(R.string.masked_content_cross));
 
             if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
                 displayFirstBuyStepWithBlur(layoutBuySteps, strategy.getBuySteps().get(0));
@@ -1348,6 +1442,7 @@ public class StrategyFragment extends Fragment {
             tvStopLoss.setText(getString(R.string.masked_content));
             tvRiskReward.setText(getString(R.string.masked_content_short));
             tvStrategyDetail.setText(getString(R.string.masked_strategy_content));
+            tvRecentCross.setText(getString(R.string.masked_content_cross));
 
             if (strategy != null && strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
                 displayFirstBuyStepWithBlur(layoutBuySteps, strategy.getBuySteps().get(0));
@@ -1390,6 +1485,7 @@ public class StrategyFragment extends Fragment {
             btnWatchAd.setVisibility(isPremiumCoin ? View.GONE : View.VISIBLE);
             tvAdStatus.setVisibility(View.GONE);
 
+
             ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) btnWatchAd.getLayoutParams();
             if (params != null) {
                 params.topMargin = (int) (80 * getResources().getDisplayMetrics().density);
@@ -1400,6 +1496,7 @@ public class StrategyFragment extends Fragment {
             tvStopLoss.setText(getString(R.string.masked_content));
             tvRiskReward.setText(getString(R.string.masked_content_short));
             tvStrategyDetail.setText(getString(R.string.masked_content));
+            tvRecentCross.setText(getString(R.string.masked_content_cross));
         }
     }
 

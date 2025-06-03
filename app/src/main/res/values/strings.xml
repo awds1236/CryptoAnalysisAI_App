@@ -145,6 +145,7 @@
     <string name="analysis_load_error">분석 결과 로드 실패: %1$s</string>
     <string name="retry">다시 시도</string>
     <string name="masked_content">**********</string>
+    <string name="masked_content_cross">최근 크로스: ******</string>
     <string name="masked_content_short">*****</string>
     <string name="masked_ratio">***** vs *****</string>
     <string name="short_term_fragment_updated">단기 전략 프래그먼트가 업데이트됨</string>
@@ -309,7 +310,7 @@
     <string name="privacy_policy_title">개인정보처리방침</string>
     <string name="terms_agreement_link">로그인함으로써 <u>이용약관</u> 및 <u>개인정보처리방침</u>에 동의합니다.</string>
     <!-- app/src/main/res/values/strings.xml -->
-    <string name="ai_analysis_footer">⚠️ 본 분석은 인공지능(AI)에 의해 자동 생성되었으며,\n개발자의 개인적 견해나 투자 의견을 포함하지 않습니다.</string>
+    <string name="ai_analysis_footer">⚠️ 본 분석은 인공지능(AI)에 의해 자동 생성되었으며, 개인적 견해나 투자 의견을 포함하지 않습니다.</string>
 
 
     <!-- 기존 것들 수정/추가 -->
@@ -346,4 +347,6 @@
 
     <string name="days_ago">일전</string>
     <string name="today">오늘</string>
+
+    <string name="recent_cross_format">최근 크로스: %s %s (%s)</string>
 </resources>

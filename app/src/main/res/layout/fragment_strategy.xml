@@ -303,6 +303,20 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tvRecentCross"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="4dp"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:background="#1A000000"
+                    android:visibility="gone"
+                    />
+
                 <!-- 면책 조항 추가 -->
                 <TextView
                     android:id="@+id/tvDisclaimer"
