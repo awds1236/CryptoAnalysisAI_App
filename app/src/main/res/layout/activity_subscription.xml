@@ -45,6 +45,46 @@
             android:visibility="gone"
             app:layout_constraintTop_toBottomOf="@id/tvSubscriptionStatus" />
 
+        <!-- 🎉 오픈 이벤트 할인 안내 카드 추가 -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDiscountNotice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="#FFF3E0"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:strokeColor="#FF9800"
+            app:strokeWidth="2dp"
+            app:layout_constraintTop_toBottomOf="@id/tvBillingInfo">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/discount_until_date"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#FF6F00"
+                    android:gravity="center" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/open_event_discount_notice"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="4dp"
+                    android:textColor="#E65100" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardMonthly"
             android:layout_width="match_parent"
@@ -52,7 +92,7 @@
             android:layout_marginTop="16dp"
             app:cardCornerRadius="8dp"
             app:cardElevation="4dp"
-            app:layout_constraintTop_toBottomOf="@id/tvBillingInfo">
+            app:layout_constraintTop_toBottomOf="@id/cardDiscountNotice">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -67,12 +107,23 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <TextView
+                <!-- 할인 가격 표시 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textSize="14sp"
-                    android:text="@string/subscription_monthly_price" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/subscription_monthly_price_discount"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#FF6F00" />
+
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
@@ -104,25 +155,44 @@
                 android:orientation="vertical"
                 android:padding="12dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/subscription_yearly"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/subscription_yearly_event"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <!-- 할인 가격 표시 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/subscription_yearly_price_discount"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#FF6F00" />
+
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textSize="14sp"
-                    android:text="@string/subscription_yearly_price" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-
                     android:text="@string/subscription_features" />
 
                 <Button

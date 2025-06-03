@@ -124,18 +124,23 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
 
             // 구독 취소 버튼 활성화, 구독 버튼 비활성화
             binding.btnCancelSubscription.setVisibility(View.VISIBLE);
-            binding.btnMonthlySubscription.setText(
-                    getString(R.string.subscribed_to_format, subscriptionManager.getMonthlyPrice()));
-            binding.btnMonthlySubscription.setEnabled(false);
 
+            // 🔧 월간 구독 버튼 텍스트 변경
+            if (Constants.SUBSCRIPTION_MONTHLY.equals(subscriptionType)) {
+                binding.btnMonthlySubscription.setText(getString(R.string.subscribed_monthly));
+                binding.btnMonthlySubscription.setEnabled(false);
+            } else {
+                binding.btnMonthlySubscription.setText(getString(R.string.subscribe_monthly));
+                binding.btnMonthlySubscription.setEnabled(true);
+            }
+
+            // 🔧 연간 구독 버튼 텍스트 변경
             if (Constants.SUBSCRIPTION_YEARLY.equals(subscriptionType)) {
-                binding.btnYearlySubscription.setText(
-                        getString(R.string.subscribed_to_format, subscriptionManager.getYearlyPrice()));
+                binding.btnYearlySubscription.setText(getString(R.string.subscribed_yearly));
                 binding.btnYearlySubscription.setEnabled(false);
             } else {
-                binding.btnYearlySubscription.setText(
-                        getString(R.string.upgrade_to_format, subscriptionManager.getYearlyPrice()));
-                binding.btnYearlySubscription.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14); // 폰트 크기를 14sp로 설정
+                binding.btnYearlySubscription.setText(getString(R.string.subscribe_yearly_upgrade));
+                binding.btnYearlySubscription.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
                 binding.btnYearlySubscription.setEnabled(true);
             }
         } else {
@@ -144,10 +149,13 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
 
             // 구독 버튼 활성화, 구독 취소 버튼 비활성화
             binding.btnCancelSubscription.setVisibility(View.GONE);
-            binding.btnMonthlySubscription.setText(getString(R.string.subscribe_to_format,
-                    getString(R.string.subscription_monthly_price)));
-            binding.btnYearlySubscription.setText(getString(R.string.subscribe_to_format,
-                    getString(R.string.subscription_yearly_price)));
+
+            // 🔧 구독하지 않은 경우 버튼 텍스트
+            binding.btnMonthlySubscription.setText(getString(R.string.subscribe_monthly));
+            binding.btnMonthlySubscription.setEnabled(true);
+
+            binding.btnYearlySubscription.setText(getString(R.string.subscribe_yearly));
+            binding.btnYearlySubscription.setEnabled(true);
         }
 
         binding.progressBar.setVisibility(View.GONE);
@@ -211,29 +219,8 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
             return;
         }
 
-        // 상품 정보에서 가격 추출
-        for (ProductDetails details : productDetailsList) {
-            // 구독 상품 정보에서 가격 및 기간 추출
-            List<ProductDetails.SubscriptionOfferDetails> offerDetails = details.getSubscriptionOfferDetails();
-            if (offerDetails != null && !offerDetails.isEmpty()) {
-                // 첫 번째 구독 옵션 사용
-                ProductDetails.SubscriptionOfferDetails offer = offerDetails.get(0);
-
-                // 첫 번째 가격 단계 사용
-                if (!offer.getPricingPhases().getPricingPhaseList().isEmpty()) {
-                    String formattedPrice = offer.getPricingPhases().getPricingPhaseList().get(0).getFormattedPrice();
-                    String productId = details.getProductId();
-
-                    if (BillingManager.MONTHLY_SUBSCRIPTION_ID.equals(productId)) {
-                        // 월간 구독 가격
-                        binding.btnMonthlySubscription.setText(formattedPrice + " 구독하기");
-                    } else if (BillingManager.YEARLY_SUBSCRIPTION_ID.equals(productId)) {
-                        // 연간 구독 가격
-                        binding.btnYearlySubscription.setText(formattedPrice + " 구독하기");
-                    }
-                }
-            }
-        }
+        // 🔧 상품 정보가 있어도 버튼 텍스트는 간단하게 유지
+        // Google Play Console에서 설정한 실제 할인 가격이 결제 시 표시됨
 
         // 로딩 상태 숨기기
         binding.progressBar.setVisibility(View.GONE);
@@ -259,5 +246,4 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
         binding.progressBar.setVisibility(View.GONE);
         Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
     }
-
 }

@@ -62,6 +62,7 @@
     <string name="subscription_title">프리미엄 구독</string>
     <string name="subscription_description">⚠️ 본 서비스는 AI 기반 기술적 분석 정보 제공 목적이며, 투자 권유나 수익 보장이 아닙니다. 모든 투자 결정은 사용자 본인의 책임입니다.</string>
     <string name="subscription_monthly">월간 구독</string>
+    <string name="subscription_yearly_event">연간 구독</string>
     <string name="subscription_yearly">연간 구독 (30% 할인)</string>
     <string name="subscription_monthly_price">월 15,000원</string>
     <string name="subscription_yearly_price">연 125,000원 (월 10,400원)</string>
@@ -299,7 +300,7 @@
     <string name="resistance_explanation_content">가격이 상승하다가 하락 전환할 가능성이 높은 구간입니다. 과거 차트에서 여러 번 저항받았던 가격대나 심리적 저항선을 의미합니다. 단순 참고용 정보이며 반드시 하락을 의미하지는 않습니다.</string>
 
     <string name="risk_management_explanation_title">⚠️ 위험 관리 구간</string>
-    <string name="risk_management_explanation_content">기술적 분석 관점에서 추세가 변할 가능성이 높아지는 구간입니다. 해당 가격을 벗어날 경우 기존 분석이 무효화될 수 있는 참고 구간입니다. 투자 조언이 아닌 단순 기술적 해석입니다.</string>
+    <string name="risk_management_explanation_content">기술적 분석 관점에서 추세가 변할 가능성이 높아지는 구간입니다. 해당 가격을 벗어날 경우 기존 분석이 무효화될 수 있는 참고 구간입니다.</string>
 
     <string name="detailed_disclaimer_title">⚠️ 주요 주의 사항</string>
     <string name="detailed_disclaimer_content">• 본 분석은 AI에 의한 기술적 해석으로 참고용입니다\n• 투자 권유, 매매 조언, 수익 보장이 아닙니다\n• 모든 투자 결정과 손익은 사용자 본인 책임입니다\n• 암호화폐는 변동성이 매우 높은 고위험 자산입니다\n• 투자 전 충분한 학습과 신중한 판단이 필요합니다\n• 감당할 수 있는 범위 내에서만 투자하시기 바랍니다</string>
@@ -349,4 +350,24 @@
     <string name="today">오늘</string>
 
     <string name="recent_cross_format">최근 크로스: %s %s (%s)</string>
+
+    <!-- 🎉 오픈 이벤트 할인 관련 문자열 추가 -->
+    <string name="open_event_discount_notice">🎉 오픈 이벤트 할인 2025년 7월 31일까지 할인된 가격으로 구독하세요!\n\n• 월간 구독: 15,000원 → 9,900원 (34% 할인)\n• 연간 구독: 125,000원 → 108,000원 (월 9,000원, 14% 할인)</string>
+    <string name="subscription_monthly_price_discount">월 9,900원 (정가 15,000원)</string>
+    <string name="subscription_yearly_price_discount">연 108,000원 (월 9,000원, 정가 125,000원)</string>
+    <string name="discount_until_date">🎉 7월 31일까지 할인</string>
+
+    <!-- 구독 버튼 텍스트 -->
+    <string name="subscribe_monthly">월간 구독하기</string>
+    <string name="subscribe_yearly">연간 구독하기</string>
+    <string name="subscribed_monthly">월간 구독중</string>
+    <string name="subscribed_yearly">연간 구독중</string>
+    <string name="subscribe_yearly_upgrade">연간 구독하기 (업그레이드)</string>
+
+    <!-- 골든/데드 크로스 설명 추가 -->
+    <string name="golden_cross_explanation_title">📈 골든 크로스 (Golden Cross)</string>
+    <string name="golden_cross_explanation_content">단기 이동평균선이 장기 이동평균선을 상향 돌파하는 기술적 신호입니다. 일반적으로 상승 추세 전환의 신호로 해석되지만, 단순 참고용 정보이며 반드시 상승을 보장하지는 않습니다.</string>
+
+    <string name="death_cross_explanation_title">📉 데드 크로스 (Death Cross)</string>
+    <string name="death_cross_explanation_content">단기 이동평균선이 장기 이동평균선을 하향 돌파하는 기술적 신호입니다. 일반적으로 하락 추세 전환의 신호로 해석되지만, 단순 참고용 정보이며 반드시 하락을 의미하지는 않습니다.</string>
 </resources>
