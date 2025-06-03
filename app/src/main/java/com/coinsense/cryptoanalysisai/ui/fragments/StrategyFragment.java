@@ -467,17 +467,18 @@ public class StrategyFragment extends Fragment {
         getCandleDataAndUpdateChartSilently();
     }
 
-    // ★ 조용한 차트 데이터 갱신 (로딩 표시 없이)
+    /**
+     * 조용한 차트 데이터 갱신 (로딩 표시 없이) - 50일 데이터로 MA 계산
+     */
     private void getCandleDataAndUpdateChartSilently() {
         if (coinInfo == null || coinInfo.getMarket() == null) return;
 
         BinanceApiService apiService = RetrofitClient.getBinanceApiService();
 
-        // 모든 기간에서 동일하게 30일 일봉 사용
-        String interval = "1d"; // 일봉으로 통일
-        int limit = 30; // 30일로 통일
+        // MA 계산을 위해 100일 데이터 요청
+        String interval = "1d";
+        int limit = 100; // 100일로 확장
 
-        // 로그는 DEBUG 레벨로만 (자동 갱신이므로 조용히)
         Log.d("StrategyFragment", String.format("자동 차트 갱신: 기간=%s, 심볼=%s",
                 getStrategyTypeName(), coinInfo.getSymbol()));
 
@@ -489,7 +490,6 @@ public class StrategyFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                     List<List<Object>> klines = response.body();
 
-                    // UI 스레드에서 차트 업데이트
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             try {
@@ -508,23 +508,22 @@ public class StrategyFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<List<List<Object>>> call, @NonNull Throwable t) {
-                // 자동 갱신 실패는 조용히 로깅만 (사용자에게 알리지 않음)
                 Log.w("StrategyFragment", "자동 차트 갱신 실패: " + t.getMessage());
             }
         });
     }
 
     /**
-     * 캔들 데이터 가져와서 차트 업데이트 - 모든 기간 동일한 30일 일봉
+     * 캔들 데이터 가져와서 차트 업데이트 - 50일 데이터로 MA 계산, 최근 30일만 표시
      */
     private void getCandleDataAndUpdateChart() {
         if (coinInfo == null || coinInfo.getMarket() == null) return;
 
         BinanceApiService apiService = RetrofitClient.getBinanceApiService();
 
-        // 모든 기간에서 동일하게 30일 일봉 사용
+        // MA 계산을 위해 100일 데이터 요청 (더 정확한 MA 계산을 위해)
         String interval = "1d"; // 일봉으로 통일
-        int limit = 30; // 30일로 통일
+        int limit = 100; // 100일로 확장 (MA20 계산을 위해)
 
         Log.d("StrategyFragment", String.format("차트 데이터 요청: 기간=%s, 인터벌=%s, 개수=%d",
                 getStrategyTypeName(), interval, limit));
@@ -563,7 +562,8 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * 캔들스틱 + 지지선/저항선 결합 차트 생성 (골든크로스/데드크로스 표시 포함, MA 라인 제거)
+     * 캔들스틱 + 골든크로스/데드크로스 포인트만 표시하는 차트 생성
+     * 50일 데이터로 MA 계산, 최근 30일만 차트에 표시
      */
     private void createCombinedChartData(List<List<Object>> klines) {
         if (strategyChart == null || klines.isEmpty()) {
@@ -572,41 +572,51 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
-        Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들", klines.size()));
+        Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들 (100일 데이터)", klines.size()));
 
         CombinedData combinedData = new CombinedData();
 
-        // 1. 캔들스틱 데이터 생성
-        ArrayList<CandleEntry> candleEntries = new ArrayList<>();
-        ArrayList<Float> closePrices = new ArrayList<>(); // 이동평균선 계산용
-        float minPrice = Float.MAX_VALUE;
-        float maxPrice = Float.MIN_VALUE;
-
+        // 1. 전체 100일 데이터로 close price 배열 생성 (MA 계산용)
+        ArrayList<Float> allClosePrices = new ArrayList<>();
         for (int i = 0; i < klines.size(); i++) {
             List<Object> kline = klines.get(i);
             try {
-                // 바이낸스 API 응답 구조: [timestamp, open, high, low, close, volume, ...]
+                double close = Double.parseDouble(kline.get(4).toString());
+                allClosePrices.add((float) close);
+            } catch (Exception e) {
+                Log.e("StrategyFragment", "전체 데이터 파싱 오류 (인덱스 " + i + "): " + e.getMessage());
+                continue;
+            }
+        }
+
+        // 2. 최근 30일 캔들스틱 데이터만 생성
+        int displayDays = 30; // 표시할 일수
+        int startIndex = Math.max(0, klines.size() - displayDays); // 최근 30일 시작 인덱스
+
+        ArrayList<CandleEntry> candleEntries = new ArrayList<>();
+        float minPrice = Float.MAX_VALUE;
+        float maxPrice = Float.MIN_VALUE;
+
+        for (int i = startIndex; i < klines.size(); i++) {
+            List<Object> kline = klines.get(i);
+            try {
                 double open = Double.parseDouble(kline.get(1).toString());
                 double high = Double.parseDouble(kline.get(2).toString());
                 double low = Double.parseDouble(kline.get(3).toString());
                 double close = Double.parseDouble(kline.get(4).toString());
 
-                // float로 변환
                 float openF = (float) open;
                 float highF = (float) high;
                 float lowF = (float) low;
                 float closeF = (float) close;
 
-                candleEntries.add(new CandleEntry(i, highF, lowF, openF, closeF));
-                closePrices.add(closeF); // 이동평균선 계산용
+                // 차트용 인덱스는 0부터 시작하도록 조정
+                int chartIndex = i - startIndex;
+                candleEntries.add(new CandleEntry(chartIndex, highF, lowF, openF, closeF));
 
                 minPrice = Math.min(minPrice, lowF);
                 maxPrice = Math.max(maxPrice, highF);
 
-                if (i < 3) { // 처음 3개만 로깅
-                    Log.d("StrategyFragment", String.format("캔들 %d: O=%.2f H=%.2f L=%.2f C=%.2f",
-                            i, openF, highF, lowF, closeF));
-                }
             } catch (Exception e) {
                 Log.e("StrategyFragment", "캔들 데이터 파싱 오류 (인덱스 " + i + "): " + e.getMessage());
                 continue;
@@ -619,162 +629,274 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
-        Log.d("StrategyFragment", String.format("캔들 엔트리 생성 완료: %d개, 가격 범위: %.2f ~ %.2f",
+        Log.d("StrategyFragment", String.format("최근 30일 캔들 엔트리 생성 완료: %d개, 가격 범위: %.2f ~ %.2f",
                 candleEntries.size(), minPrice, maxPrice));
 
         // 캔들스틱 데이터셋 설정
         CandleDataSet candleDataSet = new CandleDataSet(candleEntries, "Price");
-
-        // 캔들 색상과 스타일 설정 (더 명확한 캔들스틱 표시)
         candleDataSet.setShadowColor(Color.parseColor("#CCCCCC"));
-        candleDataSet.setShadowWidth(1f); // 캔들 심지 두께
+        candleDataSet.setShadowWidth(1f);
         candleDataSet.setDecreasingColor(Color.parseColor("#FF4B6C")); // 하락 - 빨간색
         candleDataSet.setDecreasingPaintStyle(Paint.Style.FILL);
         candleDataSet.setIncreasingColor(Color.parseColor("#00C087")); // 상승 - 녹색
         candleDataSet.setIncreasingPaintStyle(Paint.Style.FILL);
         candleDataSet.setNeutralColor(Color.parseColor("#FFC107")); // 동일가 - 노란색
         candleDataSet.setDrawValues(false);
-
-        // 캔들 간격과 크기 최적화 (더 넓은 캔들)
-        candleDataSet.setBarSpace(0.1f); // 캔들 간격 줄임
+        candleDataSet.setBarSpace(0.1f);
         candleDataSet.setHighlightEnabled(true);
         candleDataSet.setHighLightColor(Color.WHITE);
 
         CandleData candleData = new CandleData(candleDataSet);
         combinedData.setData(candleData);
 
-        // 2. 이동평균선 계산 (표시하지 않고 골든크로스/데드크로스 계산용으로만 사용)
+        // 3. 전체 50일 데이터로 이동평균선 계산 (표시하지 않음, 크로스 계산용만)
         ArrayList<ILineDataSet> lineDataSets = new ArrayList<>();
 
-        // MA5 계산
-        ArrayList<Entry> ma5Entries = new ArrayList<>();
-        for (int i = 4; i < closePrices.size(); i++) { // 5일부터 계산 가능
+        // MA5 계산 (전체 데이터로)
+        ArrayList<Entry> allMa5Entries = new ArrayList<>();
+        for (int i = 4; i < allClosePrices.size(); i++) { // 5일부터 계산 가능
             float sum = 0;
             for (int j = i - 4; j <= i; j++) {
-                sum += closePrices.get(j);
+                sum += allClosePrices.get(j);
             }
             float ma5 = sum / 5;
-            ma5Entries.add(new Entry(i, ma5));
-
-            minPrice = Math.min(minPrice, ma5);
-            maxPrice = Math.max(maxPrice, ma5);
+            allMa5Entries.add(new Entry(i, ma5));
         }
 
-        // MA20 계산
-        ArrayList<Entry> ma20Entries = new ArrayList<>();
-        for (int i = 19; i < closePrices.size(); i++) { // 20일부터 계산 가능
+        // MA20 계산 (전체 데이터로)
+        ArrayList<Entry> allMa20Entries = new ArrayList<>();
+        for (int i = 19; i < allClosePrices.size(); i++) { // 20일부터 계산 가능
             float sum = 0;
             for (int j = i - 19; j <= i; j++) {
-                sum += closePrices.get(j);
+                sum += allClosePrices.get(j);
             }
             float ma20 = sum / 20;
-            ma20Entries.add(new Entry(i, ma20));
-
-            minPrice = Math.min(minPrice, ma20);
-            maxPrice = Math.max(maxPrice, ma20);
+            allMa20Entries.add(new Entry(i, ma20));
         }
 
-        // 3. 골든크로스/데드크로스 시그널 포인트 추가 (MA 라인은 표시하지 않음)
-        if (ma5Entries.size() > 1 && ma20Entries.size() > 1) {
+        Log.d("StrategyFragment", String.format("MA 계산 완료 - MA5: %d개, MA20: %d개",
+                allMa5Entries.size(), allMa20Entries.size()));
+
+        // 🔍 디버깅을 위해 MA 라인을 임시로 표시 (크로스 확인용)
+        // ⚠️ 최종 버전에서는 제거할 수 있음
+
+        // 최근 30일 범위의 MA5 라인 생성 (얇은 파란색)
+        ArrayList<Entry> displayMa5Entries = new ArrayList<>();
+        for (int i = startIndex; i < klines.size(); i++) {
+            int ma5Index = i - 4; // MA5는 인덱스 4부터 시작
+            if (ma5Index >= 0 && ma5Index < allMa5Entries.size()) {
+                int chartIndex = i - startIndex;
+                float ma5Value = allMa5Entries.get(ma5Index).getY();
+                displayMa5Entries.add(new Entry(chartIndex, ma5Value));
+
+                minPrice = Math.min(minPrice, ma5Value);
+                maxPrice = Math.max(maxPrice, ma5Value);
+            }
+        }
+
+        // 최근 30일 범위의 MA20 라인 생성 (얇은 주황색)
+        ArrayList<Entry> displayMa20Entries = new ArrayList<>();
+        for (int i = startIndex; i < klines.size(); i++) {
+            int ma20Index = i - 19; // MA20은 인덱스 19부터 시작
+            if (ma20Index >= 0 && ma20Index < allMa20Entries.size()) {
+                int chartIndex = i - startIndex;
+                float ma20Value = allMa20Entries.get(ma20Index).getY();
+                displayMa20Entries.add(new Entry(chartIndex, ma20Value));
+
+                minPrice = Math.min(minPrice, ma20Value);
+                maxPrice = Math.max(maxPrice, ma20Value);
+            }
+        }
+
+        // MA5 라인 추가 (얇은 파란색 라인) - 디버깅용
+        if (!displayMa5Entries.isEmpty()) {
+            LineDataSet ma5DataSet = new LineDataSet(displayMa5Entries, "MA5");
+            ma5DataSet.setColor(Color.parseColor("#2196F3")); // 파란색
+            ma5DataSet.setLineWidth(1f);
+            ma5DataSet.setDrawCircles(false);
+            ma5DataSet.setDrawValues(false);
+            ma5DataSet.setHighlightEnabled(false);
+            lineDataSets.add(ma5DataSet);
+
+            Log.d("StrategyFragment", String.format("🔍 MA5 라인 추가 (디버깅용): %d개 포인트", displayMa5Entries.size()));
+        }
+
+        // MA20 라인 추가 (얇은 주황색 라인) - 디버깅용
+        if (!displayMa20Entries.isEmpty()) {
+            LineDataSet ma20DataSet = new LineDataSet(displayMa20Entries, "MA20");
+            ma20DataSet.setColor(Color.parseColor("#FF9800")); // 주황색
+            ma20DataSet.setLineWidth(1f);
+            ma20DataSet.setDrawCircles(false);
+            ma20DataSet.setDrawValues(false);
+            ma20DataSet.setHighlightEnabled(false);
+            lineDataSets.add(ma20DataSet);
+
+            Log.d("StrategyFragment", String.format("🔍 MA20 라인 추가 (디버깅용): %d개 포인트", displayMa20Entries.size()));
+        }
+
+        // 4. 골든크로스/데드크로스 시그널 포인트 계산 (전체 데이터에서)
+        if (allMa5Entries.size() > 1 && allMa20Entries.size() > 1) {
             ArrayList<Entry> goldenCrossEntries = new ArrayList<>();
             ArrayList<Entry> deathCrossEntries = new ArrayList<>();
 
-            // 골든크로스/데드크로스 검사 범위 설정
-            // MA5는 인덱스 4부터, MA20은 인덱스 19부터 시작하므로
-            // 비교 가능한 시점은 인덱스 19부터
-            int ma5StartIndex = 4;  // MA5가 시작되는 실제 데이터 인덱스
-            int ma20StartIndex = 19; // MA20이 시작되는 실제 데이터 인덱스
+            Log.d("StrategyFragment", String.format("🔍 크로스 감지 시작 - 전체 데이터: %d일, 표시 시작: %d일째부터",
+                    klines.size(), startIndex));
 
-            // 비교를 위해서는 둘 다 존재하는 구간부터 시작
-            int comparisonStartIndex = Math.max(ma20StartIndex, ma5StartIndex);
+            // 전체 데이터에서 크로스 포인트 찾기
+            int crossCount = 0;
+            for (int dataIndex = 20; dataIndex < klines.size() - 1; dataIndex++) { // 20부터 시작 (MA20 안정화)
+                int ma5Index = dataIndex - 4;
+                int ma20Index = dataIndex - 19;
 
-            // MA5와 MA20 배열에서의 실제 인덱스 계산
-            for (int dataIndex = comparisonStartIndex; dataIndex < klines.size() - 1; dataIndex++) {
-                // MA5 배열에서의 인덱스 (MA5는 인덱스 4부터 시작)
-                int ma5Index = dataIndex - ma5StartIndex;
                 int ma5NextIndex = ma5Index + 1;
-
-                // MA20 배열에서의 인덱스 (MA20은 인덱스 19부터 시작)
-                int ma20Index = dataIndex - ma20StartIndex;
                 int ma20NextIndex = ma20Index + 1;
 
-                // 배열 범위 검사
-                if (ma5Index >= 0 && ma5NextIndex < ma5Entries.size() &&
-                        ma20Index >= 0 && ma20NextIndex < ma20Entries.size()) {
+                if (ma5Index >= 0 && ma5NextIndex < allMa5Entries.size() &&
+                        ma20Index >= 0 && ma20NextIndex < allMa20Entries.size()) {
 
-                    float ma5Current = ma5Entries.get(ma5Index).getY();
-                    float ma5Next = ma5Entries.get(ma5NextIndex).getY();
-                    float ma20Current = ma20Entries.get(ma20Index).getY();
-                    float ma20Next = ma20Entries.get(ma20NextIndex).getY();
+                    float ma5Current = allMa5Entries.get(ma5Index).getY();
+                    float ma5Next = allMa5Entries.get(ma5NextIndex).getY();
+                    float ma20Current = allMa20Entries.get(ma20Index).getY();
+                    float ma20Next = allMa20Entries.get(ma20NextIndex).getY();
 
-                    // 골든크로스 체크 (MA5가 MA20을 상향돌파)
-                    if (ma5Current <= ma20Current && ma5Next > ma20Next) {
-                        goldenCrossEntries.add(new Entry(dataIndex + 1, ma5Next));
-                        Log.d("StrategyFragment", String.format("골든크로스 발견: 데이터인덱스 %d, MA5=%.2f, MA20=%.2f",
-                                dataIndex + 1, ma5Next, ma20Next));
+                    // 모든 MA 값들을 로그로 출력 (처음 5개와 마지막 5개만)
+                    if (dataIndex <= 25 || dataIndex >= klines.size() - 6) {
+                        Log.d("StrategyFragment", String.format("📊 일자=%d, MA5: %.2f→%.2f, MA20: %.2f→%.2f",
+                                dataIndex, ma5Current, ma5Next, ma20Current, ma20Next));
                     }
-                    // 데드크로스 체크 (MA5가 MA20을 하향돌파)
-                    else if (ma5Current >= ma20Current && ma5Next < ma20Next) {
-                        deathCrossEntries.add(new Entry(dataIndex + 1, ma5Next));
-                        Log.d("StrategyFragment", String.format("데드크로스 발견: 데이터인덱스 %d, MA5=%.2f, MA20=%.2f",
-                                dataIndex + 1, ma5Next, ma20Next));
+
+                    // 골든크로스 검사 (더 관대한 조건으로 변경)
+                    if (ma5Current < ma20Current && ma5Next > ma20Next) {
+                        crossCount++;
+                        Log.d("StrategyFragment", String.format("🟡 골든크로스 감지! 일자=%d, MA5: %.2f→%.2f, MA20: %.2f→%.2f",
+                                dataIndex + 1, ma5Current, ma5Next, ma20Current, ma20Next));
+
+                        // 최근 30일 범위 내의 크로스만 차트에 표시
+                        if (dataIndex + 1 >= startIndex) {
+                            int chartIndex = (dataIndex + 1) - startIndex;
+
+                            // 해당 날짜의 캔들 데이터 가져오기
+                            try {
+                                List<Object> crossKline = klines.get(dataIndex + 1);
+                                double high = Double.parseDouble(crossKline.get(2).toString());
+                                double low = Double.parseDouble(crossKline.get(3).toString());
+                                float candleHigh = (float) high;
+                                float candleLow = (float) low;
+
+                                // 골든크로스는 캔들 아래쪽에 표시 (Low 값에서 캔들 크기의 10% 아래)
+                                float candleSize = candleHigh - candleLow;
+                                float offset = Math.max(candleSize * 0.3f, candleLow * 0.005f); // 캔들 크기의 30% 또는 가격의 0.5% 중 큰 값
+                                float goldenCrossY = candleLow - offset;
+
+                                goldenCrossEntries.add(new Entry(chartIndex, goldenCrossY));
+
+                                minPrice = Math.min(minPrice, goldenCrossY);
+
+                                Log.d("StrategyFragment", String.format("✅ 골든크로스 차트 추가: 원본일자=%d, 차트인덱스=%d, 캔들Low=%.2f, 표시위치=%.2f, 오프셋=%.2f",
+                                        dataIndex + 1, chartIndex, candleLow, goldenCrossY, offset));
+                            } catch (Exception e) {
+                                Log.e("StrategyFragment", "골든크로스 캔들 데이터 파싱 오류: " + e.getMessage());
+                            }
+                        } else {
+                            Log.d("StrategyFragment", String.format("⚠️ 골든크로스는 표시 범위 밖 (일자=%d, 범위=%d 이후)", dataIndex + 1, startIndex));
+                        }
+                    }
+                    // 데드크로스 검사 (더 관대한 조건으로 변경)
+                    else if (ma5Current > ma20Current && ma5Next < ma20Next) {
+                        crossCount++;
+                        Log.d("StrategyFragment", String.format("🔴 데드크로스 감지! 일자=%d, MA5: %.2f→%.2f, MA20: %.2f→%.2f",
+                                dataIndex + 1, ma5Current, ma5Next, ma20Current, ma20Next));
+
+                        // 최근 30일 범위 내의 크로스만 차트에 표시
+                        if (dataIndex + 1 >= startIndex) {
+                            int chartIndex = (dataIndex + 1) - startIndex;
+
+                            // 해당 날짜의 캔들 데이터 가져오기
+                            try {
+                                List<Object> crossKline = klines.get(dataIndex + 1);
+                                double high = Double.parseDouble(crossKline.get(2).toString());
+                                double low = Double.parseDouble(crossKline.get(3).toString());
+                                float candleHigh = (float) high;
+                                float candleLow = (float) low;
+
+                                // 데드크로스는 캔들 위쪽에 표시 (High 값에서 캔들 크기의 10% 위)
+                                float candleSize = candleHigh - candleLow;
+                                float offset = Math.max(candleSize * 0.3f, candleHigh * 0.005f); // 캔들 크기의 30% 또는 가격의 0.5% 중 큰 값
+                                float deathCrossY = candleHigh + offset;
+
+                                deathCrossEntries.add(new Entry(chartIndex, deathCrossY));
+
+                                maxPrice = Math.max(maxPrice, deathCrossY);
+
+                                Log.d("StrategyFragment", String.format("✅ 데드크로스 차트 추가: 원본일자=%d, 차트인덱스=%d, 캔들High=%.2f, 표시위치=%.2f, 오프셋=%.2f",
+                                        dataIndex + 1, chartIndex, candleHigh, deathCrossY, offset));
+                            } catch (Exception e) {
+                                Log.e("StrategyFragment", "데드크로스 캔들 데이터 파싱 오류: " + e.getMessage());
+                            }
+                        } else {
+                            Log.d("StrategyFragment", String.format("⚠️ 데드크로스는 표시 범위 밖 (일자=%d, 범위=%d 이후)", dataIndex + 1, startIndex));
+                        }
                     }
                 }
             }
 
-            // 골든크로스 포인트 추가 (황금색 별 모양)
+            Log.d("StrategyFragment", String.format("🔍 전체 크로스 감지 완료: 총 %d개 크로스 발견", crossCount));
+
+            // 골든크로스 포인트 추가 (큰 황금색 원, 캔들 아래쪽)
             if (!goldenCrossEntries.isEmpty()) {
-                LineDataSet goldenCrossDataSet = new LineDataSet(goldenCrossEntries, "");
-                goldenCrossDataSet.setColor(Color.parseColor("#FFD700")); // 골드 색상
+                LineDataSet goldenCrossDataSet = new LineDataSet(goldenCrossEntries, "Golden Cross");
+                goldenCrossDataSet.setColor(Color.TRANSPARENT);
                 goldenCrossDataSet.setDrawCircles(true);
-                goldenCrossDataSet.setCircleColor(Color.parseColor("#FFD700"));
-                goldenCrossDataSet.setCircleRadius(8f);
-                goldenCrossDataSet.setCircleHoleRadius(4f);
+                goldenCrossDataSet.setCircleColor(Color.parseColor("#FFD700")); // 골드 색상 외곽
+                goldenCrossDataSet.setCircleRadius(14f); // 더 크게
+                goldenCrossDataSet.setCircleHoleRadius(9f);
                 goldenCrossDataSet.setCircleHoleColor(Color.parseColor("#4CAF50")); // 녹색 중심
                 goldenCrossDataSet.setDrawValues(false);
                 goldenCrossDataSet.setHighlightEnabled(false);
                 goldenCrossDataSet.setLineWidth(0f);
-                goldenCrossDataSet.setColor(Color.TRANSPARENT);
                 lineDataSets.add(goldenCrossDataSet);
 
-                Log.d("StrategyFragment", String.format("골든크로스 포인트 %d개 추가됨", goldenCrossEntries.size()));
+                Log.d("StrategyFragment", String.format("✅ 골든크로스 포인트 %d개 추가됨 (캔들 아래쪽)", goldenCrossEntries.size()));
+            } else {
+                Log.d("StrategyFragment", "⚠️ 골든크로스 포인트 없음 (최근 30일 범위)");
             }
 
-            // 데드크로스 포인트 추가 (검은색 별 모양)
+            // 데드크로스 포인트 추가 (큰 검은색 원, 캔들 위쪽)
             if (!deathCrossEntries.isEmpty()) {
-                LineDataSet deathCrossDataSet = new LineDataSet(deathCrossEntries, "");
-                deathCrossDataSet.setColor(Color.parseColor("#424242")); // 어두운 회색
+                LineDataSet deathCrossDataSet = new LineDataSet(deathCrossEntries, "Death Cross");
+                deathCrossDataSet.setColor(Color.TRANSPARENT);
                 deathCrossDataSet.setDrawCircles(true);
-                deathCrossDataSet.setCircleColor(Color.parseColor("#424242"));
-                deathCrossDataSet.setCircleRadius(8f);
-                deathCrossDataSet.setCircleHoleRadius(4f);
+                deathCrossDataSet.setCircleColor(Color.parseColor("#424242")); // 어두운 회색 외곽
+                deathCrossDataSet.setCircleRadius(14f); // 더 크게
+                deathCrossDataSet.setCircleHoleRadius(9f);
                 deathCrossDataSet.setCircleHoleColor(Color.parseColor("#F44336")); // 빨간색 중심
                 deathCrossDataSet.setDrawValues(false);
                 deathCrossDataSet.setHighlightEnabled(false);
                 deathCrossDataSet.setLineWidth(0f);
-                deathCrossDataSet.setColor(Color.TRANSPARENT);
                 lineDataSets.add(deathCrossDataSet);
 
-                Log.d("StrategyFragment", String.format("데드크로스 포인트 %d개 추가됨", deathCrossEntries.size()));
+                Log.d("StrategyFragment", String.format("✅ 데드크로스 포인트 %d개 추가됨 (캔들 위쪽)", deathCrossEntries.size()));
+            } else {
+                Log.d("StrategyFragment", "⚠️ 데드크로스 포인트 없음 (최근 30일 범위)");
             }
         }
 
-        // 4. 전략이 있는 경우 지지선/저항선 추가
+        // 5. 전략이 있는 경우 지지선/저항선 추가 (최근 30일 범위로 조정)
         if (strategy != null) {
-            // 지지선들 (녹색 통일) - 실제 buySteps 개수만큼 모두 표시
+            // 지지선들 (녹색, 점선)
             if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
                 for (int stepIndex = 0; stepIndex < strategy.getBuySteps().size(); stepIndex++) {
                     AnalysisResult.Strategy.TradingStep step = strategy.getBuySteps().get(stepIndex);
                     ArrayList<Entry> supportEntries = new ArrayList<>();
 
                     float supportPrice = (float) step.getPrice();
-                    for (int i = 0; i < klines.size(); i++) {
+                    for (int i = 0; i < displayDays; i++) { // 30일 범위로 조정
                         supportEntries.add(new Entry(i, supportPrice));
                     }
 
-                    LineDataSet supportDataSet = new LineDataSet(supportEntries, "");
-                    supportDataSet.setColor(Color.parseColor("#4CAF50")); // 통일된 녹색
-                    supportDataSet.setLineWidth(1f);
+                    LineDataSet supportDataSet = new LineDataSet(supportEntries, "Support " + (stepIndex + 1));
+                    supportDataSet.setColor(Color.parseColor("#4CAF50"));
+                    supportDataSet.setLineWidth(2f);
                     supportDataSet.setDrawCircles(false);
                     supportDataSet.setDrawValues(false);
                     supportDataSet.enableDashedLine(15f, 8f, 0f);
@@ -789,20 +911,20 @@ public class StrategyFragment extends Fragment {
                 }
             }
 
-            // 저항선들 (빨간색 통일) - 실제 targetPrices 개수만큼 모두 표시
+            // 저항선들 (빨간색, 점선)
             if (strategy.getTargetPrices() != null && !strategy.getTargetPrices().isEmpty()) {
                 for (int targetIndex = 0; targetIndex < strategy.getTargetPrices().size(); targetIndex++) {
                     double targetPrice = strategy.getTargetPrices().get(targetIndex);
                     ArrayList<Entry> resistanceEntries = new ArrayList<>();
 
                     float resistancePrice = (float) targetPrice;
-                    for (int i = 0; i < klines.size(); i++) {
+                    for (int i = 0; i < displayDays; i++) { // 30일 범위로 조정
                         resistanceEntries.add(new Entry(i, resistancePrice));
                     }
 
-                    LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, "");
-                    resistanceDataSet.setColor(Color.parseColor("#F44336")); // 통일된 빨간색
-                    resistanceDataSet.setLineWidth(1f);
+                    LineDataSet resistanceDataSet = new LineDataSet(resistanceEntries, "Resistance " + (targetIndex + 1));
+                    resistanceDataSet.setColor(Color.parseColor("#F44336"));
+                    resistanceDataSet.setLineWidth(2f);
                     resistanceDataSet.setDrawCircles(false);
                     resistanceDataSet.setDrawValues(false);
                     resistanceDataSet.enableDashedLine(15f, 8f, 0f);
@@ -817,18 +939,18 @@ public class StrategyFragment extends Fragment {
                 }
             }
 
-            // 손절매 라인 (주황색) - 모든 기간에서 표시
+            // 손절매 라인 (주황색, 점선)
             if (strategy.getStopLoss() > 0) {
                 ArrayList<Entry> stopLossEntries = new ArrayList<>();
                 float stopLossPrice = (float) strategy.getStopLoss();
 
-                for (int i = 0; i < klines.size(); i++) {
+                for (int i = 0; i < displayDays; i++) { // 30일 범위로 조정
                     stopLossEntries.add(new Entry(i, stopLossPrice));
                 }
 
-                LineDataSet stopLossDataSet = new LineDataSet(stopLossEntries, "");
+                LineDataSet stopLossDataSet = new LineDataSet(stopLossEntries, "Stop Loss");
                 stopLossDataSet.setColor(Color.parseColor("#FF9800"));
-                stopLossDataSet.setLineWidth(1f);
+                stopLossDataSet.setLineWidth(2f);
                 stopLossDataSet.setDrawCircles(false);
                 stopLossDataSet.setDrawValues(false);
                 stopLossDataSet.enableDashedLine(20f, 10f, 0f);
@@ -843,33 +965,34 @@ public class StrategyFragment extends Fragment {
             }
         }
 
+        // 6. 라인 데이터 추가
         if (!lineDataSets.isEmpty()) {
             LineData lineData = new LineData(lineDataSets);
             combinedData.setData(lineData);
-            Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개", lineDataSets.size()));
+            Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개 (MA 라인 + 크로스 포인트 + 지지/저항선)", lineDataSets.size()));
         }
 
-        // Y축 범위 설정
+        // 7. Y축 범위 설정
         float padding = (maxPrice - minPrice) * 0.08f;
         strategyChart.getAxisLeft().setAxisMinimum(minPrice - padding);
         strategyChart.getAxisLeft().setAxisMaximum(maxPrice + padding);
 
-        // X축 범위 설정
-        strategyChart.setVisibleXRangeMaximum(klines.size());
-        strategyChart.setVisibleXRangeMinimum(klines.size());
+        // 8. X축 범위 설정 (30일로 조정)
+        strategyChart.setVisibleXRangeMaximum(displayDays);
+        strategyChart.setVisibleXRangeMinimum(displayDays);
 
-        // 차트 그리기 순서 설정
+        // 9. 차트 그리기 순서 설정
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
                 CombinedChart.DrawOrder.LINE
         });
 
-        // 차트에 데이터 설정
+        // 10. 차트에 데이터 설정 및 업데이트
         strategyChart.setData(combinedData);
         strategyChart.fitScreen();
         strategyChart.invalidate();
 
-        Log.d("StrategyFragment", "골든크로스/데드크로스 포인트만 포함한 차트 업데이트 완료");
+        Log.d("StrategyFragment", "✅ 100일 데이터로 계산된 골든크로스/데드크로스 포인트 + MA 라인 (디버깅용) 차트 완료");
     }
 
 
