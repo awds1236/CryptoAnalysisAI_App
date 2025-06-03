@@ -328,4 +328,12 @@
     <!-- Chart description -->
     <string name="chart_description">This chart shows current price and key support/resistance levels. This is reference information based on analysis, not actual market data.</string>
     <string name="chart_disclaimer">※ The chart is AI analysis-based reference material and not an accurate indicator for actual trading.</string>
+
+    <!-- Chart legend related additions -->
+    <string name="golden_cross_legend">Golden Cross</string>
+    <string name="death_cross_legend">Death Cross</string>
+
+    <string name="days_ago"> days ago</string>
+    <string name="today">Today</string>
+
 </resources>

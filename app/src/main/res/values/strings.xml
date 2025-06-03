@@ -339,4 +339,11 @@
     <!-- 차트 설명 -->
     <string name="chart_description">이 차트는 현재 가격과 주요 지지선, 저항선을 보여줍니다. 실제 시장 데이터가 아닌 분석 기반 참고 정보입니다.</string>
     <string name="chart_disclaimer">※ 차트는 AI 분석 기반 참고 자료이며, 실제 거래를 위한 정확한 지표가 아닙니다.</string>
+
+    <!-- 차트 범례 관련 추가 -->
+    <string name="golden_cross_legend">골든크로스</string>
+    <string name="death_cross_legend">데드크로스</string>
+
+    <string name="days_ago">일전</string>
+    <string name="today">오늘</string>
 </resources>
