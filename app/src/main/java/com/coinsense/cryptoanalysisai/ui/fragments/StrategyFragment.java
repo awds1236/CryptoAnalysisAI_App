@@ -874,7 +874,7 @@ public class StrategyFragment extends Fragment {
 
 
     /**
-     * 전략별 골든크로스/데드크로스 차트 생성
+     * 전략별 골든크로스/데드크로스 차트 생성 - 구독/광고 상태에 따른 접근 제어 추가
      */
     private void createCombinedChartData(List<List<Object>> klines) {
         if (strategyChart == null || klines.isEmpty()) {
@@ -883,12 +883,22 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
+        // 📍 접근 권한 확인
+        boolean isSubscribed = subscriptionManager.isSubscribed();
+        boolean hasAdPermission = false;
+        boolean hasChartAccess = false;
+
+        if (coinInfo != null && coinInfo.getSymbol() != null) {
+            hasAdPermission = adManager.hasActiveAdPermission(coinInfo.getSymbol());
+            hasChartAccess = isSubscribed || hasAdPermission;
+        }
+
         // 📍 최근 크로스 정보 초기화
         recentCrossType = null;
         recentCrossDaysAgo = -1;
 
-        Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들 (%s 전략, MA라인 제외)",
-                klines.size(), getStrategyTypeName()));
+        Log.d("StrategyFragment", String.format("차트 데이터 생성 시작: %d개 캔들 (%s 전략) - 차트 접근권한: %s",
+                klines.size(), getStrategyTypeName(), hasChartAccess ? "있음" : "없음"));
 
         CombinedData combinedData = new CombinedData();
 
@@ -905,7 +915,7 @@ public class StrategyFragment extends Fragment {
             }
         }
 
-        // 2. 100일 캔들스틱 데이터 생성
+        // 2. 100일 캔들스틱 데이터 생성 (항상 표시)
         int totalDisplayDays = 100;
         int extendedDays = 105;
         int visibleDays = 30;
@@ -946,7 +956,7 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
-        // 캔들스틱 데이터셋 설정
+        // 캔들스틱 데이터셋 설정 (항상 표시)
         CandleDataSet candleDataSet = new CandleDataSet(candleEntries, "Price");
         candleDataSet.setShadowColor(Color.parseColor("#CCCCCC"));
         candleDataSet.setShadowWidth(0.8f);
@@ -963,213 +973,216 @@ public class StrategyFragment extends Fragment {
         CandleData candleData = new CandleData(candleDataSet);
         combinedData.setData(candleData);
 
-        // 3. 전략별 이동평균선 계산 (크로스 포인트 계산용으로만 사용, 차트에는 표시하지 않음)
+        // 3. 이동평균선 계산 및 골든크로스/데드크로스 분석 (접근 권한이 있을 때만)
         ArrayList<ILineDataSet> lineDataSets = new ArrayList<>();
-        ArrayList<Entry> fastMA = new ArrayList<>();
-        ArrayList<Entry> slowMA = new ArrayList<>();
-        String fastMAName = "";
-        String slowMAName = "";
 
-        switch (strategyType) {
-            case STRATEGY_SHORT_TERM:
-                // 5일 EMA vs 20일 EMA
-                fastMA = calculateEMA(allClosePrices, 5);
-                slowMA = calculateEMA(allClosePrices, 20);
-                fastMAName = "EMA5";
-                slowMAName = "EMA20";
-                break;
+        if (hasChartAccess) {
+            ArrayList<Entry> fastMA = new ArrayList<>();
+            ArrayList<Entry> slowMA = new ArrayList<>();
+            String fastMAName = "";
+            String slowMAName = "";
 
-            case STRATEGY_MID_TERM:
-                // 20일 EMA vs 60일 SMA
-                fastMA = calculateEMA(allClosePrices, 20);
-                slowMA = calculateSMA(allClosePrices, 60);
-                fastMAName = "EMA20";
-                slowMAName = "SMA60";
-                break;
+            switch (strategyType) {
+                case STRATEGY_SHORT_TERM:
+                    // 5일 EMA vs 20일 EMA
+                    fastMA = calculateEMA(allClosePrices, 5);
+                    slowMA = calculateEMA(allClosePrices, 20);
+                    fastMAName = "EMA5";
+                    slowMAName = "EMA20";
+                    break;
 
-            case STRATEGY_LONG_TERM:
-                // 50일 SMA vs 200일 SMA
-                fastMA = calculateSMA(allClosePrices, 50);
-                slowMA = calculateSMA(allClosePrices, 200);
-                fastMAName = "SMA50";
-                slowMAName = "SMA200";
-                break;
-        }
+                case STRATEGY_MID_TERM:
+                    // 20일 EMA vs 60일 SMA
+                    fastMA = calculateEMA(allClosePrices, 20);
+                    slowMA = calculateSMA(allClosePrices, 60);
+                    fastMAName = "EMA20";
+                    slowMAName = "SMA60";
+                    break;
 
-        Log.d("StrategyFragment", String.format("MA 계산 완료 - %s: %d개, %s: %d개 (차트에는 표시하지 않음)",
-                fastMAName, fastMA.size(), slowMAName, slowMA.size()));
+                case STRATEGY_LONG_TERM:
+                    // 50일 SMA vs 200일 SMA
+                    fastMA = calculateSMA(allClosePrices, 50);
+                    slowMA = calculateSMA(allClosePrices, 200);
+                    fastMAName = "SMA50";
+                    slowMAName = "SMA200";
+                    break;
+            }
 
-        // *** MA 라인을 차트에 추가하는 부분 제거 ***
-        // 기존에 여기서 displayFastMA, displaySlowMA를 lineDataSets에 추가했지만 제거
+            Log.d("StrategyFragment", String.format("MA 계산 완료 - %s: %d개, %s: %d개 (권한 있음 - 크로스 분석 진행)",
+                    fastMAName, fastMA.size(), slowMAName, slowMA.size()));
 
-        // 4. 골든크로스/데드크로스 시그널 포인트 계산
-        if (fastMA.size() > 1 && slowMA.size() > 1) {
-            ArrayList<Entry> goldenCrossEntries = new ArrayList<>();
-            ArrayList<Entry> deathCrossEntries = new ArrayList<>();
+            // 4. 골든크로스/데드크로스 시그널 포인트 계산 (접근 권한이 있을 때만)
+            if (fastMA.size() > 1 && slowMA.size() > 1) {
+                ArrayList<Entry> goldenCrossEntries = new ArrayList<>();
+                ArrayList<Entry> deathCrossEntries = new ArrayList<>();
 
-            int stabilizationStart = getStabilizationStartIndex();
+                int stabilizationStart = getStabilizationStartIndex();
 
-            // 📍 최근 크로스 찾기를 위한 변수
-            int mostRecentCrossDate = -1;
-            String mostRecentCrossType = null;
+                // 📍 최근 크로스 찾기를 위한 변수
+                int mostRecentCrossDate = -1;
+                String mostRecentCrossType = null;
 
-            Log.d("StrategyFragment", String.format("🔍 %s 크로스 감지 시작 - 안정화 시점: %d일째부터",
-                    getStrategyTypeName(), stabilizationStart));
+                Log.d("StrategyFragment", String.format("🔍 %s 크로스 감지 시작 - 안정화 시점: %d일째부터 (권한 있음)",
+                        getStrategyTypeName(), stabilizationStart));
 
-            // 크로스 포인트 찾기
-            for (int dataIndex = stabilizationStart; dataIndex < klines.size() - 1; dataIndex++) {
+                // 크로스 포인트 찾기
+                for (int dataIndex = stabilizationStart; dataIndex < klines.size() - 1; dataIndex++) {
 
-                // 해당 데이터 인덱스의 MA 값 찾기 (기존 로직과 동일)
-                float fastCurrent = 0, fastNext = 0, slowCurrent = 0, slowNext = 0;
-                boolean foundCurrent = false, foundNext = false;
+                    // 해당 데이터 인덱스의 MA 값 찾기
+                    float fastCurrent = 0, fastNext = 0, slowCurrent = 0, slowNext = 0;
+                    boolean foundCurrent = false, foundNext = false;
 
-                // 현재 시점 MA 값 찾기
-                for (Entry fastEntry : fastMA) {
-                    if ((int)fastEntry.getX() == dataIndex) {
-                        fastCurrent = fastEntry.getY();
-                        break;
+                    // 현재 시점 MA 값 찾기
+                    for (Entry fastEntry : fastMA) {
+                        if ((int)fastEntry.getX() == dataIndex) {
+                            fastCurrent = fastEntry.getY();
+                            break;
+                        }
                     }
-                }
-                for (Entry slowEntry : slowMA) {
-                    if ((int)slowEntry.getX() == dataIndex) {
-                        slowCurrent = slowEntry.getY();
-                        foundCurrent = true;
-                        break;
-                    }
-                }
-
-                // 다음 시점 MA 값 찾기
-                for (Entry fastEntry : fastMA) {
-                    if ((int)fastEntry.getX() == dataIndex + 1) {
-                        fastNext = fastEntry.getY();
-                        break;
-                    }
-                }
-                for (Entry slowEntry : slowMA) {
-                    if ((int)slowEntry.getX() == dataIndex + 1) {
-                        slowNext = slowEntry.getY();
-                        foundNext = true;
-                        break;
-                    }
-                }
-
-                if (!foundCurrent || !foundNext) continue;
-
-                // 골든크로스 검사 (Fast MA가 Slow MA를 상향 돌파)
-                if (fastCurrent <= slowCurrent && fastNext > slowNext) {
-                    Log.d("StrategyFragment", String.format("🟡 골든크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
-                            dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
-
-                    // 📍 최근 크로스 정보 업데이트
-                    if (dataIndex + 1 > mostRecentCrossDate) {
-                        mostRecentCrossDate = dataIndex + 1;
-                        mostRecentCrossType = "GOLDEN";
+                    for (Entry slowEntry : slowMA) {
+                        if ((int)slowEntry.getX() == dataIndex) {
+                            slowCurrent = slowEntry.getY();
+                            foundCurrent = true;
+                            break;
+                        }
                     }
 
-                    // 최근 100일 범위 내의 크로스만 차트에 표시 (기존 로직)
-                    if (dataIndex + 1 >= startIndex) {
-                        int chartIndex = (dataIndex + 1) - startIndex;
-                        try {
-                            List<Object> crossKline = klines.get(dataIndex + 1);
-                            double high = Double.parseDouble(crossKline.get(2).toString());
-                            double low = Double.parseDouble(crossKline.get(3).toString());
-                            float candleHigh = (float) high;
-                            float candleLow = (float) low;
+                    // 다음 시점 MA 값 찾기
+                    for (Entry fastEntry : fastMA) {
+                        if ((int)fastEntry.getX() == dataIndex + 1) {
+                            fastNext = fastEntry.getY();
+                            break;
+                        }
+                    }
+                    for (Entry slowEntry : slowMA) {
+                        if ((int)slowEntry.getX() == dataIndex + 1) {
+                            slowNext = slowEntry.getY();
+                            foundNext = true;
+                            break;
+                        }
+                    }
 
-                            float candleSize = candleHigh - candleLow;
-                            float offset = Math.max(candleSize * 0.7f, candleLow * 0.02f);
-                            float goldenCrossY = candleLow - offset;
+                    if (!foundCurrent || !foundNext) continue;
 
-                            goldenCrossEntries.add(new Entry(chartIndex, goldenCrossY));
-                            minPrice = Math.min(minPrice, goldenCrossY);
-                        } catch (Exception e) {
-                            Log.e("StrategyFragment", "골든크로스 캔들 데이터 파싱 오류: " + e.getMessage());
+                    // 골든크로스 검사 (Fast MA가 Slow MA를 상향 돌파)
+                    if (fastCurrent <= slowCurrent && fastNext > slowNext) {
+                        Log.d("StrategyFragment", String.format("🟡 골든크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
+                                dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
+
+                        // 📍 최근 크로스 정보 업데이트
+                        if (dataIndex + 1 > mostRecentCrossDate) {
+                            mostRecentCrossDate = dataIndex + 1;
+                            mostRecentCrossType = "GOLDEN";
+                        }
+
+                        // 최근 100일 범위 내의 크로스만 차트에 표시
+                        if (dataIndex + 1 >= startIndex) {
+                            int chartIndex = (dataIndex + 1) - startIndex;
+                            try {
+                                List<Object> crossKline = klines.get(dataIndex + 1);
+                                double high = Double.parseDouble(crossKline.get(2).toString());
+                                double low = Double.parseDouble(crossKline.get(3).toString());
+                                float candleHigh = (float) high;
+                                float candleLow = (float) low;
+
+                                float candleSize = candleHigh - candleLow;
+                                float offset = Math.max(candleSize * 0.7f, candleLow * 0.02f);
+                                float goldenCrossY = candleLow - offset;
+
+                                goldenCrossEntries.add(new Entry(chartIndex, goldenCrossY));
+                                minPrice = Math.min(minPrice, goldenCrossY);
+                            } catch (Exception e) {
+                                Log.e("StrategyFragment", "골든크로스 캔들 데이터 파싱 오류: " + e.getMessage());
+                            }
+                        }
+                    }
+                    // 데드크로스 검사 (Fast MA가 Slow MA를 하향 돌파)
+                    else if (fastCurrent >= slowCurrent && fastNext < slowNext) {
+                        Log.d("StrategyFragment", String.format("🔴 데드크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
+                                dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
+
+                        // 📍 최근 크로스 정보 업데이트
+                        if (dataIndex + 1 > mostRecentCrossDate) {
+                            mostRecentCrossDate = dataIndex + 1;
+                            mostRecentCrossType = "DEATH";
+                        }
+
+                        // 최근 100일 범위 내의 크로스만 차트에 표시
+                        if (dataIndex + 1 >= startIndex) {
+                            int chartIndex = (dataIndex + 1) - startIndex;
+                            try {
+                                List<Object> crossKline = klines.get(dataIndex + 1);
+                                double high = Double.parseDouble(crossKline.get(2).toString());
+                                double low = Double.parseDouble(crossKline.get(3).toString());
+                                float candleHigh = (float) high;
+                                float candleLow = (float) low;
+
+                                float candleSize = candleHigh - candleLow;
+                                float offset = Math.max(candleSize * 1.2f, candleHigh * 0.025f);
+                                float deathCrossY = candleHigh + offset;
+
+                                deathCrossEntries.add(new Entry(chartIndex, deathCrossY));
+                                maxPrice = Math.max(maxPrice, deathCrossY);
+                            } catch (Exception e) {
+                                Log.e("StrategyFragment", "데드크로스 캔들 데이터 파싱 오류: " + e.getMessage());
+                            }
                         }
                     }
                 }
-                // 데드크로스 검사 (Fast MA가 Slow MA를 하향 돌파)
-                else if (fastCurrent >= slowCurrent && fastNext < slowNext) {
-                    Log.d("StrategyFragment", String.format("🔴 데드크로스 감지! 일자=%d, %s: %.2f→%.2f, %s: %.2f→%.2f",
-                            dataIndex + 1, fastMAName, fastCurrent, fastNext, slowMAName, slowCurrent, slowNext));
 
-                    // 📍 최근 크로스 정보 업데이트
-                    if (dataIndex + 1 > mostRecentCrossDate) {
-                        mostRecentCrossDate = dataIndex + 1;
-                        mostRecentCrossType = "DEATH";
-                    }
+                // 📍 최근 크로스 정보 저장 (권한이 있을 때만)
+                if (mostRecentCrossDate >= 0 && mostRecentCrossType != null) {
+                    recentCrossType = mostRecentCrossType;
+                    // 며칠 전인지 계산 (전체 데이터 기준에서 마지막 날이 0일 전)
+                    recentCrossDaysAgo = klines.size() - 1 - mostRecentCrossDate;
 
-                    // 최근 100일 범위 내의 크로스만 차트에 표시 (기존 로직)
-                    if (dataIndex + 1 >= startIndex) {
-                        int chartIndex = (dataIndex + 1) - startIndex;
-                        try {
-                            List<Object> crossKline = klines.get(dataIndex + 1);
-                            double high = Double.parseDouble(crossKline.get(2).toString());
-                            double low = Double.parseDouble(crossKline.get(3).toString());
-                            float candleHigh = (float) high;
-                            float candleLow = (float) low;
+                    Log.d("StrategyFragment", String.format("📍 최근 크로스: %s (%d일 전) - 권한 있음으로 표시",
+                            recentCrossType, recentCrossDaysAgo));
+                }
 
-                            float candleSize = candleHigh - candleLow;
-                            float offset = Math.max(candleSize * 1.2f, candleHigh * 0.025f);
-                            float deathCrossY = candleHigh + offset;
+                // ScatterData로 삼각형 마커 추가 (크로스 포인트 - 권한이 있을 때만)
+                ArrayList<IScatterDataSet> scatterDataSets = new ArrayList<>();
 
-                            deathCrossEntries.add(new Entry(chartIndex, deathCrossY));
-                            maxPrice = Math.max(maxPrice, deathCrossY);
-                        } catch (Exception e) {
-                            Log.e("StrategyFragment", "데드크로스 캔들 데이터 파싱 오류: " + e.getMessage());
-                        }
-                    }
+                // 골든크로스 삼각형 마커 (위쪽 삼각형)
+                if (!goldenCrossEntries.isEmpty()) {
+                    ScatterDataSet goldenCrossDataSet = new ScatterDataSet(goldenCrossEntries, "Golden Cross");
+                    goldenCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(false));
+                    goldenCrossDataSet.setColor(Color.parseColor("#4CAF50"));
+                    goldenCrossDataSet.setScatterShapeSize(30f);
+                    goldenCrossDataSet.setDrawValues(false);
+                    goldenCrossDataSet.setHighlightEnabled(false);
+                    scatterDataSets.add(goldenCrossDataSet);
+
+                    Log.d("StrategyFragment", String.format("✅ 골든크로스 삼각형 마커 %d개 추가됨 (권한 있음)", goldenCrossEntries.size()));
+                }
+
+                // 데드크로스 삼각형 마커 (아래쪽 삼각형)
+                if (!deathCrossEntries.isEmpty()) {
+                    ScatterDataSet deathCrossDataSet = new ScatterDataSet(deathCrossEntries, "Death Cross");
+                    deathCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(true));
+                    deathCrossDataSet.setColor(Color.parseColor("#F44336"));
+                    deathCrossDataSet.setScatterShapeSize(30f);
+                    deathCrossDataSet.setDrawValues(false);
+                    deathCrossDataSet.setHighlightEnabled(false);
+                    scatterDataSets.add(deathCrossDataSet);
+
+                    Log.d("StrategyFragment", String.format("✅ 데드크로스 삼각형 마커 %d개 추가됨 (권한 있음)", deathCrossEntries.size()));
+                }
+
+                // ScatterData를 CombinedData에 추가 (권한이 있을 때만)
+                if (!scatterDataSets.isEmpty()) {
+                    ScatterData scatterData = new ScatterData(scatterDataSets);
+                    combinedData.setData(scatterData);
                 }
             }
-
-            // 📍 최근 크로스 정보 저장
-            if (mostRecentCrossDate >= 0 && mostRecentCrossType != null) {
-                recentCrossType = mostRecentCrossType;
-                // 며칠 전인지 계산 (전체 데이터 기준에서 마지막 날이 0일 전)
-                recentCrossDaysAgo = klines.size() - 1 - mostRecentCrossDate;
-
-                Log.d("StrategyFragment", String.format("📍 최근 크로스: %s (%d일 전)",
-                        recentCrossType, recentCrossDaysAgo));
-            }
-
-
-            // ScatterData로 삼각형 마커 추가 (크로스 포인트는 유지)
-            ArrayList<IScatterDataSet> scatterDataSets = new ArrayList<>();
-
-            // 골든크로스 삼각형 마커 (위쪽 삼각형)
-            if (!goldenCrossEntries.isEmpty()) {
-                ScatterDataSet goldenCrossDataSet = new ScatterDataSet(goldenCrossEntries, "Golden Cross");
-                goldenCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(false));
-                goldenCrossDataSet.setColor(Color.parseColor("#4CAF50"));
-                goldenCrossDataSet.setScatterShapeSize(30f);
-                goldenCrossDataSet.setDrawValues(false);
-                goldenCrossDataSet.setHighlightEnabled(false);
-                scatterDataSets.add(goldenCrossDataSet);
-
-                Log.d("StrategyFragment", String.format("✅ 골든크로스 삼각형 마커 %d개 추가됨", goldenCrossEntries.size()));
-            }
-
-            // 데드크로스 삼각형 마커 (아래쪽 삼각형)
-            if (!deathCrossEntries.isEmpty()) {
-                ScatterDataSet deathCrossDataSet = new ScatterDataSet(deathCrossEntries, "Death Cross");
-                deathCrossDataSet.setShapeRenderer(new RotatedTriangleRenderer(true));
-                deathCrossDataSet.setColor(Color.parseColor("#F44336"));
-                deathCrossDataSet.setScatterShapeSize(30f);
-                deathCrossDataSet.setDrawValues(false);
-                deathCrossDataSet.setHighlightEnabled(false);
-                scatterDataSets.add(deathCrossDataSet);
-
-                Log.d("StrategyFragment", String.format("✅ 데드크로스 삼각형 마커 %d개 추가됨", deathCrossEntries.size()));
-            }
-
-            // ScatterData를 CombinedData에 추가
-            if (!scatterDataSets.isEmpty()) {
-                ScatterData scatterData = new ScatterData(scatterDataSets);
-                combinedData.setData(scatterData);
-            }
+        } else {
+            Log.d("StrategyFragment", "차트 접근 권한 없음 - 크로스 분석 및 표시 생략");
         }
 
-        // 5. 전략이 있는 경우 지지선/저항선 추가 (이 부분은 유지)
-        if (strategy != null) {
+        // 5. 전략이 있는 경우 지지선/저항선 추가 (접근 권한이 있을 때만)
+        if (hasChartAccess && strategy != null) {
+            Log.d("StrategyFragment", "지지선/저항선 추가 시작 (권한 있음)");
+
             // 지지선들 (녹색, 점선)
             if (strategy.getBuySteps() != null && !strategy.getBuySteps().isEmpty()) {
                 for (int stepIndex = 0; stepIndex < strategy.getBuySteps().size(); stepIndex++) {
@@ -1222,7 +1235,7 @@ public class StrategyFragment extends Fragment {
                 }
             }
 
-            // 손절매 라인 (주황색, 점선)
+            // 손절매 라인 (주황색, 점선) - 위험 관리 구간
             if (strategy.getStopLoss() > 0) {
                 ArrayList<Entry> stopLossEntries = new ArrayList<>();
                 float stopLossPrice = (float) strategy.getStopLoss();
@@ -1244,14 +1257,17 @@ public class StrategyFragment extends Fragment {
                 minPrice = Math.min(minPrice, stopLossPrice);
                 maxPrice = Math.max(maxPrice, stopLossPrice);
             }
+
+            Log.d("StrategyFragment", String.format("지지선/저항선 %d개 추가 완료 (권한 있음)", lineDataSets.size()));
+        } else if (!hasChartAccess) {
+            Log.d("StrategyFragment", "차트 접근 권한 없음 - 지지선/저항선 표시 생략");
         }
 
-        // 6. 라인 데이터 추가 (지지/저항선만 포함, MA 라인 제외)
+        // 6. 라인 데이터 추가 (접근 권한이 있고 지지/저항선이 있을 때만)
         if (!lineDataSets.isEmpty()) {
             LineData lineData = new LineData(lineDataSets);
             combinedData.setData(lineData);
-            Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개 (지지/저항선만, MA라인 제외)",
-                    lineDataSets.size()));
+            Log.d("StrategyFragment", String.format("라인 데이터 추가: %d개 (권한 있음)", lineDataSets.size()));
         }
 
         // 7. Y축 범위 설정
@@ -1263,13 +1279,11 @@ public class StrategyFragment extends Fragment {
         strategyChart.getAxisLeft().setAxisMinimum(minPrice - padding);
         strategyChart.getAxisLeft().setAxisMaximum(maxPrice + padding);
 
-
-
         // 8. 차트 그리기 순서 설정
         strategyChart.setDrawOrder(new CombinedChart.DrawOrder[]{
                 CombinedChart.DrawOrder.CANDLE,
-                CombinedChart.DrawOrder.LINE,      // 지지/저항선만
-                CombinedChart.DrawOrder.SCATTER    // 크로스 마커
+                CombinedChart.DrawOrder.LINE,      // 지지/저항선 (권한 있을 때만)
+                CombinedChart.DrawOrder.SCATTER    // 크로스 마커 (권한 있을 때만)
         });
 
         // 9. 차트에 데이터 설정
@@ -1278,10 +1292,10 @@ public class StrategyFragment extends Fragment {
         // X축 범위 다시 강제 설정 (데이터 설정 후)
         XAxis xAxis = strategyChart.getXAxis();
         xAxis.setAxisMinimum(0f);
-        xAxis.setAxisMaximum(100f); // 🔧 99f → 105f로 변경
+        xAxis.setAxisMaximum(100f);
         xAxis.setGranularity(5f);
         xAxis.setGranularityEnabled(true);
-        xAxis.setSpaceMax(0.5f); // 🔧 1.5f → 0.5f로 원래대로
+        xAxis.setSpaceMax(0.5f);
 
         // X축 뷰포트 설정
         strategyChart.setVisibleXRangeMaximum(visibleDays);
@@ -1290,15 +1304,23 @@ public class StrategyFragment extends Fragment {
         strategyChart.setDragEnabled(true);
 
         // 초기 위치 조정 - "오늘"이 화면 중간쯤 오도록
-        float initialPosition = 105 - visibleDays; // 🔧 105 - 30 = 75 (확장된 범위 기준)
+        float initialPosition = 105 - visibleDays;
         strategyChart.moveViewToX(initialPosition);
 
-        updateRecentCrossUI();
+        // 10. 최근 크로스 UI 업데이트
+        // 권한이 있을 때만 실제 크로스 정보를 업데이트하고,
+        // 권한이 없을 때는 updateContentAccessUI()에서 마스킹 처리됨
+        if (hasChartAccess) {
+            updateRecentCrossUI();
+        }
+        // 권한이 없을 때는 UI를 숨기지 않음 - updateContentAccessUI()에서 마스킹 처리
 
         strategyChart.invalidate();
 
-        Log.d("StrategyFragment", String.format("✅ %s 전략 차트 완료: 차트 영역 확장, 32일 표시",
-                getStrategyTypeName()));
+        Log.d("StrategyFragment", String.format("✅ %s 전략 차트 완료: 권한 상태=%s, 캔들만=%s",
+                getStrategyTypeName(),
+                hasChartAccess ? "있음" : "없음",
+                hasChartAccess ? "전체표시" : "캔들만표시"));
     }
 
 
