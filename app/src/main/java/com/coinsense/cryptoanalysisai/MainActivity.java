@@ -40,6 +40,7 @@ import com.coinsense.cryptoanalysisai.utils.LocaleHelper;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -462,6 +463,27 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
     }
 
     private boolean isUserSignedIn() {
+        // 1. Firebase Auth 상태를 먼저 확인
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            // Firebase에 로그인되어 있다면 SharedPreferences도 업데이트
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+            if (!prefs.getBoolean(Constants.PREF_IS_LOGGED_IN, false)) {
+                // SharedPreferences 동기화
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putBoolean(Constants.PREF_IS_LOGGED_IN, true);
+                editor.putString(Constants.PREF_USER_EMAIL, currentUser.getEmail());
+                editor.putString(Constants.PREF_USER_DISPLAY_NAME, currentUser.getDisplayName());
+                editor.putString(Constants.PREF_USER_ID, currentUser.getUid());
+                editor.apply();
+
+                // 구독 관리자에도 사용자 설정
+                SubscriptionManager.getInstance(this).updateUser(currentUser);
+            }
+            return true;
+        }
+
+        // 2. Firebase에 없다면 SharedPreferences 확인
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         return prefs.getBoolean(Constants.PREF_IS_LOGGED_IN, false);
     }

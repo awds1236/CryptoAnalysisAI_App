@@ -12,6 +12,8 @@ import com.coinsense.cryptoanalysisai.services.AdManager;
 import com.coinsense.cryptoanalysisai.utils.Constants;
 import com.coinsense.cryptoanalysisai.utils.LocaleHelper;
 import com.google.android.gms.ads.MobileAds;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 public class CryptoAnalysisApp extends Application {
     private static final String TAG = "CryptoAnalysisApp";
@@ -23,6 +25,18 @@ public class CryptoAnalysisApp extends Application {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "앱 초기화 완료");
+
+        // Firebase Auth 상태 확인 및 SharedPreferences 동기화
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean(Constants.PREF_IS_LOGGED_IN, true);
+            editor.putString(Constants.PREF_USER_EMAIL, currentUser.getEmail());
+            editor.putString(Constants.PREF_USER_DISPLAY_NAME, currentUser.getDisplayName());
+            editor.putString(Constants.PREF_USER_ID, currentUser.getUid());
+            editor.apply();
+        }
 
         // 테마 설정 적용
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);

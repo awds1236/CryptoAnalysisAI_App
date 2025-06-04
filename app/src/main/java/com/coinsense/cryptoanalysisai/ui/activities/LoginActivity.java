@@ -279,7 +279,22 @@ public class LoginActivity extends BaseActivity {
     }
 
     private boolean isUserSignedIn() {
-        // SharedPreferences에서 로그인 상태 확인
+        // 1. Firebase Auth 상태를 먼저 확인
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            // Firebase에 로그인되어 있다면 SharedPreferences도 업데이트
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean(Constants.PREF_IS_LOGGED_IN, true);
+            editor.putString(Constants.PREF_USER_EMAIL, currentUser.getEmail());
+            editor.putString(Constants.PREF_USER_DISPLAY_NAME, currentUser.getDisplayName());
+            editor.putString(Constants.PREF_USER_ID, currentUser.getUid());
+            editor.apply();
+
+            return true;
+        }
+
+        // 2. Firebase에 없다면 SharedPreferences 확인
         SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
         return prefs.getBoolean(Constants.PREF_IS_LOGGED_IN, false);
     }
