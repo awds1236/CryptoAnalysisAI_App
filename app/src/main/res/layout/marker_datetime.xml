@@ -12,20 +12,54 @@
         android:layout_height="match_parent"
         android:background="@drawable/marker_background" />
 
-    <!-- 날짜/시간 텍스트 -->
-    <TextView
-        android:id="@+id/tvDateTime"
+    <!-- 날짜/시간, 가격, 등락률 텍스트 -->
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:orientation="vertical"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="6dp"
-        android:textColor="#FFFFFF"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:minWidth="80dp"
-        android:background="@android:color/transparent"
-        android:text="3월 15일 14시" />
+        android:paddingVertical="8dp"
+        android:gravity="center">
+
+        <!-- 날짜/시간 텍스트 -->
+        <TextView
+            android:id="@+id/tvDateTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="@android:color/transparent"
+            android:text="3월 15일 14시" />
+
+        <!-- 종가 가격 텍스트 -->
+        <TextView
+            android:id="@+id/tvPrice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:textColor="#FFC107"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="@android:color/transparent"
+            android:text="$65,432.10" />
+
+        <!-- 등락률 텍스트 -->
+        <TextView
+            android:id="@+id/tvChangeRate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="#4CAF50"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="@android:color/transparent"
+            android:text="+3.45%" />
+
+    </LinearLayout>
 
 </FrameLayout>
