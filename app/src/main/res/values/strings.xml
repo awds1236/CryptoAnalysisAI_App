@@ -370,4 +370,12 @@
 
     <string name="death_cross_explanation_title">📉 데드 크로스 (Death Cross)</string>
     <string name="death_cross_explanation_content">단기 이동평균선이 장기 이동평균선을 하향 돌파하는 기술적 신호입니다. 일반적으로 하락 추세 전환의 신호로 해석되지만, 단순 참고용 정보이며 반드시 하락을 의미하지는 않습니다.</string>
+
+    <!-- 차트 기간 관련 추가 문자열 -->
+    <string name="chart_interval_1h">1시간</string>
+    <string name="chart_interval_4h">4시간</string>
+    <string name="chart_interval_1d">1일</string>
+    <string name="hours_ago">시간전</string>
+    <string name="hours_ago_4x">×4시간전</string>
+
 </resources>
