@@ -1,5 +1,7 @@
 package com.coinsense.cryptoanalysisai.services;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -47,14 +49,38 @@ public class BillingManager implements PurchasesUpdatedListener {
     private final Context context;
     private BillingClient billingClient;
     private List<ProductDetails> productDetailsList = new ArrayList<>();
-
-    // 결제 상태 콜백 리스너
     private BillingStatusListener billingStatusListener;
+
+    // 🔧 Google Play Store 계정 정보 저장
+    private String currentPlayStoreAccount = null;
 
     private BillingManager(Context context) {
         this.context = context.getApplicationContext();
         setupBillingClient();
+
+        // 🔧 현재 Play Store 계정 정보 확인
+        detectPlayStoreAccount();
     }
+
+    /**
+     * 🔧 Google Play Store 계정 감지
+     */
+    private void detectPlayStoreAccount() {
+        try {
+            AccountManager accountManager = AccountManager.get(context);
+            Account[] accounts = accountManager.getAccountsByType("com.google");
+
+            if (accounts.length > 0) {
+                // 첫 번째 Google 계정을 Play Store 계정으로 간주
+                currentPlayStoreAccount = accounts[0].name;
+                Log.d(TAG, "감지된 Play Store 계정: " + currentPlayStoreAccount);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Play Store 계정 감지 실패: " + e.getMessage());
+        }
+    }
+
+
 
     public static synchronized BillingManager getInstance(Context context) {
         if (instance == null) {
@@ -185,8 +211,8 @@ public class BillingManager implements PurchasesUpdatedListener {
     }
 
     /**
-     * 구매 내역 처리 (구독 상태 업데이트)
-     * Google Play의 실제 구독 정보를 확인하고 Firebase에 저장
+     * 기존 processPurchases 메서드 - 최소 수정 버전
+     * 핵심: 구매 소유자 확인 로직 개선 + 크로스 디바이스 구독 확인
      */
     private void processPurchases(List<Purchase> purchases) {
         // 현재 로그인한 Firebase 사용자 확인
@@ -197,9 +223,10 @@ public class BillingManager implements PurchasesUpdatedListener {
         }
 
         Log.d(TAG, "현재 Firebase 사용자 ID: " + user.getUid());
+        Log.d(TAG, "현재 Firebase 사용자 Email: " + user.getEmail());
         Log.d(TAG, "Google Play에서 확인된 구매 내역 수: " + (purchases != null ? purchases.size() : 0));
 
-        // 구매 소유자 확인 및 필터링
+        // 🔧 수정: 구매 소유자 확인 및 필터링 - 로직 개선
         SharedPreferences prefs = context.getSharedPreferences("billing_purchase_info", Context.MODE_PRIVATE);
         List<Purchase> validPurchases = new ArrayList<>();
 
@@ -207,14 +234,15 @@ public class BillingManager implements PurchasesUpdatedListener {
             for (Purchase purchase : purchases) {
                 String purchaseOwner = prefs.getString(purchase.getOrderId(), null);
 
-                // 첫 실행 또는 마이그레이션 - 구매 소유자 정보가 없으면 현재 사용자로 저장
+                // 🔧 수정: 첫 실행 또는 마이그레이션 - 구매 소유자 정보가 없으면 현재 사용자로 저장
                 if (purchaseOwner == null) {
+                    // 🔧 개선: Firebase 계정으로 소유권 설정 (기존과 동일)
                     purchaseOwner = user.getEmail();
                     prefs.edit().putString(purchase.getOrderId(), purchaseOwner).apply();
                     Log.d(TAG, "구매 소유자 정보 저장: " + purchase.getOrderId() + " -> " + purchaseOwner);
                 }
 
-                // 구매 소유자와 현재 사용자 일치 여부 확인
+                // 🔧 수정: 구매 소유자와 현재 사용자 일치 여부 확인
                 if (purchaseOwner.equals(user.getEmail())) {
                     validPurchases.add(purchase);
                     Log.d(TAG, "유효한 구매 발견: " + purchase.getOrderId() + " 소유자: " + purchaseOwner);
@@ -225,23 +253,30 @@ public class BillingManager implements PurchasesUpdatedListener {
                 }
             }
 
-            // 유효한 구매가 없으면 기본 구독 상태(미구독) 설정
+            // 🔧 추가: 유효한 구매가 없으면 다른 기기에서의 구독 확인
             if (validPurchases.isEmpty()) {
-                setupDefaultSubscriptionData(user);
+                Log.d(TAG, "현재 기기에서 유효한 구매 없음 - 다른 기기 구독 확인");
+                checkCrossDeviceSubscription(user);
                 return;
             }
 
-            // 유효한 구매만 처리
+            // 🔧 수정: 유효한 구매만 처리 (기존 로직과 동일)
             purchases = validPurchases;
+        } else {
+            // 🔧 추가: 구매 내역이 없으면 다른 기기에서의 구독 확인
+            Log.d(TAG, "구매 내역 없음 - 다른 기기 구독 확인");
+            checkCrossDeviceSubscription(user);
+            return;
         }
 
+        // ========== 기존 로직 그대로 유지 ==========
         SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
         boolean isSubscribed = false;
         long expiryTimestamp = 0;
         String subscriptionType = Constants.SUBSCRIPTION_NONE;
         boolean isAutoRenewing = false;
 
-        // Google Play에서 받은 구매 정보 처리
+        // Google Play에서 받은 구매 정보 처리 (기존과 동일)
         if (purchases != null && !purchases.isEmpty()) {
             for (Purchase purchase : purchases) {
                 Log.d(TAG, "구매 상태 검토: " + purchase.getProducts() + ", 상태: " + purchase.getPurchaseState());
@@ -279,6 +314,7 @@ public class BillingManager implements PurchasesUpdatedListener {
             Log.d(TAG, "활성 구독이 확인되지 않았습니다");
         }
 
+        // ========== 기존 Firebase 업데이트 로직 그대로 유지 ==========
         // Firebase 구독 데이터베이스 참조
         DatabaseReference subscriptionRef = FirebaseDatabase.getInstance()
                 .getReference("subscriptions")
@@ -294,11 +330,11 @@ public class BillingManager implements PurchasesUpdatedListener {
         updateData.put("subscriptionType", subscriptionType);
         updateData.put("expiryTimestamp", expiryTimestamp);
         updateData.put("autoRenewing", isAutoRenewing);
-        updateData.put("subscribed", isSubscribed);  // 단일 필드만 사용
+        updateData.put("subscribed", isSubscribed);
         updateData.put("isCancelled", false);
         updateData.put("lastUpdated", System.currentTimeMillis());
 
-        // 기존 데이터를 유지하기 위해 먼저 조회 후 업데이트
+        // 기존 데이터를 유지하기 위해 먼저 조회 후 업데이트 (기존과 동일)
         subscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -309,7 +345,6 @@ public class BillingManager implements PurchasesUpdatedListener {
                         existingData = snapshot.getValue(FirebaseSubscriptionManager.SubscriptionData.class);
                     } catch (Exception e) {
                         Log.e(TAG, "구독 데이터 파싱 오류: " + e.getMessage());
-                        // 데이터 파싱 실패 시 null로 처리
                     }
                 }
 
@@ -317,17 +352,13 @@ public class BillingManager implements PurchasesUpdatedListener {
                 if (existingData != null) {
                     // 신규 구독인 경우만 시작 시간 업데이트
                     if (!finalIsSubscribed && existingData.isSubscribed()) {
-                        // 기존 구독 → 구독 아님: 취소된 경우
                         updateData.put("startTimestamp", existingData.getStartTimestamp());
                     } else if (finalIsSubscribed && !existingData.isSubscribed()) {
-                        // 구독 아님 → 새 구독: 신규 구독 시작
                         updateData.put("startTimestamp", System.currentTimeMillis());
                     } else {
-                        // 상태 변화 없음: 기존 시작 시간 유지
                         updateData.put("startTimestamp", existingData.getStartTimestamp());
                     }
                 } else {
-                    // 새 데이터면 현재 시간을 시작 시간으로 설정
                     updateData.put("startTimestamp", System.currentTimeMillis());
                 }
 
@@ -344,7 +375,7 @@ public class BillingManager implements PurchasesUpdatedListener {
                             Log.e(TAG, "Firebase 구독 정보 업데이트 실패: " + e.getMessage());
                         });
 
-                // 구매 기록 저장 (특수 문자 처리하여 Firebase 경로 오류 방지)
+                // 구매 기록 저장 (기존과 동일)
                 try {
                     saveFirebasePurchaseRecord(finalPurchases);
                 } catch (Exception e) {
@@ -360,7 +391,138 @@ public class BillingManager implements PurchasesUpdatedListener {
     }
 
     /**
-     * 계정 전환 시 구독 없음 상태로 설정
+     * 🔧 Play Store 계정과 Firebase 계정 연결 정보 저장
+     */
+    private void linkPlayStoreWithFirebase(String firebaseEmail, String playStoreAccount, Purchase purchase) {
+        if (playStoreAccount == null || firebaseEmail == null) return;
+
+        // Firebase에 연결 정보 저장
+        DatabaseReference linkRef = FirebaseDatabase.getInstance()
+                .getReference("account_links")
+                .child(sanitizeEmail(firebaseEmail));
+
+        Map<String, Object> linkData = new HashMap<>();
+        linkData.put("playStoreAccount", playStoreAccount);
+        linkData.put("firebaseAccount", firebaseEmail);
+        linkData.put("lastPurchaseOrderId", purchase.getOrderId());
+        linkData.put("linkTimestamp", System.currentTimeMillis());
+
+        linkRef.setValue(linkData)
+                .addOnSuccessListener(aVoid -> Log.d(TAG, "계정 연결 정보 저장 완료"))
+                .addOnFailureListener(e -> Log.e(TAG, "계정 연결 정보 저장 실패: " + e.getMessage()));
+    }
+
+    /**
+     * 🔧 새로 추가: 다른 기기에서의 구독 확인
+     */
+    private void checkCrossDeviceSubscription(FirebaseUser user) {
+        DatabaseReference subscriptionRef = FirebaseDatabase.getInstance()
+                .getReference("subscriptions")
+                .child(user.getUid());
+
+        subscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    try {
+                        FirebaseSubscriptionManager.SubscriptionData data =
+                                snapshot.getValue(FirebaseSubscriptionManager.SubscriptionData.class);
+
+                        if (data != null && data.isSubscribed()) {
+                            long currentTime = System.currentTimeMillis();
+
+                            // 구독이 만료되지 않았다면 유효한 구독으로 처리
+                            if (data.getExpiryTimestamp() > currentTime) {
+                                Log.d(TAG, "다른 기기에서 활성 구독 발견 - Firebase에서 구독 상태 유지");
+
+                                if (billingStatusListener != null) {
+                                    billingStatusListener.onSubscriptionStatusUpdated(
+                                            true, data.getSubscriptionType());
+                                }
+                                return;
+                            } else {
+                                Log.d(TAG, "다른 기기 구독이 만료됨");
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "구독 데이터 파싱 오류: " + e.getMessage());
+                    }
+                }
+
+                // 활성 구독이 없는 경우 기본 상태로 설정
+                setupDefaultSubscriptionData(user);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "구독 정보 조회 실패: " + error.getMessage());
+                setupDefaultSubscriptionData(user);
+            }
+        });
+    }
+
+    /**
+     * 🔧 Firebase 구독 정보 업데이트
+     */
+    private void updateFirebaseSubscription(FirebaseUser user, boolean isSubscribed,
+                                            String subscriptionType, long expiryTimestamp,
+                                            boolean isAutoRenewing) {
+        DatabaseReference subscriptionRef = FirebaseDatabase.getInstance()
+                .getReference("subscriptions")
+                .child(user.getUid());
+
+        Map<String, Object> updateData = new HashMap<>();
+        updateData.put("subscriptionType", subscriptionType);
+        updateData.put("expiryTimestamp", expiryTimestamp);
+        updateData.put("autoRenewing", isAutoRenewing);
+        updateData.put("subscribed", isSubscribed);
+        updateData.put("isCancelled", false);
+        updateData.put("lastUpdated", System.currentTimeMillis());
+        updateData.put("playStoreAccount", currentPlayStoreAccount); // 🔧 Play Store 계정 정보 추가
+
+        // 🔧 기존 시작 시간 유지 또는 새로 설정
+        subscriptionRef.child("startTimestamp").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (!snapshot.exists() || (Long) snapshot.getValue() == 0) {
+                    updateData.put("startTimestamp", System.currentTimeMillis());
+                }
+
+                subscriptionRef.updateChildren(updateData)
+                        .addOnSuccessListener(aVoid -> {
+                            Log.d(TAG, "Firebase 구독 정보 업데이트 성공");
+                            if (billingStatusListener != null) {
+                                billingStatusListener.onSubscriptionStatusUpdated(isSubscribed, subscriptionType);
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            Log.e(TAG, "Firebase 구독 정보 업데이트 실패: " + e.getMessage());
+                        });
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e(TAG, "시작 시간 조회 실패: " + error.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 🔧 이메일을 Firebase 키로 사용 가능하게 변환
+     */
+    private String sanitizeEmail(String email) {
+        if (email == null) return "unknown";
+        return email.replace(".", "_")
+                .replace("#", "_")
+                .replace("$", "_")
+                .replace("[", "_")
+                .replace("]", "_");
+    }
+
+
+
+    /**
+     * 🔧 계정 전환 시 구독 없음 상태로 설정
      */
     private void setupDefaultSubscriptionData(FirebaseUser user) {
         if (user == null) return;
@@ -377,10 +539,11 @@ public class BillingManager implements PurchasesUpdatedListener {
         defaultData.put("subscribed", false);
         defaultData.put("isCancelled", false);
         defaultData.put("lastUpdated", System.currentTimeMillis());
+        defaultData.put("playStoreAccount", currentPlayStoreAccount);
 
         subscriptionRef.updateChildren(defaultData)
                 .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "기본 구독 정보 설정 완료: " + user.getUid());
+                    Log.d(TAG, "기본 구독 정보 설정 완료");
                     if (billingStatusListener != null) {
                         billingStatusListener.onSubscriptionStatusUpdated(false, Constants.SUBSCRIPTION_NONE);
                     }
