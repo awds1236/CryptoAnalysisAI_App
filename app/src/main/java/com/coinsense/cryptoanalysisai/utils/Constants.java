@@ -42,7 +42,7 @@ public class Constants {
     public static final String[] MAIN_COINS = {"BTC", "ETH", "XRP", "SOL","DOGE", "ADA"};
 
     // Add a new array for premium coins
-    public static final String[] PREMIUM_COINS = {"TRX", "SUI", "LINK", "AVAX", "XLM", "HBAR"};
+    public static final String[] PREMIUM_COINS = {"TRX", "SUI", "LINK", "AVAX", "XLM", "HBAR", "HYPE", "BCH", "TON", "LTC", "DOT", "UNI", "AAVE", "NEAR","POL","VET"};
 
     // 기본 설정
     public static final int DEFAULT_CANDLE_COUNT = 30;

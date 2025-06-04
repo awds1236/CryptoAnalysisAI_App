@@ -38,6 +38,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -51,13 +53,17 @@ public class CoinListFragment extends Fragment {
     private FragmentCoinListBinding binding;
     private CoinListAdapter adapter;
     private OnCoinSelectedListener listener;
-    private ExchangeType exchangeType = ExchangeType.BINANCE; // 기본값을 바이낸스로 변경
+    private ExchangeType exchangeType = ExchangeType.BINANCE;
     private AnalysisApiService analysisApiService;
 
     // 코인 캐시 (빠른 액세스를 위한)
     private Map<String, CoinInfo> coinCache = new HashMap<>();
     // 분석 결과 캐시
     private Map<String, AnalysisResult> analysisCache = new HashMap<>();
+
+    // ★ 새로 추가: 분석 결과가 있는 코인들의 심볼 목록
+    private Set<String> availableAnalysisCoins = new HashSet<>();
+    private boolean analysisDataLoaded = false; // 분석 데이터 로드 완료 여부
 
     public CoinListFragment() {
         // 기본 생성자
@@ -86,8 +92,7 @@ public class CoinListFragment extends Fragment {
             exchangeType = ExchangeType.BINANCE;
         }
 
-        analysisApiService = AnalysisApiService.getInstance(requireContext());  // context 전달
-
+        analysisApiService = AnalysisApiService.getInstance(requireContext());
     }
 
     @Nullable
@@ -110,7 +115,7 @@ public class CoinListFragment extends Fragment {
         // 리사이클러뷰 초기화
         initRecyclerView();
 
-        // 데이터 로드
+        // ★ 데이터 로드 순서 변경: 분석 결과 먼저 로드
         loadCoinList();
 
         // 새로고침 기능 설정
@@ -171,81 +176,86 @@ public class CoinListFragment extends Fragment {
             if (listener != null) {
                 listener.onCoinSelected(coinInfo, exchangeType);
             }
-        }, analysisCache); // 분석 캐시 전달
+        }, analysisCache);
 
         binding.recyclerCoins.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerCoins.setAdapter(adapter);
     }
 
     /**
-     * 코인 목록 로드 - 바이낸스의 주요 코인만 로드
+     * ★ 수정된 코인 목록 로드 - 분석 결과 우선 로드
      */
     private void loadCoinList() {
         showLoading(true);
 
-        // 바이낸스에서 코인 목록 로드
-        loadBinanceMarkets();
-
-        // 모든 코인의 분석 결과 로드
+        // 분석 결과가 있는 코인들의 목록을 먼저 로드
         loadAllAnalyses();
     }
 
     /**
-     * 모든 코인의 분석 결과 로드
+     * ★ 수정된 모든 코인의 분석 결과 로드 - 완료 후 바이낸스 마켓 로드
      */
-    // loadAllAnalyses 메서드 수정
     private void loadAllAnalyses() {
+        Log.d(TAG, "분석 결과 로드 시작");
+
         analysisApiService.getAllLatestAnalyses(new AnalysisApiService.OnAllAnalysesRetrievedListener() {
             @Override
             public void onAllAnalysesRetrieved(List<AnalysisResult> resultList) {
+                Log.d(TAG, "분석 결과 로드 완료: " + resultList.size() + "개");
+
                 // 분석 결과 캐시에 저장
                 analysisCache.clear();
+                availableAnalysisCoins.clear();
+
                 for (AnalysisResult result : resultList) {
-                    analysisCache.put(result.getCoinSymbol(), result);
+                    String coinSymbol = result.getCoinSymbol();
+                    if (coinSymbol != null && !coinSymbol.isEmpty()) {
+                        analysisCache.put(coinSymbol, result);
+                        availableAnalysisCoins.add(coinSymbol);
+                        Log.d(TAG, "분석 데이터 추가: " + coinSymbol);
+                    }
                 }
 
-                // 어댑터에 분석 결과 추가 및 데이터 정렬 다시 실행
-                if (adapter != null && getActivity() != null) {
+                analysisDataLoaded = true;
+                Log.d(TAG, "분석 가능한 코인 수: " + availableAnalysisCoins.size());
+
+                // 분석 결과 로드가 완료되면 바이낸스 마켓 로드
+                if (getActivity() != null) {
                     getActivity().runOnUiThread(() -> {
-                        // 분석 캐시 업데이트
-                        adapter.updateAnalysisCache(analysisCache);
-
-                        // 정렬 다시 수행
-                        if (!adapter.getOriginalList().isEmpty()) {
-                            List<CoinInfo> sortedList = new ArrayList<>(adapter.getOriginalList());
-
-                            // 여기서 다시 정렬 수행
-                            Collections.sort(sortedList, (o1, o2) -> {
-                                boolean o1Buy = isBuyRecommended(o1.getSymbol());
-                                boolean o2Buy = isBuyRecommended(o2.getSymbol());
-
-                                if (o1Buy && !o2Buy) return -1;
-                                if (!o1Buy && o2Buy) return 1;
-
-                                if (!o1.isPremium() && o2.isPremium()) return -1;
-                                if (o1.isPremium() && !o2.isPremium()) return 1;
-
-                                return Double.compare(o2.getCurrentPrice(), o1.getCurrentPrice());
-                            });
-
-                            // 정렬된 목록으로 업데이트
-                            adapter.updateData(sortedList);
-                        }
+                        loadBinanceMarkets();
                     });
                 }
             }
 
             @Override
             public void onFailure(String errorMessage) {
-                Log.e(TAG, getString(R.string.analysis_load_failed, errorMessage));
+                Log.e(TAG, "분석 결과 로드 실패: " + errorMessage);
+
+                // 분석 결과 로드가 실패해도 빈 목록으로 계속 진행
+                analysisDataLoaded = true;
+                availableAnalysisCoins.clear();
+
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        showError("분석 데이터를 불러올 수 없습니다: " + errorMessage);
+                        showLoading(false);
+                    });
+                }
             }
         });
     }
 
     /**
-     * 바이낸스 마켓 목록 로드
+     * ★ 수정된 바이낸스 마켓 목록 로드 - 분석 결과가 있는 코인만 필터링
      */
     private void loadBinanceMarkets() {
+        if (!analysisDataLoaded) {
+            Log.w(TAG, "분석 데이터가 아직 로드되지 않았습니다");
+            return;
+        }
+
+        Log.d(TAG, "바이낸스 마켓 로드 시작 - 분석 가능한 코인만 필터링");
+
         BinanceApiService apiService = RetrofitClient.getBinanceApiService();
 
         apiService.getExchangeInfo().enqueue(new Callback<BinanceModels.BinanceExchangeInfo>() {
@@ -253,52 +263,50 @@ public class CoinListFragment extends Fragment {
             public void onResponse(@NonNull Call<BinanceModels.BinanceExchangeInfo> call, @NonNull Response<BinanceModels.BinanceExchangeInfo> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     BinanceModels.BinanceExchangeInfo exchangeInfo = response.body();
-                    List<CoinInfo> usdtMarkets = new ArrayList<>();
+                    List<CoinInfo> filteredMarkets = new ArrayList<>();
 
-                    // USDT 마켓 중 모든 코인 변환 (필터링 제거)
+                    Log.d(TAG, "바이낸스 거래소 정보 수신 완료");
+
+                    // ★ 분석 결과가 있는 코인만 필터링
                     for (BinanceModels.BinanceExchangeInfo.SymbolInfo symbolInfo : exchangeInfo.getSymbols()) {
                         if ("USDT".equals(symbolInfo.getQuoteAsset()) && "TRADING".equals(symbolInfo.getStatus())) {
                             String baseAsset = symbolInfo.getBaseAsset();
 
-                            // 우리가 관심있는 모든 코인 처리 (주요 코인 + 프리미엄 코인)
-                            boolean isInterestingCoin = false;
-                            boolean isPremiumCoin = false;
+                            // ★ 핵심 변경: 분석 결과가 있는 코인인지 확인
+                            if (availableAnalysisCoins.contains(baseAsset)) {
+                                Log.d(TAG, "분석 데이터 있는 코인 추가: " + baseAsset);
 
-                            // 기본 코인인지 확인
-                            for (String mainCoin : Constants.MAIN_COINS) {
-                                if (mainCoin.equalsIgnoreCase(baseAsset)) {
-                                    isInterestingCoin = true;
-                                    break;
-                                }
-                            }
+                                CoinInfo coinInfo = symbolInfo.toUpbitFormat();
+                                String localizedName = getKoreanName(baseAsset);
+                                coinInfo.setKoreanName(localizedName);
+                                coinInfo.setEnglishName(localizedName);
 
-                            // 프리미엄 코인인지 확인
-                            if (!isInterestingCoin) {
+                                // 프리미엄 코인 여부 확인 (기존 로직 유지)
+                                boolean isPremiumCoin = false;
                                 for (String premiumCoin : Constants.PREMIUM_COINS) {
                                     if (premiumCoin.equalsIgnoreCase(baseAsset)) {
-                                        isInterestingCoin = true;
                                         isPremiumCoin = true;
                                         break;
                                     }
                                 }
-                            }
-
-                            if (isInterestingCoin) {
-                                CoinInfo coinInfo = symbolInfo.toUpbitFormat();
-                                String localizedName = getKoreanName(symbolInfo.getBaseAsset()); // 현재 언어에 맞는 이름 가져오기
-                                coinInfo.setKoreanName(localizedName);
-                                coinInfo.setEnglishName(localizedName); // 영어 이름에도 현지화된 이름 설정
                                 coinInfo.setPremium(isPremiumCoin);
-                                usdtMarkets.add(coinInfo);
 
-                                // 코인 캐시에 추가
+                                filteredMarkets.add(coinInfo);
                                 coinCache.put(coinInfo.getSymbol(), coinInfo);
                             }
                         }
                     }
 
+                    Log.d(TAG, "필터링된 코인 수: " + filteredMarkets.size());
+
+                    if (filteredMarkets.isEmpty()) {
+                        showError("분석 가능한 코인이 없습니다");
+                        showLoading(false);
+                        return;
+                    }
+
                     // 가격 정보 로드
-                    loadBinancePrices(usdtMarkets);
+                    loadBinancePrices(filteredMarkets);
                 } else {
                     showError(getString(R.string.binance_market_error));
                     showLoading(false);
@@ -314,25 +322,57 @@ public class CoinListFragment extends Fragment {
     }
 
     /**
-     * 코인의 영어 이름을 가져오기
+     * 가격 정보만 새로고침 (MainActivity에서 호출됨)
      */
-    private String getEnglishName(String symbol) {
-        // 동일한 리소스 ID를 사용하여 현재 영어 모드에서는 영어 이름을 반환
-        switch (symbol) {
-            case "BTC": return "Bitcoin";
-            case "ETH": return "Ethereum";
-            case "XRP": return "Ripple";
-            case "SOL": return "Solana";
-            case "DOGE": return "Dogecoin";
-            case "ADA": return "Cardano";
-            case "TRX": return "Tron";
-            case "SUI": return "Sui";
-            case "LINK": return "Chainlink";
-            case "AVAX": return "Avalanche";
-            case "XLM": return "Stellar";
-            case "HBAR": return "Hedera";
-            default: return symbol;
-        }
+    public void refreshPrices() {
+        if (!isAdded() || adapter == null) return;
+
+        // 어댑터가 가지고 있는 현재 코인 목록 가져오기
+        List<CoinInfo> currentCoins = adapter.getOriginalList();
+
+        if (currentCoins.isEmpty()) return;
+
+        BinanceApiService apiService = RetrofitClient.getBinanceApiService();
+
+        apiService.getAllTickers().enqueue(new Callback<List<BinanceTicker>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<BinanceTicker>> call, @NonNull Response<List<BinanceTicker>> response) {
+                if (!isAdded()) return;
+
+                if (response.isSuccessful() && response.body() != null) {
+                    List<BinanceTicker> tickers = response.body();
+                    boolean dataChanged = false;
+
+                    // 코인 정보에 가격 데이터 추가
+                    for (CoinInfo coin : currentCoins) {
+                        for (BinanceTicker ticker : tickers) {
+                            if (coin.getMarket().equals(ticker.getSymbol())) {
+                                double newPrice = ticker.getPrice();
+                                // 가격이 변경된 경우에만 처리
+                                if (newPrice != coin.getCurrentPrice()) {
+                                    coin.setCurrentPrice(newPrice);
+                                    dataChanged = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+
+                    // 변경사항이 있는 경우만 UI 갱신
+                    if (dataChanged && adapter != null && getActivity() != null) {
+                        getActivity().runOnUiThread(() -> {
+                            adapter.notifyDataSetChanged();
+                        });
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<BinanceTicker>> call, @NonNull Throwable t) {
+                // 실패해도 조용히 넘어감 (silent fail) - 다음 갱신 시도에서 다시 시도
+                Log.w(TAG, getString(R.string.price_update_failed, t.getMessage()));
+            }
+        });
     }
 
     /**
@@ -366,8 +406,7 @@ public class CoinListFragment extends Fragment {
                         }
                     }
 
-                    // 코인 목록 정렬: 매수 추천 코인 먼저, 그 다음 기본 코인, 마지막으로 프리미엄 코인
-                    // 같은 카테고리 내에서는 가격 높은 순으로 정렬
+                    // ★ 코인 목록 정렬: 매수 추천 코인 먼저, 그 다음 기본 코인, 마지막으로 프리미엄 코인
                     Collections.sort(markets, new Comparator<CoinInfo>() {
                         @Override
                         public int compare(CoinInfo o1, CoinInfo o2) {
@@ -427,60 +466,6 @@ public class CoinListFragment extends Fragment {
     }
 
     /**
-     * 가격 정보만 새로고침 (MainActivity에서 호출됨)
-     */
-    public void refreshPrices() {
-        if (!isAdded() || adapter == null) return;
-
-        // 어댑터가 가지고 있는 현재 코인 목록 가져오기
-        List<CoinInfo> currentCoins = adapter.getOriginalList();
-
-        if (currentCoins.isEmpty()) return;
-
-        BinanceApiService apiService = RetrofitClient.getBinanceApiService();
-
-        apiService.getAllTickers().enqueue(new Callback<List<BinanceTicker>>() {
-            @Override
-            public void onResponse(@NonNull Call<List<BinanceTicker>> call, @NonNull Response<List<BinanceTicker>> response) {
-                if (!isAdded()) return;
-
-                if (response.isSuccessful() && response.body() != null) {
-                    List<BinanceTicker> tickers = response.body();
-                    boolean dataChanged = false;
-
-                    // 코인 정보에 가격 데이터 추가
-                    for (CoinInfo coin : currentCoins) {
-                        for (BinanceTicker ticker : tickers) {
-                            if (coin.getMarket().equals(ticker.getSymbol())) {
-                                double newPrice = ticker.getPrice();
-                                // 가격이 변경된 경우에만 처리
-                                if (newPrice != coin.getCurrentPrice()) {
-                                    coin.setCurrentPrice(newPrice);
-                                    dataChanged = true;
-                                }
-                                break;
-                            }
-                        }
-                    }
-
-                    // 변경사항이 있는 경우만 UI 갱신
-                    if (dataChanged && adapter != null && getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            adapter.notifyDataSetChanged();
-                        });
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<List<BinanceTicker>> call, @NonNull Throwable t) {
-                // 실패해도 조용히 넘어감 (silent fail) - 다음 갱신 시도에서 다시 시도
-                Log.w(TAG, getString(R.string.price_update_failed, t.getMessage()));
-            }
-        });
-    }
-
-    /**
      * 바이낸스 24시간 가격 변화 정보 가져오기
      */
     private void load24hTickerForCoin(CoinInfo coinInfo) {
@@ -517,10 +502,19 @@ public class CoinListFragment extends Fragment {
         getActivity().runOnUiThread(() -> {
             if (adapter != null) {
                 adapter.updateData(coins);
+                // 분석 캐시도 어댑터에 전달
+                adapter.updateAnalysisCache(analysisCache);
             }
 
             binding.tvEmpty.setVisibility(coins.isEmpty() ? View.VISIBLE : View.GONE);
+
+            if (coins.isEmpty()) {
+                binding.tvEmpty.setText("분석 가능한 코인이 없습니다");
+            }
+
             showLoading(false);
+
+            Log.d(TAG, "코인 목록 갱신 완료: " + coins.size() + "개 (분석 가능한 코인만)");
         });
     }
 
@@ -551,6 +545,10 @@ public class CoinListFragment extends Fragment {
     public void refreshData() {
         if (binding != null) {
             binding.etSearch.setText("");
+            // ★ 새로고침 시에도 분석 결과부터 로드
+            analysisDataLoaded = false;
+            availableAnalysisCoins.clear();
+            analysisCache.clear();
             loadCoinList();
         }
     }
@@ -593,9 +591,7 @@ public class CoinListFragment extends Fragment {
         private final List<CoinInfo> originalList;
         private List<CoinInfo> filteredList;
         private final OnCoinClickListener listener;
-
         private Map<String, AnalysisResult> analysisCache;
-
 
         // 생성자 수정
         public CoinListAdapter(List<CoinInfo> coins, OnCoinClickListener listener, Map<String, AnalysisResult> analysisCache) {
@@ -610,7 +606,6 @@ public class CoinListFragment extends Fragment {
             this.analysisCache = newCache;
             notifyDataSetChanged();
         }
-
 
         // 추천 확인 메서드
         private boolean isBuyRecommended(String symbol) {
