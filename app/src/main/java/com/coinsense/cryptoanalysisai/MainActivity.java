@@ -367,14 +367,80 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
 
+        // 사용자 이름 설정
+        updateUserNameInMenu(menu);
+
         return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+
+        // 메뉴가 열릴 때마다 사용자 이름 업데이트
+        updateUserNameInMenu(menu);
+
+        return true;
+    }
+
+    /**
+     * 메뉴에 현재 로그인된 사용자 이름 표시
+     */
+    private void updateUserNameInMenu(Menu menu) {
+        MenuItem userNameItem = menu.findItem(R.id.action_user_name);
+        if (userNameItem != null) {
+            String userName = getCurrentUserName();
+            if (userName != null && !userName.isEmpty()) {
+                userNameItem.setTitle("👤 " + userName);
+            } else {
+                userNameItem.setTitle("👤 사용자");
+            }
+
+            // 사용자 이름 항목은 클릭할 수 없도록 설정
+            userNameItem.setEnabled(false);
+        }
+    }
+
+    /**
+     * 현재 로그인된 사용자 이름 가져오기
+     */
+    private String getCurrentUserName() {
+        // 1. Firebase Auth에서 먼저 시도
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getDisplayName() != null) {
+            return currentUser.getDisplayName();
+        }
+
+        // 2. SharedPreferences에서 가져오기
+        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+        String displayName = prefs.getString(Constants.PREF_USER_DISPLAY_NAME, null);
+
+        if (displayName != null && !displayName.isEmpty()) {
+            return displayName;
+        }
+
+        // 3. 이메일이라도 표시 (이름이 없는 경우)
+        String email = prefs.getString(Constants.PREF_USER_EMAIL, null);
+        if (email != null && !email.isEmpty()) {
+            // 이메일에서 @ 앞부분만 표시
+            int atIndex = email.indexOf('@');
+            if (atIndex > 0) {
+                return email.substring(0, atIndex);
+            }
+            return email;
+        }
+
+        return "사용자";
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_refresh) {
+        if (id == R.id.action_user_name) {
+            // 사용자 이름 클릭 시는 아무 동작하지 않음
+            return true;
+        } else if (id == R.id.action_refresh) {
             refreshCurrentFragment();
             return true;
         } else if (id == R.id.action_settings) {
