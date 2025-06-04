@@ -726,10 +726,12 @@ public class StrategyFragment extends Fragment {
 
 
     /**
-     * ★ 간단한 생성자를 가진 MarkerView (권장)
+     * ★ 간단한 생성자를 가진 MarkerView (날짜, 가격, 등락률 표시)
      */
     private class DateTimeMarkerView extends MarkerView {
         private TextView tvDateTime;
+        private TextView tvPrice;
+        private TextView tvChangeRate;
         private View backgroundView;
 
         public DateTimeMarkerView(Context context) {
@@ -737,6 +739,8 @@ public class StrategyFragment extends Fragment {
 
             // 마커 뷰 초기화
             tvDateTime = findViewById(R.id.tvDateTime);
+            tvPrice = findViewById(R.id.tvPrice);
+            tvChangeRate = findViewById(R.id.tvChangeRate);
             backgroundView = findViewById(R.id.markerBackground);
 
             // 반투명 배경 설정
@@ -753,7 +757,6 @@ public class StrategyFragment extends Fragment {
 
                 // 날짜/시간 텍스트 생성
                 String dateTimeText = getDateTimeForIndex(chartIndex);
-
                 if (dateTimeText != null && !dateTimeText.isEmpty()) {
                     tvDateTime.setText(dateTimeText);
                     tvDateTime.setTextColor(Color.WHITE);
@@ -761,11 +764,42 @@ public class StrategyFragment extends Fragment {
                     tvDateTime.setText("날짜 없음");
                 }
 
-                Log.d("StrategyFragment", "MarkerView 업데이트: " + dateTimeText);
+                // ★ 종가 정보 표시
+                String priceText = getPriceForIndex(chartIndex);
+                if (priceText != null && !priceText.isEmpty()) {
+                    tvPrice.setText(priceText);
+                    tvPrice.setTextColor(Color.parseColor("#FFC107")); // 금색
+                    tvPrice.setVisibility(View.VISIBLE);
+                } else {
+                    tvPrice.setText("가격 없음");
+                    tvPrice.setVisibility(View.VISIBLE);
+                }
+
+                // ★ 등락률 계산 및 표시
+                String changeRateText = getChangeRateForIndex(chartIndex);
+                if (changeRateText != null && !changeRateText.isEmpty()) {
+                    tvChangeRate.setText(changeRateText);
+                    tvChangeRate.setVisibility(View.VISIBLE);
+
+                    // 등락률에 따른 색상 설정
+                    if (changeRateText.startsWith("+")) {
+                        tvChangeRate.setTextColor(Color.parseColor("#4CAF50")); // 상승 - 초록
+                    } else if (changeRateText.startsWith("-")) {
+                        tvChangeRate.setTextColor(Color.parseColor("#F44336")); // 하락 - 빨강
+                    } else {
+                        tvChangeRate.setTextColor(Color.parseColor("#9E9E9E")); // 보합 - 회색
+                    }
+                } else {
+                    tvChangeRate.setVisibility(View.GONE);
+                }
+
+                Log.d("StrategyFragment", "MarkerView 업데이트: " + dateTimeText + " / " + priceText + " / " + changeRateText);
 
             } catch (Exception ex) {
                 Log.e("StrategyFragment", "MarkerView 업데이트 오류: " + ex.getMessage());
                 tvDateTime.setText("오류");
+                tvPrice.setVisibility(View.GONE);
+                tvChangeRate.setVisibility(View.GONE);
             }
 
             super.refreshContent(e, highlight);
@@ -826,6 +860,113 @@ public class StrategyFragment extends Fragment {
 
             return null;
         }
+
+        /**
+         * ★ 인덱스에 해당하는 종가 문자열 반환
+         */
+        private String getPriceForIndex(int chartIndex) {
+            if (currentKlinesData == null || currentKlinesData.isEmpty()) {
+                return null;
+            }
+
+            try {
+                // 차트 인덱스를 실제 kline 데이터 인덱스로 변환
+                int totalDisplayPeriods = 100;
+                int startIndex = Math.max(0, currentKlinesData.size() - totalDisplayPeriods);
+                int actualIndex = startIndex + chartIndex;
+
+                if (actualIndex >= 0 && actualIndex < currentKlinesData.size()) {
+                    List<Object> kline = currentKlinesData.get(actualIndex);
+
+                    // 종가 파싱
+                    double closePrice = Double.parseDouble(kline.get(4).toString());
+
+                    // 통화 심볼에 따른 포맷팅 (소수점 1자리씩 추가)
+                    if ("$".equals(currencySymbol)) {
+                        // USD 표시 - 소수점 자리수 증가
+                        if (closePrice >= 100000) {
+                            return String.format("$%.1fK", closePrice / 1000);
+                        } else if (closePrice >= 10000) {
+                            return String.format("$%.2fK", closePrice / 1000);
+                        } else if (closePrice >= 1000) {
+                            return String.format("$%.3fK", closePrice / 1000);
+                        } else if (closePrice >= 100) {
+                            return String.format("$%.1f", closePrice);
+                        } else if (closePrice >= 10) {
+                            return String.format("$%.2f", closePrice);
+                        } else if (closePrice >= 1) {
+                            return String.format("$%.3f", closePrice);
+                        } else {
+                            return String.format("$%.5f", closePrice);
+                        }
+                    } else {
+                        // KRW 표시 - 소수점 자리수 증가
+                        if (closePrice >= 100000000) {
+                            return String.format("₩%.2f억", closePrice / 100000000);
+                        } else if (closePrice >= 10000000) {
+                            return String.format("₩%.1f만", closePrice / 10000);
+                        } else if (closePrice >= 1000000) {
+                            return String.format("₩%.2f백만", closePrice / 1000000);
+                        } else if (closePrice >= 100000) {
+                            return String.format("₩%.1f만", closePrice / 10000);
+                        } else if (closePrice >= 10000) {
+                            return String.format("₩%.2f만", closePrice / 10000);
+                        } else if (closePrice >= 1000) {
+                            return String.format("₩%.2f천", closePrice / 1000);
+                        } else {
+                            return String.format("₩%.1f", closePrice);
+                        }
+                    }
+                }
+
+            } catch (Exception e) {
+                Log.e("StrategyFragment", "MarkerView 가격 계산 오류: " + e.getMessage());
+            }
+
+            return null;
+        }
+
+        private String getChangeRateForIndex(int chartIndex) {
+            if (currentKlinesData == null || currentKlinesData.isEmpty()) {
+                return null;
+            }
+
+            try {
+                // 차트 인덱스를 실제 kline 데이터 인덱스로 변환
+                int totalDisplayPeriods = 100;
+                int startIndex = Math.max(0, currentKlinesData.size() - totalDisplayPeriods);
+                int actualIndex = startIndex + chartIndex;
+
+                // 첫 번째 봉이거나 인덱스가 유효하지 않으면 등락률 없음
+                if (actualIndex <= 0 || actualIndex >= currentKlinesData.size()) {
+                    return null;
+                }
+
+                // 현재 봉과 이전 봉의 종가 가져오기
+                List<Object> currentKline = currentKlinesData.get(actualIndex);
+                List<Object> previousKline = currentKlinesData.get(actualIndex - 1);
+
+                double currentClose = Double.parseDouble(currentKline.get(4).toString());
+                double previousClose = Double.parseDouble(previousKline.get(4).toString());
+
+                // 등락률 계산: (현재 - 이전) / 이전 * 100
+                double changeRate = ((currentClose - previousClose) / previousClose) * 100;
+
+                // 포맷팅
+                if (changeRate > 0) {
+                    return String.format("+%.2f%%", changeRate);
+                } else if (changeRate < 0) {
+                    return String.format("%.2f%%", changeRate);
+                } else {
+                    return "0.00%";
+                }
+
+            } catch (Exception e) {
+                Log.e("StrategyFragment", "MarkerView 등락률 계산 오류: " + e.getMessage());
+            }
+
+            return null;
+        }
     }
 
     /**
@@ -854,7 +995,7 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * ★ 클릭된 봉의 날짜/시간 표시 - 과학적 표기법 파싱 수정
+     * ★ 클릭된 봉의 날짜/시간, 종가, 등락률 표시 - 과학적 표기법 파싱 수정
      */
     private void showCandleDateTime(int chartIndex) {
         if (currentKlinesData == null || currentKlinesData.isEmpty()) {
@@ -895,15 +1036,102 @@ public class StrategyFragment extends Fragment {
                 }
 
                 Date candleDate = new Date(timestamp);
-
-                // 언어별 포맷팅
                 String dateTimeText = formatDateTime(candleDate, currentChartInterval);
 
-                // 토스트로 표시
-                Toast.makeText(getContext(), dateTimeText, Toast.LENGTH_LONG).show();
+                // ★ 종가 정보 추출 및 포맷팅
+                String priceText = "";
+                try {
+                    double closePrice = Double.parseDouble(kline.get(4).toString());
 
-                Log.d("StrategyFragment", String.format("봉 클릭: 인덱스=%d, 실제인덱스=%d, 시간=%s",
-                        chartIndex, actualIndex, dateTimeText));
+                    if ("$".equals(currencySymbol)) {
+                        // USD 포맷팅 - 소수점 자리수 증가
+                        if (closePrice >= 100000) {
+                            priceText = String.format("$%.1fK", closePrice / 1000);
+                        } else if (closePrice >= 10000) {
+                            priceText = String.format("$%.2fK", closePrice / 1000);
+                        } else if (closePrice >= 1000) {
+                            priceText = String.format("$%.3fK", closePrice / 1000);
+                        } else if (closePrice >= 100) {
+                            priceText = String.format("$%.1f", closePrice);
+                        } else if (closePrice >= 10) {
+                            priceText = String.format("$%.2f", closePrice);
+                        } else if (closePrice >= 1) {
+                            priceText = String.format("$%.3f", closePrice);
+                        } else {
+                            priceText = String.format("$%.5f", closePrice);
+                        }
+                    } else {
+                        // KRW 포맷팅 - 소수점 자리수 증가
+                        if (closePrice >= 100000000) {
+                            priceText = String.format("₩%.2f억", closePrice / 100000000);
+                        } else if (closePrice >= 10000000) {
+                            priceText = String.format("₩%.1f만", closePrice / 10000);
+                        } else if (closePrice >= 1000000) {
+                            priceText = String.format("₩%.2f백만", closePrice / 1000000);
+                        } else if (closePrice >= 100000) {
+                            priceText = String.format("₩%.1f만", closePrice / 10000);
+                        } else if (closePrice >= 10000) {
+                            priceText = String.format("₩%.2f만", closePrice / 10000);
+                        } else if (closePrice >= 1000) {
+                            priceText = String.format("₩%.2f천", closePrice / 1000);
+                        } else {
+                            priceText = String.format("₩%.1f", closePrice);
+                        }
+                    }
+
+                    Log.d("StrategyFragment", String.format("종가 파싱: %.2f → %s", closePrice, priceText));
+
+                } catch (Exception e) {
+                    Log.e("StrategyFragment", "종가 파싱 오류: " + e.getMessage());
+                    priceText = "가격 정보 없음";
+                }
+
+                // ★ 등락률 계산
+                String changeRateText = "";
+                String changeRateDisplay = "";
+
+                if (actualIndex > 0) { // 첫 번째 봉이 아닌 경우만 등락률 계산
+                    try {
+                        List<Object> previousKline = currentKlinesData.get(actualIndex - 1);
+
+                        double currentClose = Double.parseDouble(kline.get(4).toString());
+                        double previousClose = Double.parseDouble(previousKline.get(4).toString());
+
+                        // 등락률 계산: (현재 - 이전) / 이전 * 100
+                        double changeRate = ((currentClose - previousClose) / previousClose) * 100;
+
+                        // 포맷팅 및 색상 정보
+                        if (changeRate > 0) {
+                            changeRateText = String.format("+%.2f%%", changeRate);
+                            changeRateDisplay = " 📈 " + changeRateText + " (상승)";
+                        } else if (changeRate < 0) {
+                            changeRateText = String.format("%.2f%%", changeRate);
+                            changeRateDisplay = " 📉 " + changeRateText + " (하락)";
+                        } else {
+                            changeRateText = "0.00%";
+                            changeRateDisplay = " ➡️ " + changeRateText + " (보합)";
+                        }
+
+                        Log.d("StrategyFragment", String.format("등락률 계산: 현재=%.2f, 이전=%.2f, 등락률=%s",
+                                currentClose, previousClose, changeRateText));
+
+                    } catch (Exception e) {
+                        Log.e("StrategyFragment", "등락률 계산 오류: " + e.getMessage());
+                        changeRateDisplay = " (등락률 계산 불가)";
+                    }
+                } else {
+                    changeRateDisplay = " (첫 번째 데이터)";
+                }
+
+                // ★ 날짜/시간 + 종가 + 등락률을 함께 표시 (3줄로 구성)
+                String fullMessage = String.format("%s\n💰 %s%s",
+                        dateTimeText, priceText, changeRateDisplay);
+
+                // 토스트로 표시
+                Toast.makeText(getContext(), fullMessage, Toast.LENGTH_LONG).show();
+
+                Log.d("StrategyFragment", String.format("봉 클릭: 인덱스=%d, 실제인덱스=%d, 시간=%s, 가격=%s, 등락률=%s",
+                        chartIndex, actualIndex, dateTimeText, priceText, changeRateText));
 
             } else {
                 Log.w("StrategyFragment", String.format("인덱스 범위 초과: 차트=%d, 실제=%d, 전체=%d",
