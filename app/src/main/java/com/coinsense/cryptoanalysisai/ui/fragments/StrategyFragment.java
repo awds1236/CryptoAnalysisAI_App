@@ -44,6 +44,7 @@ import com.coinsense.cryptoanalysisai.utils.Constants;
 // MPAndroidChart 임포트
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.charts.ScatterChart;
+import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.CandleData;
@@ -57,9 +58,12 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.data.ScatterData;
 import com.github.mikephil.charting.data.ScatterDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.IScatterDataSet;
+import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.renderer.scatter.IShapeRenderer;
+import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.google.android.material.tabs.TabLayout;
 
@@ -68,6 +72,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -134,6 +139,9 @@ public class StrategyFragment extends Fragment {
     // 최근 크로스 정보 저장용 변수들
     private String recentCrossType = null; // "GOLDEN" 또는 "DEATH"
     private int recentCrossDaysAgo = -1;   // 며칠 전인지
+
+    private List<List<Object>> currentKlinesData = new ArrayList<>(); // 현재 차트의 kline 데이터 저장
+
 
     // StrategyFragment 클래스 안에 추가
     public static class RotatedTriangleRenderer implements IShapeRenderer {
@@ -402,12 +410,18 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * ★ 차트 기간 선택 탭 설정
+     * ★ 차트 기간 선택 탭 설정 - 중복 추가 방지
      */
     private void setupChartIntervalTabs() {
         if (tabsChartInterval == null) return;
 
-        // 탭 추가
+        // ★ 기존 탭들을 모두 제거 (중복 방지)
+        tabsChartInterval.removeAllTabs();
+
+        // ★ 기존 리스너도 제거 (메모리 누수 방지)
+        tabsChartInterval.clearOnTabSelectedListeners();
+
+        // 탭 추가 - 이제 중복되지 않음
         tabsChartInterval.addTab(tabsChartInterval.newTab().setText("1시간"));
         tabsChartInterval.addTab(tabsChartInterval.newTab().setText("4시간"));
         tabsChartInterval.addTab(tabsChartInterval.newTab().setText("1일"));
@@ -416,7 +430,7 @@ public class StrategyFragment extends Fragment {
         tabsChartInterval.selectTab(tabsChartInterval.getTabAt(CHART_INTERVAL_1D));
         currentChartInterval = CHART_INTERVAL_1D;
 
-        // 탭 선택 리스너
+        // 탭 선택 리스너 - 새로 설정
         tabsChartInterval.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -444,7 +458,10 @@ public class StrategyFragment extends Fragment {
 
         // 초기 이동평균선 정보 설정
         updateMovingAverageInfo();
+
+        Log.d("StrategyFragment", "차트 기간 탭 설정 완료 - 중복 방지 적용");
     }
+
 
     /**
      * ★ 이동평균선 정보 업데이트
@@ -561,7 +578,7 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * setupChart()에서 X축 범위 확장
+     * setupChart() 메서드 수정 - MarkerView 적용
      */
     private void setupChart() {
         if (strategyChart == null) return;
@@ -581,11 +598,11 @@ public class StrategyFragment extends Fragment {
                 CombinedChart.DrawOrder.SCATTER
         });
 
-        // 차트 여백 설정 - 원래대로
-        strategyChart.setExtraOffsets(8f, 5f, 8f, 5f);
+        // 차트 여백 설정
+        strategyChart.setExtraOffsets(8f, 40f, 8f, 5f); // 위쪽 여백 증가 (마커 공간)
         strategyChart.setBackgroundColor(Color.parseColor("#1E1E1E"));
 
-        // X축 설정 - 차트 데이터 범위 확장
+        // ★ X축 설정 - 라벨 제거
         XAxis xAxis = strategyChart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(true);
@@ -594,44 +611,16 @@ public class StrategyFragment extends Fragment {
         xAxis.setTextColor(Color.parseColor("#CCCCCC"));
         xAxis.setTextSize(9f);
 
-        // X축 범위 확장: "오늘" 이후에도 빈 공간 생성
+        // X축 라벨 완전히 숨기기
+        xAxis.setDrawLabels(false);
         xAxis.setAxisMinimum(0f);
         xAxis.setAxisMaximum(100f);
-
         xAxis.setGranularity(5f);
         xAxis.setGranularityEnabled(true);
-        xAxis.setLabelCount(20, false);
+        xAxis.setLabelCount(0, false);
         xAxis.setAvoidFirstLastClipping(false);
         xAxis.setSpaceMin(0.5f);
         xAxis.setSpaceMax(0.5f);
-
-        // X축 라벨 포매터 - 확장된 범위 대응
-        xAxis.setValueFormatter(new ValueFormatter() {
-            @Override
-            public String getFormattedValue(float value) {
-                int chartIndex = (int) Math.round(value);
-
-                if (chartIndex % 5 != 0) {
-                    return "";
-                }
-
-                int totalDisplayDays = 100;
-                int daysAgo = totalDisplayDays - chartIndex - 1;
-
-                // 실제 데이터 범위 (0~99)
-                if (daysAgo < 0 || daysAgo >= totalDisplayDays) {
-                    return ""; // 100~105 인덱스는 라벨 없음 (빈 공간)
-                }
-
-                if (daysAgo == 0) {
-                    return getString(R.string.today);
-                }
-
-                // ★ 기간별 단위 표시
-                String unit = getTimeUnitForInterval(currentChartInterval);
-                return daysAgo + unit;
-            }
-        });
 
         // Y축 설정 (기존과 동일)
         YAxis leftAxis = strategyChart.getAxisLeft();
@@ -644,6 +633,7 @@ public class StrategyFragment extends Fragment {
         leftAxis.setSpaceTop(2f);
         leftAxis.setSpaceBottom(2f);
 
+        // Y축 가격 포맷터 (기존과 동일)
         leftAxis.setValueFormatter(new ValueFormatter() {
             @Override
             public String getFormattedValue(float value) {
@@ -693,8 +683,291 @@ public class StrategyFragment extends Fragment {
         rightAxis.setEnabled(false);
         strategyChart.getLegend().setEnabled(false);
 
-        Log.d("StrategyFragment", "차트 설정 완료 - X축 범위 확장 (0~100)");
+        // ★ 커스텀 MarkerView 설정 (Toast 대신)
+        try {
+            DateTimeMarkerView markerView = new DateTimeMarkerView(getContext());
+            markerView.setChartView(strategyChart);
+            strategyChart.setMarker(markerView);
+
+            Log.d("StrategyFragment", "MarkerView 설정 완료");
+        } catch (Exception e) {
+            Log.e("StrategyFragment", "MarkerView 설정 오류: " + e.getMessage());
+            // MarkerView 설정 실패 시 기본 클릭 리스너로 폴백
+            setupFallbackClickListener();
+        }
+
+        // ★ 하이라이트 설정 (선택된 봉 강조)
+        strategyChart.setHighlightPerTapEnabled(true);
+        strategyChart.setHighlightPerDragEnabled(false);
+
+        // 하이라이트 선 스타일
+        strategyChart.setDrawMarkers(true);
+
+        Log.d("StrategyFragment", "차트 설정 완료 - MarkerView 적용");
     }
+
+    /**
+     * ★ MarkerView 실패 시 폴백 클릭 리스너
+     */
+    private void setupFallbackClickListener() {
+        strategyChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
+            @Override
+            public void onValueSelected(Entry e, Highlight h) {
+                int chartIndex = (int) e.getX();
+                showCandleDateTime(chartIndex); // 기존 Toast 방식
+            }
+
+            @Override
+            public void onNothingSelected() {
+                // 아무것도 선택되지 않았을 때
+            }
+        });
+    }
+
+
+    /**
+     * ★ 간단한 생성자를 가진 MarkerView (권장)
+     */
+    private class DateTimeMarkerView extends MarkerView {
+        private TextView tvDateTime;
+        private View backgroundView;
+
+        public DateTimeMarkerView(Context context) {
+            super(context, R.layout.marker_datetime);
+
+            // 마커 뷰 초기화
+            tvDateTime = findViewById(R.id.tvDateTime);
+            backgroundView = findViewById(R.id.markerBackground);
+
+            // 반투명 배경 설정
+            if (backgroundView != null) {
+                backgroundView.setBackgroundResource(R.drawable.marker_background);
+            }
+        }
+
+        @Override
+        public void refreshContent(Entry e, Highlight highlight) {
+            try {
+                // 클릭된 봉의 인덱스
+                int chartIndex = (int) e.getX();
+
+                // 날짜/시간 텍스트 생성
+                String dateTimeText = getDateTimeForIndex(chartIndex);
+
+                if (dateTimeText != null && !dateTimeText.isEmpty()) {
+                    tvDateTime.setText(dateTimeText);
+                    tvDateTime.setTextColor(Color.WHITE);
+                } else {
+                    tvDateTime.setText("날짜 없음");
+                }
+
+                Log.d("StrategyFragment", "MarkerView 업데이트: " + dateTimeText);
+
+            } catch (Exception ex) {
+                Log.e("StrategyFragment", "MarkerView 업데이트 오류: " + ex.getMessage());
+                tvDateTime.setText("오류");
+            }
+
+            super.refreshContent(e, highlight);
+        }
+
+        @Override
+        public MPPointF getOffset() {
+            // 마커 위치 조정 (중앙 정렬, 봉 위쪽에 표시)
+            return new MPPointF(-(getWidth() / 2), -getHeight() - 15);
+        }
+
+        @Override
+        public MPPointF getOffsetForDrawingAtPoint(float posX, float posY) {
+            // 기본적인 위치 조정
+            MPPointF offset = getOffset();
+
+            // 간단한 경계 체크
+            if (posX + offset.x < 0) {
+                offset.x = -posX + 10;
+            }
+
+            // 위쪽 경계 체크
+            if (posY + offset.y < 0) {
+                offset.y = 20; // 봉 아래쪽에 표시
+            }
+
+            return offset;
+        }
+
+        /**
+         * 인덱스에 해당하는 날짜/시간 문자열 반환
+         */
+        private String getDateTimeForIndex(int chartIndex) {
+            if (currentKlinesData == null || currentKlinesData.isEmpty()) {
+                return null;
+            }
+
+            try {
+                // 차트 인덱스를 실제 kline 데이터 인덱스로 변환
+                int totalDisplayPeriods = 100;
+                int startIndex = Math.max(0, currentKlinesData.size() - totalDisplayPeriods);
+                int actualIndex = startIndex + chartIndex;
+
+                if (actualIndex >= 0 && actualIndex < currentKlinesData.size()) {
+                    List<Object> kline = currentKlinesData.get(actualIndex);
+
+                    // timestamp 파싱
+                    long timestamp = parseTimestamp(kline.get(0));
+                    Date candleDate = new Date(timestamp);
+
+                    // 포맷팅
+                    return formatDateTime(candleDate, currentChartInterval);
+                }
+
+            } catch (Exception e) {
+                Log.e("StrategyFragment", "MarkerView 날짜 계산 오류: " + e.getMessage());
+            }
+
+            return null;
+        }
+    }
+
+    /**
+     * ★ 안전한 timestamp 파싱 메서드
+     */
+    private long parseTimestamp(Object timestampObj) {
+        if (timestampObj == null) {
+            throw new IllegalArgumentException("Timestamp is null");
+        }
+
+        String timestampStr = timestampObj.toString().trim();
+
+        try {
+            // 먼저 직접 long 파싱 시도
+            return Long.parseLong(timestampStr);
+        } catch (NumberFormatException e1) {
+            try {
+                // 과학적 표기법일 경우 Double로 파싱 후 변환
+                double timestampDouble = Double.parseDouble(timestampStr);
+                return (long) timestampDouble;
+            } catch (NumberFormatException e2) {
+                // 둘 다 실패하면 예외 발생
+                throw new NumberFormatException("Cannot parse timestamp: " + timestampStr);
+            }
+        }
+    }
+
+    /**
+     * ★ 클릭된 봉의 날짜/시간 표시 - 과학적 표기법 파싱 수정
+     */
+    private void showCandleDateTime(int chartIndex) {
+        if (currentKlinesData == null || currentKlinesData.isEmpty()) {
+            Toast.makeText(getContext(), "차트 데이터가 없습니다", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            // 차트 인덱스를 실제 kline 데이터 인덱스로 변환
+            int totalDisplayPeriods = 100;
+            int startIndex = Math.max(0, currentKlinesData.size() - totalDisplayPeriods);
+            int actualIndex = startIndex + chartIndex;
+
+            if (actualIndex >= 0 && actualIndex < currentKlinesData.size()) {
+                List<Object> kline = currentKlinesData.get(actualIndex);
+
+                // ★ timestamp 추출 - 과학적 표기법 처리
+                long timestamp;
+                try {
+                    String timestampStr = kline.get(0).toString();
+
+                    // 과학적 표기법인지 확인 (E 또는 e 포함)
+                    if (timestampStr.contains("E") || timestampStr.contains("e")) {
+                        // 과학적 표기법을 Double로 파싱한 후 long으로 변환
+                        double timestampDouble = Double.parseDouble(timestampStr);
+                        timestamp = (long) timestampDouble;
+                    } else {
+                        // 일반 숫자 문자열
+                        timestamp = Long.parseLong(timestampStr);
+                    }
+
+                    Log.d("StrategyFragment", String.format("Timestamp 파싱: %s → %d", timestampStr, timestamp));
+
+                } catch (NumberFormatException e) {
+                    Log.e("StrategyFragment", "Timestamp 파싱 실패: " + kline.get(0).toString());
+                    Toast.makeText(getContext(), "시간 데이터 형식 오류", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Date candleDate = new Date(timestamp);
+
+                // 언어별 포맷팅
+                String dateTimeText = formatDateTime(candleDate, currentChartInterval);
+
+                // 토스트로 표시
+                Toast.makeText(getContext(), dateTimeText, Toast.LENGTH_LONG).show();
+
+                Log.d("StrategyFragment", String.format("봉 클릭: 인덱스=%d, 실제인덱스=%d, 시간=%s",
+                        chartIndex, actualIndex, dateTimeText));
+
+            } else {
+                Log.w("StrategyFragment", String.format("인덱스 범위 초과: 차트=%d, 실제=%d, 전체=%d",
+                        chartIndex, actualIndex, currentKlinesData.size()));
+                Toast.makeText(getContext(), "유효하지 않은 데이터입니다", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (Exception e) {
+            Log.e("StrategyFragment", "날짜/시간 표시 오류: " + e.getMessage());
+            e.printStackTrace(); // 스택 트레이스도 출력
+            Toast.makeText(getContext(), "날짜 정보를 가져올 수 없습니다", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * ★ 언어별 날짜/시간 포맷팅
+     */
+    private String formatDateTime(Date date, int chartInterval) {
+        String currentLanguage = getResources().getConfiguration().locale.getLanguage();
+        boolean isKorean = "ko".equals(currentLanguage);
+
+        SimpleDateFormat formatter;
+
+        if (isKorean) {
+            // 한국어 - 한국 시간(KST)
+            TimeZone kstTimeZone = TimeZone.getTimeZone("Asia/Seoul");
+
+            switch (chartInterval) {
+                case CHART_INTERVAL_1H:
+                    formatter = new SimpleDateFormat("M월 d일 H시", Locale.KOREAN);
+                    break;
+                case CHART_INTERVAL_4H:
+                    formatter = new SimpleDateFormat("M월 d일 H시", Locale.KOREAN);
+                    break;
+                case CHART_INTERVAL_1D:
+                default:
+                    formatter = new SimpleDateFormat("M월 d일", Locale.KOREAN);
+                    break;
+            }
+            formatter.setTimeZone(kstTimeZone);
+
+        } else {
+            // 영어 - UTC 시간
+            TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
+
+            switch (chartInterval) {
+                case CHART_INTERVAL_1H:
+                    formatter = new SimpleDateFormat("MMM dd, HH:mm", Locale.ENGLISH);
+                    break;
+                case CHART_INTERVAL_4H:
+                    formatter = new SimpleDateFormat("MMM dd, HH:mm", Locale.ENGLISH);
+                    break;
+                case CHART_INTERVAL_1D:
+                default:
+                    formatter = new SimpleDateFormat("MMM dd", Locale.ENGLISH);
+                    break;
+            }
+            formatter.setTimeZone(utcTimeZone);
+        }
+
+        return formatter.format(date);
+    }
+
+
 
     /**
      * ★ 기간별 시간 단위 반환
@@ -917,6 +1190,8 @@ public class StrategyFragment extends Fragment {
             createEmptyChart();
             return;
         }
+
+        currentKlinesData = new ArrayList<>(klines);
 
         // 📍 접근 권한 확인
         boolean isSubscribed = subscriptionManager.isSubscribed();
