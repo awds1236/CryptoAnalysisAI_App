@@ -140,6 +140,8 @@ public class StrategyFragment extends Fragment {
     private String recentCrossType = null; // "GOLDEN" 또는 "DEATH"
     private int recentCrossDaysAgo = -1;   // 며칠 전인지
 
+    private boolean isFirstChartLoad = true;
+
     private List<List<Object>> currentKlinesData = new ArrayList<>(); // 현재 차트의 kline 데이터 저장
 
 
@@ -199,6 +201,8 @@ public class StrategyFragment extends Fragment {
 
         if (!isSameCoin) {
             this.coinInfo = coinInfo;
+
+            isFirstChartLoad = true;
 
             if (isAdded()) {
                 Log.d("StrategyFragment", coinInfo != null ?
@@ -1798,7 +1802,26 @@ public class StrategyFragment extends Fragment {
 
         // 7. Y축 범위 설정
         float priceRange = maxPrice - minPrice;
-        float padding = priceRange * 0.02f;
+        float padding;
+
+        // ★ 차트 기간별로 Y축 범위 조정
+        switch (currentChartInterval) {
+            case CHART_INTERVAL_1H:
+                // 1시간 차트: 패딩을 0.5%로 줄여서 봉을 크게 표시
+                padding = priceRange * 0.005f;
+                break;
+            case CHART_INTERVAL_4H:
+                // 4시간 차트: 패딩을 1%로 줄여서 봉을 크게 표시
+                padding = priceRange * 0.01f;
+                break;
+            case CHART_INTERVAL_1D:
+            default:
+                // 1일 차트: 기존 패딩 유지
+                padding = priceRange * 0.02f;
+                break;
+        }
+
+
         float minPadding = priceRange * 0.01f;
         padding = Math.max(padding, minPadding);
 
@@ -1832,6 +1855,53 @@ public class StrategyFragment extends Fragment {
         // 초기 위치 조정 - "오늘"이 화면 중간쯤 오도록
         float initialPosition = 105 - visiblePeriods;
         strategyChart.moveViewToX(initialPosition);
+
+        // ★ Y축 10% 줌 설정 후 현재 가격이 화면 중앙에 오도록 뷰포트 조정
+        if (isFirstChartLoad && !candleEntries.isEmpty()) {
+            // 최신 캔들의 종가를 기준으로 설정
+            CandleEntry latestCandle = candleEntries.get(candleEntries.size() - 1);
+            float currentPrice = latestCandle.getClose();
+
+            // ★ 코인별 가격 범위에 따른 동적 줌 레벨 계산
+            float zoomLevel;
+
+            // 가격 범위에 따라 줌 레벨 조정
+            if (priceRange < 1) {
+                // 매우 작은 가격대 (예: 0.0001 - 0.001)
+                zoomLevel = 1.3f;
+            } else if (priceRange < 10) {
+                // 작은 가격대 (예: 0.1 - 10)
+                zoomLevel = 1.2f;
+            } else if (priceRange < 1000) {
+                // 중간 가격대 (예: 100 - 1000)
+                zoomLevel = 1.15f;
+            } else {
+                // 큰 가격대 (예: 50000 - 70000)
+                zoomLevel = 1.1f;
+            }
+
+            // Y축 줌 적용
+            //strategyChart.zoom(1f, zoomLevel, 0f, 0f);
+
+            // ★ Y축 범위의 중앙값 계산
+            float yAxisMin = strategyChart.getAxisLeft().getAxisMinimum();
+            float yAxisMax = strategyChart.getAxisLeft().getAxisMaximum();
+            float yAxisCenter = (yAxisMin + yAxisMax) / 2f;
+
+            // ★ 현재 가격과 Y축 중앙의 차이 계산
+            float yOffset = currentPrice - yAxisCenter;
+
+            // X축은 가장 오른쪽(최신 데이터), Y축은 현재 가격이 중앙에 오도록 조정
+            strategyChart.moveViewTo(initialPosition, yAxisCenter + yOffset, YAxis.AxisDependency.LEFT);
+
+            // 첫 로드 완료 플래그 설정
+            isFirstChartLoad = false;
+
+            Log.d("StrategyFragment", String.format("첫 로드 - 줌 적용됨 (레벨: %.2f, 가격범위: %.2f, 현재가: %.2f)",
+                    zoomLevel, priceRange, currentPrice));
+        } else {
+            Log.d("StrategyFragment", "탭 변경 - 줌 적용 안됨");
+        }
 
         // 10. 최근 크로스 UI 업데이트
         // 권한이 있을 때만 실제 크로스 정보를 업데이트하고,
