@@ -360,4 +360,11 @@
 
     <string name="death_cross_explanation_title">📉 Death Cross</string>
     <string name="death_cross_explanation_content">A technical signal where the short-term moving average crosses below the long-term moving average. Generally interpreted as a signal of downward trend reversal, but this is reference information only and does not guarantee a downward movement.</string>
+
+    <!-- Chart interval related additional strings -->
+    <string name="chart_interval_1h">1 H</string>
+    <string name="chart_interval_4h">4 H</string>
+    <string name="chart_interval_1d">1 D</string>
+    <string name="hours_ago"> hrs ago</string>
+    <string name="hours_ago_4x">×4hrs ago</string>
 </resources>
