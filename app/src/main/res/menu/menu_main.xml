@@ -8,6 +8,13 @@
         android:title="새로고침"
         app:showAsAction="ifRoom" />
 
+    <!-- 사용자 이름 표시 -->
+    <item
+        android:id="@+id/action_user_name"
+        android:title="사용자"
+        android:enabled="false"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/action_settings"
         android:title="@string/action_settings"
