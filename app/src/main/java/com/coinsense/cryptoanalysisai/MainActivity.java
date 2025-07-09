@@ -118,7 +118,7 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
         restoreSelectedCoin();
 
         // 구독 상태 동기화
-        BillingManager.getInstance(this).syncSubscriptions();
+        BillingManager.getInstance(this).queryPurchases();
 
         AdManager.getInstance(this);
 

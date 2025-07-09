@@ -204,7 +204,7 @@ public class LoginActivity extends BaseActivity {
                             SubscriptionManager.getInstance(this).updateUser(user);
 
                             // Google Play에서 구독 정보 가져오기
-                            BillingManager.getInstance(this).syncSubscriptions();
+                            BillingManager.getInstance(this).queryPurchases();
 
                             // 초기 구독 데이터 생성 (없을 경우만)
                             createInitialSubscriptionData(user);
