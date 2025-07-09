@@ -234,11 +234,6 @@ public class SubscriptionActivity extends BaseActivity implements BillingManager
         updateSubscriptionStatus();
     }
 
-    @Override
-    public void onSubscriptionStatusUpdated(boolean isSubscribed, String subscriptionType) {
-        Log.d(TAG, "구독 상태 업데이트: " + isSubscribed + ", 유형: " + subscriptionType);
-        updateSubscriptionStatus();
-    }
 
     @Override
     public void onBillingError(String errorMessage) {

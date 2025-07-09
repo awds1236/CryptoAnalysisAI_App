@@ -95,6 +95,7 @@ dependencies {
     implementation libs.play.services.auth
     implementation libs.mediation.test.suite
     implementation libs.firebase.database
+    implementation libs.firebase.functions
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
