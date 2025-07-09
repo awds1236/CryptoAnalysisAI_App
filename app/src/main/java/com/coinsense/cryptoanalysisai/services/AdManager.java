@@ -25,7 +25,7 @@ import java.util.Map;
 public class AdManager {
     private static final String TAG = "AdManager";
     private static final String PREF_AD_STATUS = "ad_status_prefs";
-    private static final long AD_VIEW_DURATION = 10 * 60 * 1000; // 10분 (밀리초)
+    private static final long AD_VIEW_DURATION = 10 * 60 * 1000 * 6; // 10분 (밀리초)
 
     private static AdManager instance;
     private final Context context;

@@ -5,6 +5,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- ✅ 추가: 광고 관련 권한 -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
+    <!-- ✅ 추가: Android 13+ 대응 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -20,6 +27,11 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-8824775852421724~7686913127"/>
+
+        <!-- ✅ 추가: Attribution Tag 설정 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
+            android:value="true"/>
 
         <!-- SplashActivity를 LAUNCHER로 설정하고 스플래시 테마 적용 -->
         <activity

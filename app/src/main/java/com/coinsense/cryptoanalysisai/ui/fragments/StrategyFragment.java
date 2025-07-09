@@ -414,7 +414,7 @@ public class StrategyFragment extends Fragment {
     }
 
     /**
-     * ★ 차트 기간 선택 탭 설정 - 중복 추가 방지
+     * ★ 차트 기간 선택 탭 설정 - 리소스 기반으로 수정
      */
     private void setupChartIntervalTabs() {
         if (tabsChartInterval == null) return;
@@ -425,10 +425,10 @@ public class StrategyFragment extends Fragment {
         // ★ 기존 리스너도 제거 (메모리 누수 방지)
         tabsChartInterval.clearOnTabSelectedListeners();
 
-        // 탭 추가 - 이제 중복되지 않음
-        tabsChartInterval.addTab(tabsChartInterval.newTab().setText("1시간"));
-        tabsChartInterval.addTab(tabsChartInterval.newTab().setText("4시간"));
-        tabsChartInterval.addTab(tabsChartInterval.newTab().setText("1일"));
+        // 탭 추가 - 리소스 기반으로 변경
+        tabsChartInterval.addTab(tabsChartInterval.newTab().setText(getString(R.string.chart_interval_1h)));
+        tabsChartInterval.addTab(tabsChartInterval.newTab().setText(getString(R.string.chart_interval_4h)));
+        tabsChartInterval.addTab(tabsChartInterval.newTab().setText(getString(R.string.chart_interval_1d)));
 
         // 기본 선택: 1일봉
         tabsChartInterval.selectTab(tabsChartInterval.getTabAt(CHART_INTERVAL_1D));
@@ -463,37 +463,66 @@ public class StrategyFragment extends Fragment {
         // 초기 이동평균선 정보 설정
         updateMovingAverageInfo();
 
-        Log.d("StrategyFragment", "차트 기간 탭 설정 완료 - 중복 방지 적용");
+        Log.d("StrategyFragment", "차트 기간 탭 설정 완료 - 리소스 기반 적용");
     }
 
 
+
     /**
-     * ★ 이동평균선 정보 업데이트
+     * ★ 이동평균선 정보 업데이트 - 이동평균선 세부 정보 제거
      */
     private void updateMovingAverageInfo() {
         if (tvMovingAverageInfo == null) return;
 
-        String intervalName = getIntervalDisplayName(currentChartInterval);
-        MovingAverageConfig config = getMovingAverageConfig(strategyType, currentChartInterval);
+        String intervalWithStrategy = getIntervalDisplayName(currentChartInterval);
 
-        String infoText = String.format("현재 기간: %s (%s)",
-                intervalName, config.getDisplayText());
+        // 단순히 현재 기간과 전략 타입만 표시
+        String infoText = String.format(getString(R.string.current_period_format),
+                intervalWithStrategy, "");
+
+        // 빈 문자열 제거를 위해 다시 정리
+        infoText = String.format("현재 기간: %s", intervalWithStrategy);
 
         tvMovingAverageInfo.setText(infoText);
         tvMovingAverageInfo.setVisibility(View.VISIBLE);
     }
-
     /**
-     * ★ 기간 표시 이름 반환
+     * ★ 기간 표시 이름 반환 - 전략 타입 포함
      */
     private String getIntervalDisplayName(int interval) {
+        String intervalName;
         switch (interval) {
-            case CHART_INTERVAL_1H: return "1시간봉";
-            case CHART_INTERVAL_4H: return "4시간봉";
-            case CHART_INTERVAL_1D: return "1일봉";
-            default: return "1일봉";
+            case CHART_INTERVAL_1H:
+                intervalName = getString(R.string.chart_interval_1h);
+                break;
+            case CHART_INTERVAL_4H:
+                intervalName = getString(R.string.chart_interval_4h);
+                break;
+            case CHART_INTERVAL_1D:
+                intervalName = getString(R.string.chart_interval_1d);
+                break;
+            default:
+                intervalName = getString(R.string.chart_interval_1d);
+                break;
+        }
+
+        // 전략 타입 추가
+        String strategyTypeName = getStrategyTypeDisplayName();
+        return intervalName + " (" + strategyTypeName + ")";
+    }
+
+    /**
+     * ★ 전략 타입 표시 이름 반환
+     */
+    private String getStrategyTypeDisplayName() {
+        switch (strategyType) {
+            case STRATEGY_SHORT_TERM: return getString(R.string.short_term);
+            case STRATEGY_MID_TERM: return getString(R.string.mid_term);
+            case STRATEGY_LONG_TERM: return getString(R.string.long_term);
+            default: return "";
         }
     }
+
 
     /**
      * ★ 이동평균선 설정 클래스
@@ -1202,14 +1231,60 @@ public class StrategyFragment extends Fragment {
 
 
     /**
-     * ★ 기간별 시간 단위 반환
+     * ★ 기간별 시간 단위 반환 - 계산된 시간으로 수정
      */
     private String getTimeUnitForInterval(int interval) {
         switch (interval) {
-            case CHART_INTERVAL_1H: return "시간전";
-            case CHART_INTERVAL_4H: return "×4시간전";
+            case CHART_INTERVAL_1H: return getString(R.string.hours_ago);
+            case CHART_INTERVAL_4H: return getString(R.string.hours_ago); // 4시간 단위도 시간으로 통일
             case CHART_INTERVAL_1D: return getString(R.string.days_ago);
             default: return getString(R.string.days_ago);
+        }
+    }
+
+    /**
+     * ★ 시간 계산 메서드 - 자연스러운 표시로 수정
+     */
+    private String getCalculatedTimeAgo(int periodsAgo, int interval) {
+        switch (interval) {
+            case CHART_INTERVAL_1H:
+                // 1시간 단위: 그대로 표시
+                if (periodsAgo == 0) {
+                    return getString(R.string.today);
+                } else if (periodsAgo == 1) {
+                    return "1" + getString(R.string.hours_ago);
+                } else {
+                    return periodsAgo + getString(R.string.hours_ago);
+                }
+
+            case CHART_INTERVAL_4H:
+                // 4시간 단위: 실제 시간으로 계산하고 자연스럽게 표시
+                int totalHours = periodsAgo * 4;
+                if (totalHours == 0) {
+                    return getString(R.string.today);
+                } else if (totalHours < 24) {
+                    return totalHours + getString(R.string.hours_ago);
+                } else {
+                    int days = totalHours / 24;
+                    int remainingHours = totalHours % 24;
+                    if (remainingHours == 0) {
+                        return days + getString(R.string.days_ago);
+                    } else {
+                        // ★ "2일 4시간전" 형태로 자연스럽게 표시
+                        return getString(R.string.days_hours_ago_format, days, remainingHours);
+                    }
+                }
+
+            case CHART_INTERVAL_1D:
+            default:
+                // 1일 단위: 그대로 표시
+                if (periodsAgo == 0) {
+                    return getString(R.string.today);
+                } else if (periodsAgo == 1) {
+                    return "1" + getString(R.string.days_ago);
+                } else {
+                    return periodsAgo + getString(R.string.days_ago);
+                }
         }
     }
 
@@ -2004,6 +2079,9 @@ public class StrategyFragment extends Fragment {
         Log.d("StrategyFragment", "최근 크로스 정보 블러 제거");
     }
 
+    /**
+     * ★ 최근 크로스 UI 업데이트 - 시간 계산 로직 추가
+     */
     private void updateRecentCrossUI() {
         if (tvRecentCross == null) {
             return;
@@ -2046,15 +2124,8 @@ public class StrategyFragment extends Fragment {
             return;
         }
 
-        // ★ 기간별 단위 텍스트 처리
-        String timeAgoText;
-        if (recentCrossDaysAgo == 0) {
-            timeAgoText = getString(R.string.today);
-        } else if (recentCrossDaysAgo == 1) {
-            timeAgoText = "1" + getTimeUnitForInterval(currentChartInterval);
-        } else {
-            timeAgoText = recentCrossDaysAgo + getTimeUnitForInterval(currentChartInterval);
-        }
+        // ★ 계산된 시간 텍스트 사용
+        String timeAgoText = getCalculatedTimeAgo(recentCrossDaysAgo, currentChartInterval);
 
         // 최종 텍스트 구성
         String recentCrossText = String.format(getString(R.string.recent_cross_format),

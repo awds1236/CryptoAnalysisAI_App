@@ -82,6 +82,9 @@ public class AnalysisFragment extends Fragment {
     // private TextView tvCrossSignal;
     private TextView tvBuySellRatio;
 
+    // ★ 근거 정보 표시용 TextView 추가
+    private TextView tvRecommendationReason;
+
     // 최근 가격 변동 추적을 위한 변수
     private double lastPrice = 0;
 
@@ -180,6 +183,9 @@ public class AnalysisFragment extends Fragment {
         // 새로 추가한 TextView 초기화
         //tvCrossSignal = view.findViewById(R.id.tvCrossSignal);
         tvBuySellRatio = view.findViewById(R.id.tvBuySellRatio);
+
+        // ★ 근거 정보 TextView 초기화
+        tvRecommendationReason = view.findViewById(R.id.tvRecommendationReason);
 
         // onViewCreated 메서드에서 다음 코드를 찾아서
         binding.btnBack.setOnClickListener(v -> {
@@ -815,10 +821,24 @@ public class AnalysisFragment extends Fragment {
         if (analysisResult.getTimestamp() > 0) {
             Date analysisDate = new Date(analysisResult.getTimestamp());
 
+            // 현재 언어 확인
+            String currentLanguage = getResources().getConfiguration().locale.getLanguage();
+            boolean isKorean = "ko".equals(currentLanguage);
+
             // 날짜 형식 리소스에서 가져오기
             String dateFormatPattern = getString(R.string.date_format);
             SimpleDateFormat sdf = new SimpleDateFormat(dateFormatPattern, Locale.getDefault());
-            sdf.setTimeZone(TimeZone.getDefault());
+
+            // 언어별 시간대 설정
+            if (isKorean) {
+                // 한국어: 한국 시간(KST)으로 표시
+                TimeZone kstTimeZone = TimeZone.getTimeZone("Asia/Seoul");
+                sdf.setTimeZone(kstTimeZone);
+            } else {
+                // 영어: UTC 시간으로 표시
+                TimeZone utcTimeZone = TimeZone.getTimeZone("UTC");
+                sdf.setTimeZone(utcTimeZone);
+            }
 
             // 날짜를 형식에 맞게 변환
             String formattedDate = sdf.format(analysisDate);
@@ -890,6 +910,9 @@ public class AnalysisFragment extends Fragment {
             } else {
                 binding.tvConfidenceValue.setTextColor(Color.parseColor("#F44336")); // 낮음 - 빨간색
             }
+
+            // ★ 근거 정보 업데이트 추가
+            updateRecommendationReason(recommendation);
         }
 
         Log.d("AnalysisFragment", "Calling updateStrategyFragments()");
@@ -996,6 +1019,29 @@ public class AnalysisFragment extends Fragment {
 
         // 현재가와 지지선/저항선 비교 업데이트
         updatePriceComparisonWithLevels();
+    }
+
+    /**
+     * ★ 근거 정보 업데이트 메서드 추가
+     */
+    private void updateRecommendationReason(AnalysisResult.Recommendation recommendation) {
+        if (tvRecommendationReason == null || recommendation == null) return;
+
+        String reason = recommendation.getReason();
+        if (reason != null && !reason.isEmpty()) {
+            // 근거 텍스트에도 키워드 강조 적용
+            String highlightedReason = highlightKeywords(reason);
+
+            // HTML 파싱하여 TextView에 적용
+            Spanned reasonSpanned = Html.fromHtml(highlightedReason, Html.FROM_HTML_MODE_LEGACY);
+            tvRecommendationReason.setText(reasonSpanned);
+
+            Log.d(TAG, "근거 정보 업데이트: " + reason);
+        } else {
+            // 근거 정보가 없는 경우 기본 메시지 표시
+            tvRecommendationReason.setText("분석 근거 정보가 제공되지 않았습니다.");
+            Log.w(TAG, "근거 정보가 비어있음");
+        }
     }
 
     /**

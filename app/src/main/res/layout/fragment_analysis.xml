@@ -80,39 +80,7 @@
             app:layout_constraintTop_toBottomOf="@id/btnStartAnalysis"
             tools:text="현재가 위치: 지지선 가까움" />
 
-        <!-- 기존 분석 요약 카드 -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardSummary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp"
-            app:layout_constraintTop_toBottomOf="@id/tvPricePosition">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/analysis_title"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvAnalysisSummary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textSize="14sp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 기존 추천 카드 -->
+        <!-- ★ 순서 변경: 상승/하락 가능성을 먼저 배치 -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardRecommendation"
             android:layout_width="match_parent"
@@ -120,7 +88,7 @@
             android:layout_marginTop="16dp"
             app:cardCornerRadius="8dp"
             app:cardElevation="2dp"
-            app:layout_constraintTop_toBottomOf="@id/cardSummary">
+            app:layout_constraintTop_toBottomOf="@id/tvPricePosition">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -192,16 +160,68 @@
                         android:textStyle="bold"
                         tools:text="7.0/10" />
                 </LinearLayout>
+
+                <!-- ★ 근거 섹션 추가 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/recommendation_reason"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvRecommendationReason"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="2dp"
+                    android:padding="12dp"
+                    android:textColor="?android:attr/textColorSecondary"
+                    tools:text="현재 20일 이평선 하단에서 조정을 받고 있으나 주요 지지선에서 반등 시도를 보이고 있습니다." />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 전략 탭 레이아웃 -->
+        <!-- ★ 순서 변경: 분석 요약을 두 번째로 배치 -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp"
+            app:layout_constraintTop_toBottomOf="@id/cardRecommendation">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/analysis_title"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvAnalysisSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ★ 전략 탭 레이아웃의 constraint를 cardSummary로 변경 -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabsStrategy"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:layout_constraintTop_toBottomOf="@id/cardRecommendation"
+            app:layout_constraintTop_toBottomOf="@id/cardSummary"
             app:tabGravity="fill"
             app:tabMode="fixed" />
 
