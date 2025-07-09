@@ -463,39 +463,54 @@ public class MainActivity extends BaseActivity implements CoinListFragment.OnCoi
     }
 
     /**
-     * 로그아웃 처리
+     * 로그아웃 처리 - 안전하게 수정
      */
     private void logout() {
-        // Firebase 로그아웃
-        FirebaseAuth.getInstance().signOut();
+        try {
+            // Firebase 로그아웃
+            FirebaseAuth.getInstance().signOut();
 
-        // 구독 관리자에 사용자 변경 알림
-        SubscriptionManager.getInstance(this).updateUser(null);
+            // 구독 관리자에 사용자 변경 알림
+            SubscriptionManager.getInstance(this).updateUser(null);
 
-        // SharedPreferences 로그인 상태와 구독 관련 정보 모두 제거
-        SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean(Constants.PREF_IS_LOGGED_IN, false);
+            // SharedPreferences 초기화
+            SharedPreferences prefs = getSharedPreferences(Constants.PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean(Constants.PREF_IS_LOGGED_IN, false);
 
-        // 구독 관련 정보 모두 삭제
-        editor.remove(Constants.PREF_IS_SUBSCRIBED);
-        editor.remove(Constants.PREF_SUBSCRIPTION_EXPIRY);
-        editor.remove(Constants.PREF_SUBSCRIPTION_TYPE);
-        editor.remove(Constants.PREF_SUBSCRIPTION_START_TIME);
-        editor.remove(Constants.PREF_SUBSCRIPTION_AUTO_RENEWING);
-        editor.remove(Constants.PREF_MONTHLY_PRICE);
-        editor.remove(Constants.PREF_YEARLY_PRICE);
+            // 구독 관련 정보 삭제
+            editor.remove(Constants.PREF_IS_SUBSCRIBED);
+            editor.remove(Constants.PREF_SUBSCRIPTION_EXPIRY);
+            editor.remove(Constants.PREF_SUBSCRIPTION_TYPE);
+            editor.remove(Constants.PREF_SUBSCRIPTION_START_TIME);
+            editor.remove(Constants.PREF_SUBSCRIPTION_AUTO_RENEWING);
+            editor.remove(Constants.PREF_MONTHLY_PRICE);
+            editor.remove(Constants.PREF_YEARLY_PRICE);
+            editor.apply();
 
-        // AdManager 관련 SharedPreferences도 초기화
-        editor.apply();
+            // AdManager 캐시 초기화
+            try {
+                AdManager.getInstance(this).resetAllPermissions();
+            } catch (Exception e) {
+                Log.e("MainActivity", "AdManager 초기화 오류: " + e.getMessage());
+            }
 
-        // 광고 관련 캐시도 초기화
-        AdManager.getInstance(this).resetAllPermissions();
+            // ✅ 안전하게 로그인 화면으로 이동
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
 
-        // 로그인 화면으로 이동
-        Intent intent = new Intent(this, LoginActivity.class);
-        startActivity(intent);
-        finish();
+            // ✅ 현재 액티비티 종료
+            finish();
+
+        } catch (Exception e) {
+            Log.e("MainActivity", "로그아웃 처리 중 오류 발생: " + e.getMessage());
+            // 오류가 발생해도 로그인 화면으로 이동
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        }
     }
 
     /**

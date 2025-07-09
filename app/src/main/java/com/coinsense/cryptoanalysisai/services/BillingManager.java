@@ -325,21 +325,15 @@ public class BillingManager implements PurchasesUpdatedListener {
         final String finalSubscriptionType = subscriptionType;
         final List<Purchase> finalPurchases = purchases;
 
-        // 업데이트할 데이터 구성
-        Map<String, Object> updateData = new HashMap<>();
-        updateData.put("subscriptionType", subscriptionType);
-        updateData.put("expiryTimestamp", expiryTimestamp);
-        updateData.put("autoRenewing", isAutoRenewing);
-        updateData.put("subscribed", isSubscribed);
-        updateData.put("isCancelled", false);
-        updateData.put("lastUpdated", System.currentTimeMillis());
-
-        // 기존 데이터를 유지하기 위해 먼저 조회 후 업데이트 (기존과 동일)
+        // ✅ 수정: 기존 구독 정보를 먼저 조회하여 만료일 유지
         subscriptionRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 FirebaseSubscriptionManager.SubscriptionData existingData = null;
+                long finalExpiryTimestamp = 0;
+                boolean finalIsAutoRenewing = false;
 
+                // 기존 구독 데이터 가져오기
                 if (snapshot.exists()) {
                     try {
                         existingData = snapshot.getValue(FirebaseSubscriptionManager.SubscriptionData.class);
@@ -348,9 +342,62 @@ public class BillingManager implements PurchasesUpdatedListener {
                     }
                 }
 
-                // 기존 데이터가 있으면 일부 필드 유지 (시작 시간 등)
+                // Google Play에서 받은 구매 정보 처리
+                if (finalPurchases != null && !finalPurchases.isEmpty()) {
+                    for (Purchase purchase : finalPurchases) {
+                        if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                            if (!purchase.isAcknowledged()) {
+                                acknowledgePurchase(purchase);
+                            }
+
+                            List<String> skus = purchase.getProducts();
+                            finalIsAutoRenewing = purchase.isAutoRenewing();
+
+                            if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
+                                // ✅ 수정: 기존 만료일이 유효하면 그것을 사용, 없으면 새로 설정
+                                if (existingData != null &&
+                                        existingData.isSubscribed() &&
+                                        existingData.getExpiryTimestamp() > System.currentTimeMillis()) {
+
+                                    // 기존 만료일 유지
+                                    finalExpiryTimestamp = existingData.getExpiryTimestamp();
+                                    Log.d(TAG, "기존 월간 구독 만료일 유지: " + new Date(finalExpiryTimestamp));
+                                } else {
+                                    // 신규 구독 또는 만료된 구독 - 새로 설정
+                                    finalExpiryTimestamp = System.currentTimeMillis() + (30L * 24 * 60 * 60 * 1000);
+                                    Log.d(TAG, "새 월간 구독 만료일 설정: " + new Date(finalExpiryTimestamp));
+                                }
+
+                            } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
+                                // ✅ 수정: 기존 만료일이 유효하면 그것을 사용, 없으면 새로 설정
+                                if (existingData != null &&
+                                        existingData.isSubscribed() &&
+                                        existingData.getExpiryTimestamp() > System.currentTimeMillis()) {
+
+                                    // 기존 만료일 유지
+                                    finalExpiryTimestamp = existingData.getExpiryTimestamp();
+                                    Log.d(TAG, "기존 연간 구독 만료일 유지: " + new Date(finalExpiryTimestamp));
+                                } else {
+                                    // 신규 구독 또는 만료된 구독 - 새로 설정
+                                    finalExpiryTimestamp = System.currentTimeMillis() + (365L * 24 * 60 * 60 * 1000);
+                                    Log.d(TAG, "새 연간 구독 만료일 설정: " + new Date(finalExpiryTimestamp));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 업데이트할 데이터 구성
+                Map<String, Object> updateData = new HashMap<>();
+                updateData.put("subscriptionType", finalSubscriptionType);
+                updateData.put("expiryTimestamp", finalExpiryTimestamp);  // ✅ 수정된 로직으로 설정된 만료일
+                updateData.put("autoRenewing", finalIsAutoRenewing);
+                updateData.put("subscribed", finalIsSubscribed);
+                updateData.put("isCancelled", false);
+                updateData.put("lastUpdated", System.currentTimeMillis());
+
+                // 시작 시간 설정 (기존 로직 유지)
                 if (existingData != null) {
-                    // 신규 구독인 경우만 시작 시간 업데이트
                     if (!finalIsSubscribed && existingData.isSubscribed()) {
                         updateData.put("startTimestamp", existingData.getStartTimestamp());
                     } else if (finalIsSubscribed && !existingData.isSubscribed()) {
@@ -366,7 +413,6 @@ public class BillingManager implements PurchasesUpdatedListener {
                 subscriptionRef.updateChildren(updateData)
                         .addOnSuccessListener(aVoid -> {
                             Log.d(TAG, "Firebase 구독 정보 업데이트 성공: " + user.getUid());
-                            // 구독 정보 변경 알림
                             if (billingStatusListener != null) {
                                 billingStatusListener.onSubscriptionStatusUpdated(finalIsSubscribed, finalSubscriptionType);
                             }
@@ -375,7 +421,7 @@ public class BillingManager implements PurchasesUpdatedListener {
                             Log.e(TAG, "Firebase 구독 정보 업데이트 실패: " + e.getMessage());
                         });
 
-                // 구매 기록 저장 (기존과 동일)
+                // 구매 기록 저장
                 try {
                     saveFirebasePurchaseRecord(finalPurchases);
                 } catch (Exception e) {

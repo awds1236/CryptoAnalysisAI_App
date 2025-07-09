@@ -25,12 +25,14 @@ android {
     namespace 'com.coinsense.cryptoanalysisai'
     compileSdk 35
 
+
+
     defaultConfig {
         applicationId "com.coinsense.cryptoanalysisai"
         minSdk 24
         targetSdk 35
-        versionCode 13
-        versionName "1.91"
+        versionCode 21
+        versionName "1.918"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -41,6 +43,15 @@ android {
         buildConfigField "String", "DB_URL", "\"${dbUrl}\""
         buildConfigField "String", "DB_USER", "\"${dbUser}\""
         buildConfigField "String", "DB_PASS", "\"${dbPass}\""
+
+        resConfigs "ko", "en"
+    }
+
+    bundle {
+        language {
+            // 모든 언어 리소스를 포함하도록 설정
+            enableSplit = false
+        }
     }
 
     buildTypes {
