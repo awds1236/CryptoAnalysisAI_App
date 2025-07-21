@@ -37,24 +37,21 @@ public class FirebaseSubscriptionManager {
         void onError(String errorMessage);
     }
 
-    // 구독 데이터 모델 클래스
+    // 🔧 깔끔하고 충돌 없는 SubscriptionData (최종 버전)
     public static class SubscriptionData {
         private String subscriptionType = Constants.SUBSCRIPTION_NONE;
         private long expiryTimestamp = 0;
         private long startTimestamp = 0;
         private boolean autoRenewing = false;
-        private String monthlyPrice = "월 ₩15,000";
-        private String yearlyPrice = "연 ₩125,000";
-
-        // 하나의 필드만 유지하고 나머지는 제거
-        private boolean subscribed = false;  // 이 필드만 유지
-        private boolean isCancelled = false;
+        private boolean subscribed = false;
+        private boolean cancelled = false;
         private long lastUpdated = 0;
 
+        // Firebase 필수 기본 생성자
         public SubscriptionData() {
-            // Firebase 필수 기본 생성자
         }
 
+        // 🔧 String/long 필드들
         public String getSubscriptionType() {
             return subscriptionType;
         }
@@ -79,6 +76,15 @@ public class FirebaseSubscriptionManager {
             this.startTimestamp = startTimestamp;
         }
 
+        public long getLastUpdated() {
+            return lastUpdated;
+        }
+
+        public void setLastUpdated(long lastUpdated) {
+            this.lastUpdated = lastUpdated;
+        }
+
+        // 🔧 boolean 필드들 - Firebase 표준 방식 (is + set 조합만)
         public boolean isAutoRenewing() {
             return autoRenewing;
         }
@@ -86,6 +92,28 @@ public class FirebaseSubscriptionManager {
         public void setAutoRenewing(boolean autoRenewing) {
             this.autoRenewing = autoRenewing;
         }
+
+        public boolean isSubscribed() {
+            return subscribed ||
+                    (!Constants.SUBSCRIPTION_NONE.equals(subscriptionType) &&
+                            expiryTimestamp > System.currentTimeMillis());
+        }
+
+        public void setSubscribed(boolean subscribed) {
+            this.subscribed = subscribed;
+        }
+
+        public boolean isCancelled() {
+            return cancelled;
+        }
+
+        public void setIsCancelled(boolean cancelled) {
+            this.cancelled = cancelled;
+        }
+
+        // 🔧 가격 정보는 메모리에서만 관리 (Firebase DB에 저장하지 않음)
+        private String monthlyPrice = "월 ₩15,000";
+        private String yearlyPrice = "연 ₩125,000";
 
         public String getMonthlyPrice() {
             return monthlyPrice;
@@ -101,33 +129,6 @@ public class FirebaseSubscriptionManager {
 
         public void setYearlyPrice(String yearlyPrice) {
             this.yearlyPrice = yearlyPrice;
-        }
-
-        // subscribed 필드의 명확한 getter/setter
-        public boolean isSubscribed() {
-            return subscribed ||
-                    (!Constants.SUBSCRIPTION_NONE.equals(subscriptionType)
-                            && expiryTimestamp > System.currentTimeMillis());
-        }
-
-        public void setSubscribed(boolean subscribed) {
-            this.subscribed = subscribed;
-        }
-
-        public boolean isCancelled() {
-            return isCancelled;
-        }
-
-        public void setIsCancelled(boolean isCancelled) {
-            this.isCancelled = isCancelled;
-        }
-
-        public long getLastUpdated() {
-            return lastUpdated;
-        }
-
-        public void setLastUpdated(long lastUpdated) {
-            this.lastUpdated = lastUpdated;
         }
     }
 
@@ -256,6 +257,7 @@ public class FirebaseSubscriptionManager {
     /**
      * 구독 정보 업데이트
      */
+    // 🔧 updateSubscriptionData 메서드 내 Map 구성 부분 수정
     public void updateSubscriptionData(SubscriptionData subscriptionData,
                                        final OnSubscriptionDataChangeListener listener) {
         if (currentUser == null || userSubscriptionRef == null) {
@@ -272,26 +274,15 @@ public class FirebaseSubscriptionManager {
             return;
         }
 
-        // 데이터베이스에 저장할 값들만 Map으로 구성 (가격 정보 제외)
+        // 🔧 데이터베이스에 저장할 값들 (Firebase 호환 필드명 사용)
         Map<String, Object> updateData = new HashMap<>();
         updateData.put("subscriptionType", subscriptionData.getSubscriptionType());
         updateData.put("expiryTimestamp", subscriptionData.getExpiryTimestamp());
         updateData.put("startTimestamp", subscriptionData.getStartTimestamp());
         updateData.put("autoRenewing", subscriptionData.isAutoRenewing());
-
-        // 구독 상태 - 양쪽 필드 모두 업데이트
         updateData.put("subscribed", subscriptionData.isSubscribed());
-        updateData.put("isSubscribed", subscriptionData.isSubscribed());
-
-        // 취소 상태 - 양쪽 필드 모두 업데이트
-        updateData.put("cancelled", subscriptionData.isCancelled());
-        updateData.put("isCancelled", subscriptionData.isCancelled());
-
-        // 업데이트 시간
+        updateData.put("cancelled", subscriptionData.isCancelled());  // 🔧 필드명 변경
         updateData.put("lastUpdated", System.currentTimeMillis());
-
-        // 가격 정보는 데이터베이스에 저장하지 않음
-        // (단, 로컬 캐시에는 유지하기 위해 subscriptionData 객체는 수정하지 않음)
 
         userSubscriptionRef.updateChildren(updateData)
                 .addOnSuccessListener(aVoid -> {
@@ -322,26 +313,15 @@ public class FirebaseSubscriptionManager {
 
         // 새 구독 데이터 생성
         SubscriptionData newData = new SubscriptionData();
-        newData.subscriptionType = subscribed ? subscriptionType : Constants.SUBSCRIPTION_NONE;
-        newData.expiryTimestamp = expiryTimestamp;
-        newData.startTimestamp = System.currentTimeMillis();
-        newData.autoRenewing = true;
-        newData.subscribed = subscribed;
-        newData.lastUpdated = System.currentTimeMillis();
+        // 🔧 필드 직접 접근 대신 setter 메서드 사용
+        newData.setSubscriptionType(subscribed ? subscriptionType : Constants.SUBSCRIPTION_NONE);
+        newData.setExpiryTimestamp(expiryTimestamp);
+        newData.setStartTimestamp(subscribed ? System.currentTimeMillis() : 0);
+        newData.setAutoRenewing(subscribed); // 기본값으로 설정, 실제값은 BillingManager에서 업데이트
+        newData.setSubscribed(subscribed);
+        newData.setIsCancelled(!subscribed);
+        newData.setLastUpdated(System.currentTimeMillis());
 
-        // 기존 데이터가 있으면 일부 정보 유지
-        if (cachedSubscriptionData != null) {
-            newData.monthlyPrice = cachedSubscriptionData.monthlyPrice;
-            newData.yearlyPrice = cachedSubscriptionData.yearlyPrice;
-
-            // 신규 구독이 아닌 경우 시작 시간 유지
-            if (subscribed &&
-                    !Constants.SUBSCRIPTION_NONE.equals(cachedSubscriptionData.subscriptionType)) {
-                newData.startTimestamp = cachedSubscriptionData.startTimestamp;
-            }
-        }
-
-        // 변경사항 저장
         updateSubscriptionData(newData, listener);
     }
 
@@ -410,21 +390,23 @@ public class FirebaseSubscriptionManager {
 
         // 현재 구독 데이터가 있는 경우에만 취소 처리
         if (cachedSubscriptionData != null) {
-            cachedSubscriptionData.subscriptionType = Constants.SUBSCRIPTION_NONE;
-            cachedSubscriptionData.expiryTimestamp = 0;
-            cachedSubscriptionData.autoRenewing = false;
-            cachedSubscriptionData.subscribed = false;
-            cachedSubscriptionData.isCancelled = true;
-            cachedSubscriptionData.lastUpdated = System.currentTimeMillis();
+            // 🔧 필드 직접 접근 대신 setter 메서드 사용
+            cachedSubscriptionData.setSubscriptionType(Constants.SUBSCRIPTION_NONE);
+            cachedSubscriptionData.setExpiryTimestamp(0);
+            cachedSubscriptionData.setAutoRenewing(false);
+            cachedSubscriptionData.setSubscribed(false);
+            cachedSubscriptionData.setIsCancelled(true);
+            cachedSubscriptionData.setLastUpdated(System.currentTimeMillis());
 
             updateSubscriptionData(cachedSubscriptionData, listener);
         } else {
-            // 데이터가 없으면 오류로 처리 (요구사항: 데이터가 있을 때만 작동)
+            // 데이터가 없으면 오류로 처리
             if (listener != null) {
                 listener.onError("취소할 구독 데이터가 없습니다");
             }
         }
     }
+
 
     /**
      * 캐시된 구독 데이터 가져오기 (동기)

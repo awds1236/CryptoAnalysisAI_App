@@ -8,14 +8,12 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.functions.FirebaseFunctions;
 
-import org.json.JSONObject;
-
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * 구독 검증을 위한 유틸리티 클래스
- * Google Play Developer API를 통한 서버 측 검증 지원
+ * Firebase Functions를 통한 서버 측 검증 지원
  */
 public class SubscriptionValidator {
     private static final String TAG = "SubscriptionValidator";
@@ -29,8 +27,7 @@ public class SubscriptionValidator {
     }
 
     /**
-     * 🔧 서버를 통한 구독 검증 (권장 방법)
-     * Firebase Functions 또는 백엔드 서버에서 Google Play Developer API 호출
+     * 🔧 Firebase Functions를 통한 구독 검증 (서버 사이드 검증)
      */
     public void verifySubscriptionWithServer(Purchase purchase, OnSubscriptionValidatedListener listener) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -45,6 +42,10 @@ public class SubscriptionValidator {
         data.put("productId", purchase.getProducts().get(0)); // 첫 번째 상품 ID
         data.put("userId", user.getUid());
 
+        Log.d(TAG, "서버 구독 검증 요청 시작: " + purchase.getOrderId());
+        Log.d(TAG, "사용자: " + user.getUid());
+        Log.d(TAG, "상품 ID: " + purchase.getProducts().get(0));
+
         // Firebase Functions 호출
         firebaseFunctions
                 .getHttpsCallable("verifySubscription")
@@ -52,119 +53,90 @@ public class SubscriptionValidator {
                 .addOnSuccessListener(result -> {
                     try {
                         Map<String, Object> response = (Map<String, Object>) result.getData();
-                        boolean isValid = (Boolean) response.get("valid");
-                        long expiryTime = ((Number) response.get("expiryTimeMillis")).longValue();
-                        boolean autoRenewing = (Boolean) response.get("autoRenewing");
-                        String orderId = (String) response.get("orderId");
+                        Log.d(TAG, "서버 검증 응답 받음: " + response.toString());
 
-                        if (isValid) {
+                        // 응답 데이터 파싱 (null 체크 포함)
+                        Boolean isValid = (Boolean) response.get("valid");
+                        Long expiryTime = null;
+                        Boolean autoRenewing = false;
+                        String orderId = null;
+
+                        // null 체크 후 형변환
+                        Object expiryObj = response.get("expiryTimeMillis");
+                        if (expiryObj instanceof Number) {
+                            expiryTime = ((Number) expiryObj).longValue();
+                        }
+
+                        Object renewingObj = response.get("autoRenewing");
+                        if (renewingObj instanceof Boolean) {
+                            autoRenewing = (Boolean) renewingObj;
+                        }
+
+                        Object orderObj = response.get("orderId");
+                        if (orderObj instanceof String) {
+                            orderId = (String) orderObj;
+                        }
+
+                        if (isValid != null && isValid && expiryTime != null) {
+                            // 검증 성공
                             SubscriptionInfo subscriptionInfo = new SubscriptionInfo(
-                                    isValid, expiryTime, autoRenewing, orderId
+                                    true,
+                                    expiryTime,
+                                    autoRenewing,
+                                    orderId
                             );
                             listener.onValidationSuccess(subscriptionInfo);
+                            Log.d(TAG, "서버 구독 검증 성공: " + orderId +
+                                    ", 만료일: " + new java.util.Date(expiryTime) +
+                                    ", 자동갱신: " + autoRenewing);
                         } else {
-                            listener.onValidationFailed("서버에서 구독이 유효하지 않다고 응답");
+                            // 검증 실패
+                            String errorMsg = (String) response.get("message");
+                            listener.onValidationFailed(errorMsg != null ? errorMsg : "구독이 유효하지 않습니다");
+                            Log.w(TAG, "서버 구독 검증 실패: " + errorMsg);
                         }
 
                     } catch (Exception e) {
-                        Log.e(TAG, "서버 응답 파싱 오류: " + e.getMessage());
-                        listener.onValidationFailed("서버 응답 파싱 실패");
+                        Log.e(TAG, "서버 응답 파싱 오류", e);
+                        listener.onValidationFailed("서버 응답을 처리할 수 없습니다: " + e.getMessage());
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "서버 검증 실패: " + e.getMessage());
-                    listener.onValidationFailed("서버 검증 실패: " + e.getMessage());
+                    Log.e(TAG, "Firebase Functions 호출 실패", e);
+                    listener.onValidationFailed("서버와 통신할 수 없습니다: " + e.getMessage());
                 });
-    }
-
-    /**
-     * 🔧 로컬 구독 유효성 검사 (보조 방법)
-     * 서버 검증이 실패했을 때 사용하는 fallback 검증
-     */
-    public SubscriptionInfo validateSubscriptionLocally(Purchase purchase) {
-        try {
-            // 구매 토큰 기본 검증
-            if (purchase.getPurchaseToken() == null || purchase.getPurchaseToken().isEmpty()) {
-                return new SubscriptionInfo(false, 0, false, null);
-            }
-
-            // 구매 상태 확인
-            if (purchase.getPurchaseState() != Purchase.PurchaseState.PURCHASED) {
-                return new SubscriptionInfo(false, 0, false, null);
-            }
-
-            // 자동 갱신 상태 확인
-            boolean autoRenewing = purchase.isAutoRenewing();
-
-            // 구매 시간 기반 대략적인 만료 시간 계산 (정확하지 않음)
-            long purchaseTime = purchase.getPurchaseTime();
-            long estimatedExpiryTime;
-
-            // 상품 ID에 따른 기간 계산
-            String productId = purchase.getProducts().get(0);
-            if (BillingManager.MONTHLY_SUBSCRIPTION_ID.equals(productId)) {
-                estimatedExpiryTime = purchaseTime + (30L * 24 * 60 * 60 * 1000); // 30일
-            } else if (BillingManager.YEARLY_SUBSCRIPTION_ID.equals(productId)) {
-                estimatedExpiryTime = purchaseTime + (365L * 24 * 60 * 60 * 1000); // 365일
-            } else {
-                return new SubscriptionInfo(false, 0, false, null);
-            }
-
-            // 현재 시간과 비교하여 유효성 확인
-            boolean isValid = System.currentTimeMillis() < estimatedExpiryTime;
-
-            // 자동 갱신이 비활성화된 경우 (구독 취소된 경우)
-            if (!autoRenewing) {
-                // 현재 기간이 끝날 때까지만 유효
-                isValid = System.currentTimeMillis() < estimatedExpiryTime;
-                Log.w(TAG, "구독이 취소됨 - 현재 기간까지만 유효: " + isValid);
-            }
-
-            return new SubscriptionInfo(isValid, estimatedExpiryTime, autoRenewing, purchase.getOrderId());
-
-        } catch (Exception e) {
-            Log.e(TAG, "로컬 구독 검증 오류: " + e.getMessage());
-            return new SubscriptionInfo(false, 0, false, null);
-        }
-    }
-
-    /**
-     * 🔧 구독 만료 시간 정확도 개선을 위한 히스토리 추적
-     */
-    public void trackSubscriptionHistory(Purchase purchase, SubscriptionInfo validatedInfo) {
-        // SharedPreferences 또는 로컬 데이터베이스에 구독 히스토리 저장
-        // 이를 통해 갱신 패턴을 파악하고 더 정확한 만료 시간 예측 가능
-
-        try {
-            JSONObject historyEntry = new JSONObject();
-            historyEntry.put("purchaseTime", purchase.getPurchaseTime());
-            historyEntry.put("orderID", purchase.getOrderId());
-            historyEntry.put("autoRenewing", validatedInfo.autoRenewing);
-            historyEntry.put("expiryTime", validatedInfo.expiryTimeMillis);
-            historyEntry.put("validationTime", System.currentTimeMillis());
-
-            // 히스토리 저장 로직 구현
-            // saveSubscriptionHistory(historyEntry);
-
-        } catch (Exception e) {
-            Log.e(TAG, "구독 히스토리 추적 오류: " + e.getMessage());
-        }
     }
 
     /**
      * 구독 정보 클래스
      */
     public static class SubscriptionInfo {
-        public final boolean isValid;
-        public final long expiryTimeMillis;
-        public final boolean autoRenewing;
-        public final String orderId;
+        private final boolean isValid;
+        private final long expiryTimeMillis;
+        private final boolean autoRenewing;
+        private final String orderId;
 
         public SubscriptionInfo(boolean isValid, long expiryTimeMillis, boolean autoRenewing, String orderId) {
             this.isValid = isValid;
             this.expiryTimeMillis = expiryTimeMillis;
             this.autoRenewing = autoRenewing;
             this.orderId = orderId;
+        }
+
+        public boolean isValid() {
+            return isValid;
+        }
+
+        public long getExpiryTimeMillis() {
+            return expiryTimeMillis;
+        }
+
+        public boolean isAutoRenewing() {
+            return autoRenewing;
+        }
+
+        public String getOrderId() {
+            return orderId;
         }
 
         public boolean isExpired() {
@@ -188,43 +160,3 @@ public class SubscriptionValidator {
         void onValidationFailed(String error);
     }
 }
-
-/*
-Firebase Functions 예시 코드 (JavaScript):
-
-const functions = require('firebase-functions');
-const {google} = require('googleapis');
-
-// Google Play Developer API 설정
-const androidpublisher = google.androidpublisher({
-    version: 'v3',
-    auth: 'YOUR_SERVICE_ACCOUNT_KEY'
-});
-
-exports.verifySubscription = functions.https.onCall(async (data, context) => {
-    try {
-        const {purchaseToken, productId, userId} = data;
-
-        // Google Play Developer API 호출
-        const result = await androidpublisher.purchases.subscriptions.get({
-            packageName: 'com.coinsense.cryptoanalysisai',
-            subscriptionId: productId,
-            token: purchaseToken
-        });
-
-        const subscription = result.data;
-
-        return {
-            valid: subscription.paymentState === 1, // 결제 완료
-            expiryTimeMillis: parseInt(subscription.expiryTimeMillis),
-            autoRenewing: subscription.autoRenewing,
-            orderId: subscription.orderId,
-            paymentState: subscription.paymentState
-        };
-
-    } catch (error) {
-        console.error('구독 검증 오류:', error);
-        throw new functions.https.HttpsError('internal', '구독 검증 실패');
-    }
-});
-*/
