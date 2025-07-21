@@ -235,89 +235,180 @@ public class BillingManager implements PurchasesUpdatedListener {
                 }
             }
 
+            // 🔍 이 부분에 디버깅 로그 추가!
+            Log.d(TAG, "🔍 유효한 구매 수: " + validPurchases.size());
+            Log.d(TAG, "🔍 validPurchases.isEmpty() 결과: " + validPurchases.isEmpty());
+
             if (validPurchases.isEmpty()) {
-                Log.d(TAG, "현재 기기에서 유효한 구매 없음 - 다른 기기 구독 확인");
+                Log.d(TAG, "🔍 유효한 구매 없음 - checkCrossDeviceSubscription 호출");
                 checkCrossDeviceSubscription(user);
                 return;
             }
 
             purchases = validPurchases;
         } else {
-            Log.d(TAG, "구매 내역 없음 - 다른 기기 구독 확인");
+            Log.d(TAG, "🔍 구매 내역 없음 - checkCrossDeviceSubscription 호출");
             checkCrossDeviceSubscription(user);
             return;
         }
 
-        // 🔧 수정: 구독 상태 분석 로직 개선
-        SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
+        // 🔍 이 부분이 핵심!
+        Log.d(TAG, "🔍 processValidPurchases 호출 예정: " + purchases.size() + "개");
+        processValidPurchases(purchases);  // ← 이 라인이 실행되는지 확인!
+    }
+
+    /**
+     * 🔧 새 메서드: 서버 검증을 포함한 구매 처리
+     */
+    private void handlePurchaseVerification(Purchase purchase) {
+        Log.d(TAG, "🔍 구매 서버 검증 시작: " + purchase.getOrderId());
+
+        // 서버 검증 실행
+        SubscriptionValidator validator = new SubscriptionValidator(context);
+        validator.verifySubscriptionWithServer(purchase, new SubscriptionValidator.OnSubscriptionValidatedListener() {
+            @Override
+            public void onValidationSuccess(SubscriptionValidator.SubscriptionInfo subscriptionInfo) {
+                Log.d(TAG, "🎉 서버 검증 성공: " + subscriptionInfo.getOrderId());
+                Log.d(TAG, "만료일: " + new Date(subscriptionInfo.getExpiryTimeMillis()));
+                Log.d(TAG, "자동갱신: " + subscriptionInfo.isAutoRenewing());
+
+                // 서버 검증 결과로 최종 구독 상태 업데이트
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                if (user != null) {
+                    String subscriptionType = determineSubscriptionType(purchase);
+
+                    // 🔧 중요: 서버 검증 결과로 Firebase Database 덮어쓰기
+                    updateFirebaseSubscription(user,
+                            subscriptionInfo.isValid(),
+                            subscriptionInfo.getExpiryTimeMillis(),
+                            subscriptionType,
+                            subscriptionInfo.isAutoRenewing());
+
+                    // SubscriptionManager에도 반영
+                    SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
+                    subscriptionManager.setSubscribed(subscriptionInfo.isValid(),
+                            subscriptionInfo.getExpiryTimeMillis(),
+                            subscriptionType);
+
+                    Log.d(TAG, "✅ 서버 검증 결과로 구독 상태 최종 업데이트 완료");
+                }
+            }
+
+            @Override
+            public void onValidationFailed(String error) {
+                Log.w(TAG, "⚠️ 서버 검증 실패: " + error);
+                Log.w(TAG, "로컬 검증 결과 유지");
+            }
+        });
+    }
+
+    /**
+     * 🔧 새 메서드: 구매에서 구독 유형 결정
+     */
+    private String determineSubscriptionType(Purchase purchase) {
+        List<String> skus = purchase.getProducts();
+        if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
+            return Constants.SUBSCRIPTION_MONTHLY;
+        } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
+            return Constants.SUBSCRIPTION_YEARLY;
+        }
+        return Constants.SUBSCRIPTION_NONE;
+    }
+
+    /**
+     * 🔧 수정: 기존 processValidPurchases 메서드 수정
+     * 서버 검증을 추가하되 기존 로직은 유지
+     */
+    private void processValidPurchases(List<Purchase> purchases) {
+        Log.d(TAG, "유효한 구매 처리 시작: " + (purchases != null ? purchases.size() : 0) + "개");
+
         boolean isSubscribed = false;
         long expiryTimestamp = 0;
         String subscriptionType = Constants.SUBSCRIPTION_NONE;
         boolean isAutoRenewing = false;
 
-        for (Purchase purchase : purchases) {
-            Log.d(TAG, "구매 상태 검토: " + purchase.getProducts() + ", 상태: " + purchase.getPurchaseState());
-            Log.d(TAG, "자동 갱신 상태: " + purchase.isAutoRenewing());
-            Log.d(TAG, "구매 시간: " + new Date(purchase.getPurchaseTime()));
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Log.e(TAG, "사용자 로그인 상태 확인 필요");
+            return;
+        }
 
-            if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                if (!purchase.isAcknowledged()) {
-                    acknowledgePurchase(purchase);
-                }
+        if (purchases != null && !purchases.isEmpty()) {
+            for (Purchase purchase : purchases) {
+                Log.d(TAG, "🔍 구매 처리 시작: " + purchase.getOrderId());
+                Log.d(TAG, "🔍 구매 상태 값: " + purchase.getPurchaseState());
+                Log.d(TAG, "🔍 PURCHASED 상수 값: " + Purchase.PurchaseState.PURCHASED);
+                Log.d(TAG, "🔍 구매 상태 비교 결과: " + (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED));
 
-                List<String> skus = purchase.getProducts();
+                // 구매 확인 처리
+                if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                    Log.d(TAG, "✅ PURCHASED 조건문 통과!");
 
-                // 🔧 수정: 자동 갱신 상태 확인
-                boolean purchaseAutoRenewing = purchase.isAutoRenewing();
-
-                if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
-                    subscriptionType = Constants.SUBSCRIPTION_MONTHLY;
-                    isAutoRenewing = purchaseAutoRenewing;
-
-                    // 🔧 수정: 실제 구독 상태에 따른 만료 시간 계산
-                    if (purchaseAutoRenewing) {
-                        // 자동 갱신 활성화 - 정상적인 구독
-                        expiryTimestamp = calculateActualExpiryTime(purchase, 30);
-                        isSubscribed = true;
-                        Log.d(TAG, "월간 구독 활성 (자동 갱신): 만료일 " + new Date(expiryTimestamp));
+                    if (!purchase.isAcknowledged()) {
+                        Log.d(TAG, "🔍 구매 확인 필요 - acknowledgePurchase 호출");
+                        acknowledgePurchase(purchase);
                     } else {
-                        // 자동 갱신 비활성화 - 취소된 구독, 현재 기간까지만 유효
-                        expiryTimestamp = calculateGracePeriodExpiryTime(purchase, 30);
-                        isSubscribed = isWithinGracePeriod(expiryTimestamp);
-                        Log.d(TAG, "월간 구독 취소됨 (유예 기간): 만료일 " + new Date(expiryTimestamp) + ", 현재 유효: " + isSubscribed);
+                        Log.d(TAG, "🔍 이미 확인된 구매");
                     }
 
-                } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
-                    subscriptionType = Constants.SUBSCRIPTION_YEARLY;
-                    isAutoRenewing = purchaseAutoRenewing;
+                    // 🔍 이 라인들이 실행되는지 확인
+                    Log.d(TAG, "🔍 서버 검증 호출 시작: " + purchase.getOrderId());
+                    handlePurchaseVerification(purchase);
 
-                    if (purchaseAutoRenewing) {
-                        // 자동 갱신 활성화 - 정상적인 구독
-                        expiryTimestamp = calculateActualExpiryTime(purchase, 365);
-                        isSubscribed = true;
-                        Log.d(TAG, "연간 구독 활성 (자동 갱신): 만료일 " + new Date(expiryTimestamp));
-                    } else {
-                        // 자동 갱신 비활성화 - 취소된 구독, 현재 기간까지만 유효
-                        expiryTimestamp = calculateGracePeriodExpiryTime(purchase, 365);
-                        isSubscribed = isWithinGracePeriod(expiryTimestamp);
-                        Log.d(TAG, "연간 구독 취소됨 (유예 기간): 만료일 " + new Date(expiryTimestamp) + ", 현재 유효: " + isSubscribed);
+                    // 기존 로컬 검증 로직도 유지 (fallback용)
+                    List<String> skus = purchase.getProducts();
+                    boolean purchaseAutoRenewing = purchase.isAutoRenewing();
+
+                    if (skus.contains(MONTHLY_SUBSCRIPTION_ID)) {
+                        subscriptionType = Constants.SUBSCRIPTION_MONTHLY;
+                        isAutoRenewing = purchaseAutoRenewing;
+
+                        if (purchaseAutoRenewing) {
+                            expiryTimestamp = calculateActualExpiryTime(purchase, 30);
+                            isSubscribed = true;
+                            Log.d(TAG, "월간 구독 활성 (자동 갱신): 만료일 " + new Date(expiryTimestamp));
+                        } else {
+                            expiryTimestamp = calculateGracePeriodExpiryTime(purchase, 30);
+                            isSubscribed = isWithinGracePeriod(expiryTimestamp);
+                            Log.d(TAG, "월간 구독 취소됨 (유예 기간): 만료일 " + new Date(expiryTimestamp) + ", 현재 유효: " + isSubscribed);
+                        }
+
+                    } else if (skus.contains(YEARLY_SUBSCRIPTION_ID)) {
+                        subscriptionType = Constants.SUBSCRIPTION_YEARLY;
+                        isAutoRenewing = purchaseAutoRenewing;
+
+                        if (purchaseAutoRenewing) {
+                            expiryTimestamp = calculateActualExpiryTime(purchase, 365);
+                            isSubscribed = true;
+                            Log.d(TAG, "연간 구독 활성 (자동 갱신): 만료일 " + new Date(expiryTimestamp));
+                        } else {
+                            expiryTimestamp = calculateGracePeriodExpiryTime(purchase, 365);
+                            isSubscribed = isWithinGracePeriod(expiryTimestamp);
+                            Log.d(TAG, "연간 구독 취소됨 (유예 기간): 만료일 " + new Date(expiryTimestamp) + ", 현재 유효: " + isSubscribed);
+                        }
                     }
+                } else {
+                    Log.w(TAG, "❌ PURCHASED 조건문 통과 못함 - 구매 상태: " + purchase.getPurchaseState());
                 }
             }
         }
 
-        // 🔧 추가: 만료된 구독 처리
+
+        // 로컬 검증 결과로 임시 업데이트 (서버 검증이 완료되면 덮어써짐)
         if (!isSubscribed && expiryTimestamp > 0) {
             Log.d(TAG, "구독이 만료되었습니다. 만료일: " + new Date(expiryTimestamp));
             subscriptionType = Constants.SUBSCRIPTION_NONE;
             expiryTimestamp = 0;
         }
 
-        // Firebase 구독 상태 업데이트
+        // Firebase 구독 상태 임시 업데이트 (서버 검증 결과로 최종 업데이트됨)
         updateFirebaseSubscription(user, isSubscribed, expiryTimestamp, subscriptionType, isAutoRenewing);
 
-        // SubscriptionManager 업데이트
+        // SubscriptionManager 임시 업데이트
+        SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
         subscriptionManager.setSubscribed(isSubscribed, expiryTimestamp, subscriptionType);
+
+        Log.d(TAG, "로컬 검증 완료. 서버 검증 대기 중...");
     }
 
     /**

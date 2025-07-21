@@ -272,7 +272,7 @@
     <string name="action_logout">로그아웃</string>
 
     <!-- app/src/main/res/values/strings.xml 에 추가 -->
-    <string name="default_web_client_id">1:95404396994:android:133991fb5fec4fd5a9465b</string>
+    <string name="default_web_client_id">770448806682-kb3ui9r8sls5vp2elb0in8l283nv97nq.apps.googleusercontent.com</string>
 
     <string name="select_language">언어 선택 / Select Language</string>
     <string name="confirm">확인 / Confirm</string>
