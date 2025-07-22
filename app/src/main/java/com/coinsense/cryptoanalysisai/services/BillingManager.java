@@ -293,7 +293,7 @@ public class BillingManager implements PurchasesUpdatedListener {
     }
 
     /**
-     * 🔧 새로운 메서드: 구매 즉시 처리
+     * 🔧 새로운 메서드: 구매 즉시 처리 (완성 버전)
      */
     private void handlePurchaseImmediately(Purchase purchase) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -336,7 +336,7 @@ public class BillingManager implements PurchasesUpdatedListener {
             Log.d(TAG, "❌ 구독 완전 만료됨");
         }
 
-        // Firebase 즉시 업데이트
+        // 🔧 여기가 핵심! Firebase 즉시 업데이트 호출
         updateFirebaseSubscriptionDetailed(user, isSubscribed, expiryTimestamp,
                 subscriptionType, isAutoRenewing, isCancelled);
     }
@@ -382,7 +382,7 @@ public class BillingManager implements PurchasesUpdatedListener {
     }
 
     /**
-     * 🔧 새로운 메서드: 상세한 Firebase 업데이트
+     * 🔧 수정된 메서드: 상세한 Firebase 업데이트
      */
     private void updateFirebaseSubscriptionDetailed(FirebaseUser user, boolean isSubscribed,
                                                     long expiryTimestamp, String subscriptionType,
@@ -395,8 +395,8 @@ public class BillingManager implements PurchasesUpdatedListener {
         subscriptionData.put("subscribed", isSubscribed);
         subscriptionData.put("expiryTimestamp", expiryTimestamp);
         subscriptionData.put("subscriptionType", subscriptionType);
-        subscriptionData.put("autoRenewing", isAutoRenewing);  // 🔧 정확한 자동갱신 상태
-        subscriptionData.put("cancelled", isCancelled);        // 🔧 정확한 취소 상태
+        subscriptionData.put("autoRenewing", isAutoRenewing);  // 🔧 파라미터 값 직접 사용
+        subscriptionData.put("cancelled", isCancelled);        // 🔧 파라미터 값 직접 사용 (계산식 제거)
         subscriptionData.put("lastUpdated", System.currentTimeMillis());
         subscriptionData.put("lastLocalCheck", System.currentTimeMillis());
 
@@ -406,7 +406,8 @@ public class BillingManager implements PurchasesUpdatedListener {
                     Log.d(TAG, "   구독상태: " + isSubscribed);
                     Log.d(TAG, "   자동갱신: " + isAutoRenewing);
                     Log.d(TAG, "   취소여부: " + isCancelled);
-                    Log.d(TAG, "   만료일: " + (expiryTimestamp > 0 ? new Date(expiryTimestamp) : "없음"));
+                    Log.d(TAG, "   만료일: " + (expiryTimestamp > 0 ?
+                            new Date(expiryTimestamp) : "없음"));
 
                     // SubscriptionManager에도 반영
                     SubscriptionManager subscriptionManager = SubscriptionManager.getInstance(context);
@@ -414,11 +415,11 @@ public class BillingManager implements PurchasesUpdatedListener {
 
                     // UI 업데이트 알림
                     if (billingStatusListener != null) {
-                        billingStatusListener.onPurchaseComplete();
+                        billingStatusListener.onSubscriptionStatusChanged(isSubscribed, isAutoRenewing);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "❌ Firebase 업데이트 실패: " + e.getMessage());
+                    Log.e(TAG, "❌ Firebase 상세 업데이트 실패: " + e.getMessage());
                     if (billingStatusListener != null) {
                         billingStatusListener.onBillingError("구독 상태 동기화 실패: " + e.getMessage());
                     }
