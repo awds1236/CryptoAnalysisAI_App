@@ -385,6 +385,18 @@
     <!-- ★ 새로 추가된 근거 관련 문자열 -->
     <string name="recommendation_reason">분석 근거</string>
 
+    <!-- 추가 코인 이름들 (한국어) -->
+    <string name="polkadot">폴카닷</string>
+    <string name="polygon">폴리곤</string>
+    <string name="uniswap">유니스왑</string>
+    <string name="litecoin">라이트코인</string>
+    <string name="cosmos">코스모스</string>
+    <string name="near_protocol">니어 프로토콜</string>
+    <string name="fantom">팬텀</string>
+    <string name="sandbox">샌드박스</string>
+    <string name="decentraland">디센트럴랜드</string>
+    <string name="axie_infinity">액시 인피니티</string>
+
 
 
 </resources>

@@ -557,22 +557,41 @@ public class CoinListFragment extends Fragment {
      * 코인의 이름을 가져오기
      */
     private String getKoreanName(String symbol) {
-        // 리소스 ID가 통일되었으므로 이제 언어 설정을 확인할 필요 없이
-        // 바로 해당 리소스 ID를 사용하면 Android 시스템이 현재 언어에 맞는 문자열을 반환합니다
-        switch (symbol) {
-            case "BTC": return getString(R.string.bitcoin);
-            case "ETH": return getString(R.string.ethereum);
-            case "XRP": return getString(R.string.ripple);
-            case "SOL": return getString(R.string.solana);
-            case "DOGE": return getString(R.string.dogecoin);
-            case "ADA": return getString(R.string.cardano);
-            case "TRX": return getString(R.string.tron);
-            case "SUI": return getString(R.string.sui);
-            case "LINK": return getString(R.string.chainlink);
-            case "AVAX": return getString(R.string.avalanche);
-            case "XLM": return getString(R.string.stellar);
-            case "HBAR": return getString(R.string.hedera);
-            default: return symbol;
+        // 🔧 Fragment가 context에 attach되지 않은 경우 기본값 반환
+        if (!isAdded() || getContext() == null) {
+            Log.w(TAG, "getKoreanName: Fragment not attached, returning symbol: " + symbol);
+            return symbol;
+        }
+
+        try {
+            switch (symbol) {
+                case "BTC": return getString(R.string.bitcoin);
+                case "ETH": return getString(R.string.ethereum);
+                case "XRP": return getString(R.string.ripple);
+                case "SOL": return getString(R.string.solana);
+                case "DOGE": return getString(R.string.dogecoin);
+                case "ADA": return getString(R.string.cardano);
+                case "TRX": return getString(R.string.tron);
+                case "SUI": return getString(R.string.sui);
+                case "LINK": return getString(R.string.chainlink);
+                case "AVAX": return getString(R.string.avalanche);
+                case "DOT": return getString(R.string.polkadot);
+                case "MATIC": return getString(R.string.polygon);
+                case "UNI": return getString(R.string.uniswap);
+                case "LTC": return getString(R.string.litecoin);
+                case "ATOM": return getString(R.string.cosmos);
+                case "NEAR": return getString(R.string.near_protocol);
+                case "FTM": return getString(R.string.fantom);
+                case "SAND": return getString(R.string.sandbox);
+                case "MANA": return getString(R.string.decentraland);
+                case "AXS": return getString(R.string.axie_infinity);
+                case "XLM": return getString(R.string.stellar);
+                case "HBAR": return getString(R.string.hedera);
+                default: return symbol;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "getKoreanName 예외 발생: " + e.getMessage() + ", returning symbol: " + symbol);
+            return symbol;
         }
     }
 

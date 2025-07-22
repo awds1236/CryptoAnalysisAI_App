@@ -374,4 +374,16 @@
 
     <!-- ★ Added recommendation reason related strings -->
     <string name="recommendation_reason">Analysis Rationale</string>
+
+    <!-- Additional coin names (English) -->
+    <string name="polkadot">Polkadot</string>
+    <string name="polygon">Polygon</string>
+    <string name="uniswap">Uniswap</string>
+    <string name="litecoin">Litecoin</string>
+    <string name="cosmos">Cosmos</string>
+    <string name="near_protocol">NEAR Protocol</string>
+    <string name="fantom">Fantom</string>
+    <string name="sandbox">The Sandbox</string>
+    <string name="decentraland">Decentraland</string>
+    <string name="axie_infinity">Axie Infinity</string>
 </resources>
