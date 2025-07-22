@@ -154,6 +154,7 @@ public class MainActivity extends BaseActivity implements
         super.onResume();
         Log.d(TAG, "🔄 MainActivity onResume - 구독 상태 확인 시작");
 
+
         // BillingManager 연결 및 구독 상태 확인 (조용한 모드)
         if (billingManager != null) {
             billingManager.connectToPlayBillingService();
@@ -274,17 +275,6 @@ public class MainActivity extends BaseActivity implements
                 if (selectedCoin != null) {
                     ((AnalysisFragment) analysisFragment).updateCoin(selectedCoin, selectedExchangeType);
                 }
-            }
-
-            // 🔧 수정: 구독 취소만 중요한 메시지로 표시 (스팸 방지)
-            if (isSubscribed && !isAutoRenewing) {
-                // 구독 취소된 경우에만 메시지 표시
-                Snackbar.make(binding.getRoot(), "구독이 취소되었습니다 (유예기간 중)",
-                        Snackbar.LENGTH_LONG).show();
-            } else if (!isSubscribed) {
-                // 구독 완전 만료된 경우에만 메시지 표시
-                Snackbar.make(binding.getRoot(), "구독이 만료되었습니다",
-                        Snackbar.LENGTH_SHORT).show();
             }
             // 활성 구독 상태는 메시지 표시하지 않음 (스팸 방지)
         });
